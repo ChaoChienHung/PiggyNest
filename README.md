@@ -102,16 +102,16 @@ fetch('https://script.google.com/macros/s/your-script-id/exec', {
 * 若採用 OAuth + Sheets API，請做好 token 管理
 * 若為多人使用，建議做權限機制（非此版本範圍）
 
-📦 部署方式（Vercel）
+### 📦 部署方式（Vercel）
 1. 註冊 Vercel
 2. 新增專案 → 指定 GitHub Repo
 3. 將 vite.config.ts 設為 base 路徑 /
 4. 部署完成後即可存取 https://your-project.vercel.app
 
-🙋‍♂️ 作者 Ludwig
+### 🙋‍♂️ 作者 Ludwig
 * 國立中央大學 資工系畢業
 * 熱愛 AI、深度學習、全端開發
 * 專案初衷：訓練全端架構能力，做出自己會用的產品
 
-📜 License
+### 📜 License
 MIT License
