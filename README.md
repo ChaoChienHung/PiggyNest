@@ -48,16 +48,12 @@
 ## 📁 專案架構
 
 ```yaml
-/personal-finance-app
-├── frontend/             # 前端程式碼 (React + Tailwind CSS)
-│   ├── src/
-│   ├── public/
-│   └── package.json
-├── backend/              # 後端程式碼 (FastAPI)
-│   ├── main.py
-│   ├── requirements.txt
-│   └── google_sheets.py  # Google API 操作模組
-└── README.md             # 專案說明文件
+bookkeeper/
+├── main.py           ← 進入點：執行 CLI 選單
+│
+└── data/
+    ├── csv/
+    └── xlsx/
 ```
 
 ---
