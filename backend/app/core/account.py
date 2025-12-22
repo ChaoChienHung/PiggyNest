@@ -9,7 +9,9 @@ from app.config import settings
 
 
 class AccountManager:
-    """Manages user accounts"""
+    """
+    Manages user accounts
+    """
     
     def __init__(self, accounts_file: str = None):
         self.accounts_file = accounts_file or os.path.join(
@@ -19,7 +21,9 @@ class AccountManager:
         os.makedirs(os.path.dirname(self.accounts_file), exist_ok=True)
     
     def load_accounts(self) -> List[str]:
-        """Load all accounts from file"""
+        """
+        Load all accounts from file
+        """
         if os.path.exists(self.accounts_file):
             try:
                 with open(self.accounts_file, 'r', encoding='utf-8') as f:
@@ -29,12 +33,16 @@ class AccountManager:
         return []
     
     def save_accounts(self, accounts: List[str]) -> None:
-        """Save accounts to file"""
+        """
+        Save accounts to file
+        """
         with open(self.accounts_file, 'w', encoding='utf-8') as f:
             json.dump(accounts, f, ensure_ascii=False, indent=2)
     
     def create_account(self, account_name: str) -> dict:
-        """Create a new account"""
+        """
+        Create a new account
+        """
         if not self.validate_account_name(account_name):
             return {
                 "success": False,
@@ -52,7 +60,9 @@ class AccountManager:
         accounts.append(account_name)
         self.save_accounts(accounts)
         
-        # Create account directory
+        # ------------------------
+        # Create Account Directory
+        # ------------------------
         account_dir = os.path.join(settings.USER_DATA_DIR, account_name)
         os.makedirs(account_dir, exist_ok=True)
         
@@ -116,5 +126,7 @@ class AccountManager:
     
     @staticmethod
     def validate_account_name(name: str) -> bool:
-        """Validate account name format"""
+        """
+        Validate account name format
+        """
         return bool(re.match(r"^[\w\-]+$", name))
