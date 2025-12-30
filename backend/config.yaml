@@ -1,7 +1,6 @@
 paths:
   data_base_dir: "./data"
-  user_data_dir: "./data/user"
-  accounts_list: "./src/accounts.json"
+  accounts_file: "./src/accounts.json"
   categories_file: "./src/categories.json"
 
 google_drive:
