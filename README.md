@@ -1,4 +1,4 @@
-# 🧾 Bookkeeping — Personal Finance App
+# 🧾 PiggyNest — Personal Finance App
 
 This project is a personal bookkeeping application designed for both desktop and mobile use.  
 Originally created for practice and experimentation, it also serves as a playground for adopting new technologies and improving full-stack development skills.
@@ -73,7 +73,7 @@ The architecture balances simplicity, flexibility, and speed—ideal for persona
 ## 📁 Project Structure
 
 ```perl
-bookkeeping-app/
+PiggyNest/
 ├── backend/                          # FastAPI server
 │   ├── app/
 │   │   ├── __init__.py
