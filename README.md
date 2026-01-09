@@ -74,77 +74,69 @@ The architecture balances simplicity, flexibility, and speed—ideal for persona
 
 ```perl
 PiggyNest/
-├── backend/                          # FastAPI server
+├── backend/                          
 │   ├── app/
 │   │   ├── __init__.py
 │   │   ├── main.py                   # FastAPI app entry point
-│   │   ├── config.py                 # Configuration management
-│   │   ├── dependencies.py           # Dependency injection
+│   │   ├── config.py                   # Configuration management
+│   │   ├── dependencies.py             # Dependency injection (DB session, auth)
 │   │   │
-│   │   ├── api/                      # API routes
-│   │   │   ├── __init__.py
+│   │   ├── api/                        # API routes
 │   │   │   └── v1/
 │   │   │       ├── __init__.py
-│   │   │       ├── transactions.py   # Transaction endpoints
-│   │   │       ├── accounts.py       # Account management
-│   │   │       ├── categories.py     # Category management
-│   │   │       ├── reports.py        # Reports & analytics
-│   │   │       └── auth.py           # Authentication
+│   │   │       ├── transactions.py     # Transaction endpoints
+│   │   │       ├── accounts.py         # Account endpoints
+│   │   │       ├── categories.py       # Category endpoints
+│   │   │       ├── piggy_banks.py      # Piggy bank endpoints
+│   │   │       ├── reports.py          # Reports & analytics
+│   │   │       └── auth.py             # Authentication endpoints
 │   │   │
-│   │   ├── domain/                   # Core business logic
-│   │   │   ├── __init__.py
-│   │   │   ├── accounts.py           # Account operations
-│   │   │   ├── transactions.py       # Transaction logic
-│   │   │   ├── categories.py         # Category logic
-│   │   │   ├── piggy_banks.py        # Piggy bank operations
-│   │   │   └── reports.py            # Report generation
+│   │   ├── domain/                     # Core business logic (stateless)
+│   │   │   ├── accounts.py             # Account rules
+│   │   │   ├── transactions.py         # Transaction rules
+│   │   │   ├── categories.py           # Category rules
+│   │   │   ├── piggy_banks.py          # Piggy bank rules
+│   │   │   └── reports.py              # Report/aggregation logic
 │   │   │
-│   │   ├── services/                 # External services
-│   │   │   ├── __init__.py
-│   │   │   ├── google_drive.py       # Google Drive integration
-│   │   │   ├── storage.py            # Storage abstraction
-│   │   │   └── auth_service.py       # Authentication service
-│   │   │
-│   │   ├── models/                   # Data models (Pydantic)
-│   │   │   ├── __init__.py
-│   │   │   ├── transaction.py
+│   │   ├── models/                     # SQLAlchemy models
+│   │   │   ├── base.py                 # Base class (declarative_base)
 │   │   │   ├── account.py
+│   │   │   ├── transaction.py
 │   │   │   ├── category.py
-│   │   │   └── report.py
+│   │   │   └── piggy_bank.py
 │   │   │
-│   │   ├── schemas/                  # Request/Response schemas
-│   │   │   ├── __init__.py
-│   │   │   ├── transaction.py
+│   │   ├── schemas/                    # Pydantic schemas (request/response)
 │   │   │   ├── account.py
-│   │   │   └── report.py
+│   │   │   ├── transaction.py
+│   │   │   ├── category.py
+│   │   │   └── piggy_bank.py
 │   │   │
-│   │   ├── db/                       # Database layer
+│   │   ├── db/                         # Database setup & repositories
 │   │   │   ├── __init__.py
-│   │   │   ├── base.py               # Base database setup
-│   │   │   ├── session.py            # DB session management
-│   │   │   └── repositories/         # Data access layer
-│   │   │       ├── __init__.py
+│   │   │   ├── session.py              # Engine & SessionLocal
+│   │   │   ├── base.py                 # Base model metadata
+│   │   │   └── repositories/           # Data access layer
+│   │   │       ├── account_repo.py
 │   │   │       ├── transaction_repo.py
-│   │   │       └── account_repo.py
+│   │   │       ├── category_repo.py
+│   │   │       └── piggy_bank_repo.py
 │   │   │
-│   │   └── utils/                    # Utility functions
-│   │       ├── __init__.py
+│   │   └── utils/                      # Helpers
 │   │       ├── date_utils.py
-│   │       ├── file_utils.py
 │   │       └── validators.py
 │   │
-│   ├── tests/                        # Backend tests
+│   ├── tests/                        
 │   │   ├── __init__.py
-│   │   ├── conftest.py
+│   │   ├── conftest.py               # Test fixtures (DB session)
 │   │   ├── test_api/
 │   │   ├── test_core/
 │   │   └── test_services/
 │   │
-│   ├── requirements.txt              # Python dependencies
-│   ├── requirements-dev.txt          # Dev dependencies
-│   ├── pyproject.toml                # Python project config
-│   ├── .env.example                  # Environment variables template
-│   └── README.md                     # Backend documentation
+│   ├── requirements.txt              
+│   ├── requirements-dev.txt          
+│   ├── pyproject.toml                
+│   ├── .env.example                  
+│   └── README.md      
 │
 ├── frontend/                         # Next.js/React frontend
 │   ├── public/
