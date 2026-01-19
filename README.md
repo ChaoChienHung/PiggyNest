@@ -72,9 +72,11 @@ The architecture balances simplicity, flexibility, and speed—ideal for persona
 
 ## 📁 Project Structure
 
-```perl
+```bash
 PiggyNest/
-├── backend/                          
+│
+├── backend/
+│   │                       
 │   ├── app/
 │   │   ├── __init__.py
 │   │   ├── main.py                   # FastAPI app entry point
@@ -132,113 +134,39 @@ PiggyNest/
 │   │   ├── test_core/
 │   │   └── test_services/
 │   │
-│   ├── requirements.txt              
-│   ├── requirements-dev.txt          
-│   ├── pyproject.toml                
-│   ├── .env.example                  
+│   ├── requirements.txt              # (TODO)
+│   ├── pyproject.toml                # (TODO)
+│   ├── .env.example                  # (TODO)
 │   └── README.md      
 │
-├── frontend/                         # Next.js/React frontend
-│   ├── public/
-│   │   ├── favicon.ico
-│   │   └── assets/
-│   │
-│   ├── src/
-│   │   ├── app/                      # Next.js 13+ app directory
-│   │   │   ├── layout.tsx
-│   │   │   ├── page.tsx
-│   │   │   ├── dashboard/
-│   │   │   ├── transactions/
-│   │   │   ├── reports/
-│   │   │   └── settings/
-│   │   │
-│   │   ├── components/               # React components
-│   │   │   ├── ui/                   # Reusable UI components
-│   │   │   ├── transactions/
-│   │   │   ├── charts/
-│   │   │   ├── forms/
-│   │   │   └── layouts/
-│   │   │
-│   │   ├── lib/                      # Utilities & helpers
-│   │   │   ├── api.ts                # API client
-│   │   │   ├── utils.ts
-│   │   │   └── constants.ts
-│   │   │
-│   │   ├── hooks/                    # Custom React hooks
-│   │   │   ├── useTransactions.ts
-│   │   │   ├── useAccounts.ts
-│   │   │   └── useAuth.ts
-│   │   │
-│   │   ├── store/                    # State management (Zustand/Redux)
-│   │   │   ├── authStore.ts
-│   │   │   ├── transactionStore.ts
-│   │   │   └── uiStore.ts
-│   │   │
-│   │   └── types/                    # TypeScript types
-│   │       ├── transaction.ts
-│   │       ├── account.ts
-│   │       └── api.ts
-│   │
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── tailwind.config.ts
-│   ├── next.config.js
-│   └── README.md
-│
-├── mobile/                           # Flutter mobile app
-│   ├── lib/
-│   │   ├── main.dart
-│   │   ├── models/
-│   │   ├── screens/
-│   │   ├── widgets/
-│   │   ├── services/
-│   │   └── utils/
-│   ├── pubspec.yaml
-│   └── README.md
-│
-├── shared/                           # Shared code/types
-│   ├── types/                        # Shared TypeScript types
-│   └── constants/                    # Shared constants
-│
-├── data/                             # Local data storage
-│   ├── user/                         # User-specific data
-│   │   └── [account_name]/
-│   │       └── piggy_banks/
-│   │           └── [bank_name]/
-│   │               ├── csv/
-│   │               └── json/
-│   └── cache/                        # Temporary cache
-│
-├── config/                           # Configuration files
-│   ├── config.yaml                   # Main config
-│   ├── config.dev.yaml               # Development config
-│   └── config.prod.yaml              # Production config
-│
-├── scripts/                          # Utility scripts
-│   ├── setup.sh                      # Setup script
-│   ├── migrate.py                    # Data migration
-│   └── backup.py                     # Backup utility
-│
-├── docs/                             # Documentation
-│   ├── api/                          # API documentation
-│   ├── setup.md                      # Setup guide
-│   └── architecture.md               # Architecture docs
-│
-├── .github/                          # GitHub specific files
-│   └── workflows/                    # CI/CD workflows
-│       ├── backend-tests.yml
-│       └── frontend-tests.yml
-│
-├── docker/                           # Docker configurations
+├── docker/                           # (TODO) Docker configurations
 │   ├── Dockerfile.backend
 │   ├── Dockerfile.frontend
 │   └── docker-compose.yml
 │
+├── docs/                             # (TODO) Documentation
+│   ├── api/                          # (TODO) API documentation
+│   ├── setup.md                      # (TODO) Setup guide
+│   └── architecture.md               # (TODO) Architecture docs
+│
+├── frontend/                         # (TODO) Next.js/React frontend
+│   
+├── mobile/                           # (TODO) Flutter mobile app
+│
+├── scripts/                          # (TODO) Script
+│
+│
+├── .github/                          # (TODO) GitHub specific files
+│   └── workflows/                    # (TODO) CI/CD workflows
+│       ├── backend-tests.yml
+│       └── frontend-tests.yml
+│
+├── .gitattributes                    # Git attribute rules
 ├── .gitignore                        # Git ignore rules
-├── .env.example                      # Environment variables template
-├── README.md                         # Main project README
-├── LICENSE                           # License file
-└── CHANGELOG.md                      # Version history
+├── .env.example                      # (TODO) Environment variables template
+├── DevNotes.md                       # Development notes
+├── LICENSE                           # (TODO) License file
+└── README.md                         # Main project README
 ```
 
 ## 📦 Deployment Recommendations
