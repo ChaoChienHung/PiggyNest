@@ -1,5 +1,8 @@
 # Development Notes
 
+1. **Database First**:
+Since most of PiggyNest’s features and operations revolve around database interactions, I chose to adopt the database first, unlike some of my previous projects.
+
 1. **Models vs Domain vs Services**:  
     In the backend, these three layers serve different purposes and should be kept separate to maintain clarity and flexibility.  
     - **Models** define **how data is stored in the database**. They are SQLAlchemy ORM classes representing tables, columns, and relationships. Models are “dumb” — they hold data but do not contain business rules or API logic.  
@@ -11,7 +14,7 @@
     - Flexibility to change storage (database) or API without breaking rules  
     - Clear responsibilities: Models store data, Domain enforces rules, Services orchestrate actions
 
-1. **Choices between `app/api/v1` structures**:  
+2. **Options for structuring `app/api/v1`**:  
     Different API structures exist because they optimize for **different stages of development and team size**. There is no universally “correct” structure; instead, each reflects a trade-off between simplicity, scalability, and maintainability.
     1. **Single `routes.py` per API version (Centralized Routing)**  
       This structure groups all endpoints for a version into a single file:
@@ -27,7 +30,7 @@
         - Faster iteration with less boilerplate
         - Downside: the file can grow large and harder to navigate as endpoints increase
 
-    1. **Router per domain/resource (Modular Routing)**
+    2. **Router per domain/resource (Modular Routing)**
       This structure splits endpoints by domain or resource:
         ```bash
         api/
@@ -43,7 +46,7 @@
         - Reduces merge conflicts
         - Downside: introduces more boilerplate and potential dependency duplication
 
-    1. **Hybrid approach (Recommended evolution path)**
+    3. **Hybrid approach (Recommended evolution path)**
       A common mature pattern combines both approaches:
         ```bash
           api/

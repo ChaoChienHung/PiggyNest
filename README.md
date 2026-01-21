@@ -26,10 +26,9 @@ Mobile -----/
 
 ## 📌 Project Features
 
-This project is a personal finance tracking application featuring a React-based frontend (or pure HTML/CSS/Tailwind), a FastAPI backend, and Google Drive as the storage layer.  
+This project is a personal finance tracking application featuring a React-based frontend (or pure HTML/CSS/Tailwind), a FastAPI backend, and SQLite as the storage layer.  
 The architecture balances simplicity, flexibility, and speed—ideal for personal or small-scale use.
 
-- ✅ Store records on Google Drive via API  
 - ✅ Query and review transaction history  
 - ✅ Display charts (pie charts & bar charts) using Chart.js / Recharts  
 - ✅ Deployable to Vercel, Netlify, or GitHub Pages  
@@ -42,8 +41,6 @@ The architecture balances simplicity, flexibility, and speed—ideal for persona
 2. View transaction history (sorted by time)  
 3. Pie chart: spending categorized by type  
 4. Bar chart: monthly income & expense summary  
-5. Google OAuth login (advanced)  
-6. Bidirectional sync (reflect Google Drive updates in UI)
 
 ---
 
@@ -59,18 +56,24 @@ The architecture balances simplicity, flexibility, and speed—ideal for persona
 
 ---
 
-## 🔧 Tech Stack
+## Table Schema
 
-| Component | Technologies / Tools                         | Description                           |
-|----------|-----------------------------------------------|---------------------------------------|
-| Frontend | React + Tailwind CSS                          | User interface & data visualization   |
-| Backend  | FastAPI                                       | API services & business logic         |
-| Storage  | Google Drive                                   | Data storage and retrieval            |
-| Auth     | Google Service Account + OAuth2               | Secure access to Google Drive         |
+| Column Name        | Data Type                                | Description                                         |
+|--------------------|------------------------------------------|-----------------------------------------------------|
+| `transaction_id`   | INTEGER PRIMARY KEY AUTOINCREMENT        | Unique ID for each transaction                      |
+| `user_id`          | INTEGER                                  | ID of the user making the transaction               |
+| `date`             | TEXT                                     | Date of transaction (ISO format `YYYY-MM-DD`)       |
+| `amount`           | REAL                                     | Transaction amount                                  |
+| `tags`             | REAL                                     | e.g., “groceries”, “rent”, “salary” (for analytics) |
+| `category`         | TEXT                                     | e.g., Withdrawal, Deposit, Transfer                 |
+| `description`      | TEXT                                     | Optional details                                    |
+| `balance`          | REAL                                     | Account balance after transaction                   |
+| `piggy_bank`       | TEXT                                     | Optional: name of the savings jar or sub-account    |
+| `currency`         | TEXT                                     | e.g., USD, EUR, JPY                                 |
 
 ---
 
-## 📁 Project Structure
+## 📁 Folder Structure
 
 ```bash
 PiggyNest/
@@ -171,13 +174,12 @@ PiggyNest/
 
 ## 📦 Deployment Recommendations
 
-1. Frontend: Deploy on Vercel or Netlify
-2.  Backend: Deploy on Render or Railway (note: may sleep on free tier)
-3.  Google Drive: Configure Service Account and grant Spreadsheet access for secure operations
+1. Frontend : Deploy on Vercel or Netlify
+2. Backend  : Deploy on Render or Railway (note: may sleep on free tier)
+3. Database : SQLite database
 
 ## 🔐 Notes & Considerations
 
-- Google Drive is suitable for small datasets; for larger or complex workloads, consider PostgreSQL or other production databases
 - Free-tier backend services may sleep when idle, causing slow first-time responses
 - Handle OAuth2 credentials and Service Account keys securely
 - Implement basic client-side validation for better UX and data accuracy

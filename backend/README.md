@@ -1,6 +1,6 @@
 # Backend
 
-## 📁 Project Structure
+## 📁 Folder Structure
 
 ```bash
 backend/
