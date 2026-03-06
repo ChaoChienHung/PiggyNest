@@ -7,11 +7,12 @@ class PiggyBank(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    account_id = Column(Integer, ForeignKey("accounts.id"), nullable=False)
     name = Column(String(50), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("account_id", "name", name="uq_account_piggy_bank"),
+        UniqueConstraint("user_id", "name", name="uq_user_piggy_bank"),
     )
 
-    account = relationship("Account", back_populates="piggy_banks")
+    # Relationships
+    user = relationship("User", backref="piggy_banks")
+    transactions = relationship("Transaction", back_populates="piggy_bank", cascade="all, delete-orphan")

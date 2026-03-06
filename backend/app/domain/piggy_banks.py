@@ -5,7 +5,6 @@ NAME_PATTERN = re.compile(r"^[\w\-]+$")
 
 def create_piggy_bank(
     user_id: int,
-    account_id: int,
     name: str,
     repo: PiggyBankRepository,
 ):
@@ -14,16 +13,11 @@ def create_piggy_bank(
             "Invalid piggy bank name. Use alphanumeric, hyphen, underscore."
         )
 
-    existing = repo.get_by_name(account_id, name)
+    existing = repo.get_by_name(user_id, name)
     if existing:
-        raise ValueError("Piggy bank already exists in this account")
+        raise ValueError("Piggy bank already exists for this user")
 
-    return repo.create(user_id, account_id, name)
+    return repo.create(user_id, name)
 
-
-def list_piggy_banks(
-    user_id: int,
-    account_id: int,
-    repo: PiggyBankRepository,
-):
-    return repo.list_by_account(user_id, account_id)
+def list_piggy_banks(user_id: int, repo: PiggyBankRepository):
+    return repo.list_by_user(user_id)

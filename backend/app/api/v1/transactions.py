@@ -1,127 +1,93 @@
-"""
-API Routes - Transaction Management
-"""
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
-from typing import Optional
-from datetime import date
-from app.core.transactions import TransactionManager
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from typing import List, Optional
+
+from app.db.session import get_db
+from app.models.transaction import Transaction
+from app.models.piggy_bank import PiggyBank
+from app.schemas.transaction import TransactionCreate, TransactionRead
+from app.api.deps import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
+def get_user_piggy_bank(db: Session, pb_id: int, user_id: int):
+    pb = db.query(PiggyBank).filter(
+        PiggyBank.id == pb_id, PiggyBank.user_id == user_id
+    ).first()
+    if not pb:
+        raise HTTPException(status_code=404, detail="Piggy bank not found or not owned by user")
+    return pb
 
-class TransactionCreate(BaseModel):
-    date: str
-    amount: float
-    category: str
-    description: str = ""
-
-
-class TransactionFilter(BaseModel):
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    category: Optional[str] = None
-
-
-@router.post("/accounts/{account_name}/piggy-banks/{piggy_bank_name}/transactions")
-async def add_transaction(
-    account_name: str,
-    piggy_bank_name: str,
-    transaction: TransactionCreate
+@router.post("/piggy-banks/{pb_id}/transactions", response_model=TransactionRead)
+def add_transaction(
+    pb_id: int,
+    payload: TransactionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Add a new transaction"""
-    tm = TransactionManager(account_name, piggy_bank_name)
+    """Add a new transaction to a specific piggy bank"""
+    get_user_piggy_bank(db, pb_id, current_user.id)
     
-    # Load existing data
-    load_result = tm.load_from_csv()
-    
-    # Add transaction
-    result = tm.add_transaction(
-        date=transaction.date,
-        amount=transaction.amount,
-        category=transaction.category,
-        description=transaction.description
+    transaction = Transaction(
+        piggy_bank_id=pb_id,
+        amount=payload.amount,
+        category=payload.category,
+        description=payload.description,
     )
-    
-    if not result["success"]:
-        raise HTTPException(status_code=400, detail=result["error"])
-    
-    # Save to file
-    tm.save_to_csv()
-    
-    return result
+    if payload.date:
+        transaction.date = payload.date
+
+    db.add(transaction)
+    db.commit()
+    db.refresh(transaction)
+    return transaction
 
 
-@router.get("/accounts/{account_name}/piggy-banks/{piggy_bank_name}/transactions")
-async def get_transactions(
-    account_name: str,
-    piggy_bank_name: str,
-    start_date: Optional[str] = Query(None),
-    end_date: Optional[str] = Query(None),
-    category: Optional[str] = Query(None),
-    year: Optional[int] = Query(None)
+@router.get("/piggy-banks/{pb_id}/transactions", response_model=List[TransactionRead])
+def get_transactions(
+    pb_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Get transactions with optional filters"""
-    tm = TransactionManager(account_name, piggy_bank_name)
+    """Get transactions for a specific piggy bank"""
+    get_user_piggy_bank(db, pb_id, current_user.id)
+    return db.query(Transaction).filter(Transaction.piggy_bank_id == pb_id).order_by(Transaction.date.desc()).all()
+
+
+@router.delete("/transactions/{transaction_id}")
+def delete_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a transaction"""
+    transaction = db.query(Transaction).join(PiggyBank).filter(
+        Transaction.id == transaction_id,
+        PiggyBank.user_id == current_user.id
+    ).first()
     
-    # Load data
-    load_result = tm.load_from_csv(year)
-    if not load_result["success"] and load_result.get("error") != "File not found":
-        raise HTTPException(status_code=404, detail=load_result["error"])
-    
-    # Get filtered transactions
-    df = tm.get_transactions(start_date, end_date, category)
-    
-    # Convert to dict
-    transactions = df.to_dict('records')
-    
-    # Convert timestamps to strings
-    for t in transactions:
-        if 'Date' in t:
-            t['Date'] = t['Date'].isoformat()
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+        
+    db.delete(transaction)
+    db.commit()
+    return {"success": True}
+
+
+@router.get("/piggy-banks/{pb_id}/balance")
+def get_balance(
+    pb_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get current balance of a piggy bank"""
+    get_user_piggy_bank(db, pb_id, current_user.id)
+    total = db.query(func.sum(Transaction.amount)).filter(Transaction.piggy_bank_id == pb_id).scalar()
+    count = db.query(func.count(Transaction.id)).filter(Transaction.piggy_bank_id == pb_id).scalar()
     
     return {
-        "transactions": transactions,
-        "count": len(transactions),
-        "balance": tm.current_balance
-    }
-
-
-@router.delete("/accounts/{account_name}/piggy-banks/{piggy_bank_name}/transactions/{transaction_id}")
-async def delete_transaction(
-    account_name: str,
-    piggy_bank_name: str,
-    transaction_id: int
-):
-    """Delete a transaction by ID"""
-    tm = TransactionManager(account_name, piggy_bank_name)
-    
-    # Load existing data
-    load_result = tm.load_from_csv()
-    if not load_result["success"]:
-        raise HTTPException(status_code=404, detail=load_result["error"])
-    
-    # Delete transaction
-    result = tm.delete_transaction_by_id(transaction_id)
-    
-    if not result["success"]:
-        raise HTTPException(status_code=404, detail=result["error"])
-    
-    # Save changes
-    tm.save_to_csv()
-    
-    return result
-
-
-@router.get("/accounts/{account_name}/piggy-banks/{piggy_bank_name}/balance")
-async def get_balance(account_name: str, piggy_bank_name: str, year: Optional[int] = None):
-    """Get current balance"""
-    tm = TransactionManager(account_name, piggy_bank_name)
-    
-    load_result = tm.load_from_csv(year)
-    
-    return {
-        "balance": tm.current_balance,
-        "transaction_count": len(tm.transactions_df),
-        "year": tm.loaded_year
+        "balance": float(total or 0.0),
+        "transaction_count": count or 0,
     }

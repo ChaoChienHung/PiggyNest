@@ -172,6 +172,29 @@ PiggyNest/
 └── README.md                         # Main project README
 ```
 
+## 💻 How to Run Locally
+
+### 1. Start the Backend (FastAPI)
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+The backend API will run at `http://localhost:8000`.
+
+### 2. Start the Frontend (Vite + React)
+Open a new terminal window:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+The frontend application will be available at `http://localhost:5173`.
+
+---
+
 ## 📦 Deployment Recommendations
 
 1. Frontend : Deploy on Vercel or Netlify
