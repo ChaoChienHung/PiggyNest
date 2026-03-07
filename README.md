@@ -1,180 +1,30 @@
-# 🧾 PiggyNest — Personal Finance App
+# PiggyNest v2.0 🐷
 
-This project is a personal bookkeeping application designed for both desktop and mobile use.  
-Originally created for practice and experimentation, it also serves as a playground for adopting new technologies and improving full-stack development skills.
+A full-stack, comprehensive, categorized, and multi-currency personal finance bookkeeping application powered by FastAPI and React!
 
----
+PiggyNest allows users to map their real-world Net Worth across various different independent "PiggyBanks".
 
-## 🧱 Project Architecture
-
-```
- Web   -----\
-       API Request → Server → Database
-Mobile -----/
-```
-
-### Technology Stack
-
-| Layer       | Technology                               | Purpose                                   |
-|-------------|------------------------------------------|-------------------------------------------|
-| Web Client  | Next.js, React                           | Browser-based UI                          |
-| Mobile App  | Flutter                                  | Cross-platform mobile UI                  |
-| Server API  | Python (FastAPI)                         | Business logic, validation, data routing  |
-| Database    | SQLite, PostgreSQL, MySQL, MariaDB       | Persistent storage                        |
+### ✨ Core Features
+- **Secure Authentication:** JWT-based user registration and login system.
+- **Multi-Currency:** Support for major localized currencies (USD, EUR, GBP, JPY, NTD, SGD).
+- **Inter-Bank Transfers:** Transfer static funds seamlessly between specific sub-accounts.
+- **Categorization:** Tag your expenses and incomes with robust custom string attributes (Rent, Food, Salary).
+- **Financial Analytics:** Auto-populated Recharts animations generating Pie charts predicting your Money Flow layout!
 
 ---
 
-## 📌 Project Features
-
-This project is a personal finance tracking application featuring a React-based frontend (or pure HTML/CSS/Tailwind), a FastAPI backend, and SQLite as the storage layer.  
-The architecture balances simplicity, flexibility, and speed—ideal for personal or small-scale use.
-
-- ✅ Query and review transaction history  
-- ✅ Display charts (pie charts & bar charts) using Chart.js / Recharts  
-- ✅ Deployable to Vercel, Netlify, or GitHub Pages  
+### 🖥️ Tech Stack
+- **Backend**: Python 3.9+, FastAPI, SQLAlchemy, SQLite Database
+- **Frontend**: TypeScript, React, Vite, TailwindCSS (Utility classes), Recharts
+- **Tooling**: Node.js, pip
 
 ---
 
-## 📈 Planned Features
+### 🚀 Getting Started
 
-1. Input transactions (income, expenses, transfers)  
-2. View transaction history (sorted by time)  
-3. Pie chart: spending categorized by type  
-4. Bar chart: monthly income & expense summary  
+#### 1. Booting the Backend (API Server)
+PiggyNest runs a lightweight ASGI web server mapping models natively to a local `sqlite3` file.
 
----
-
-## 🔄 Workflow Overview
-
-1. User enters transaction data (category, amount, date, note, etc.)  
-2. Frontend sends an HTTP POST request to the FastAPI backend  
-3. FastAPI validates the data and performs necessary logic  
-4. Backend writes data to Google Sheets via Google API  
-5. When users request history, the frontend sends a GET request  
-6. FastAPI retrieves data from Google Drive and returns the results  
-7. Frontend displays the data as tables or charts  
-
----
-
-## Table Schema
-
-| Column Name        | Data Type                                | Description                                         |
-|--------------------|------------------------------------------|-----------------------------------------------------|
-| `transaction_id`   | INTEGER PRIMARY KEY AUTOINCREMENT        | Unique ID for each transaction                      |
-| `user_id`          | INTEGER                                  | ID of the user making the transaction               |
-| `date`             | TEXT                                     | Date of transaction (ISO format `YYYY-MM-DD`)       |
-| `amount`           | REAL                                     | Transaction amount                                  |
-| `tags`             | REAL                                     | e.g., “groceries”, “rent”, “salary” (for analytics) |
-| `category`         | TEXT                                     | e.g., Withdrawal, Deposit, Transfer                 |
-| `description`      | TEXT                                     | Optional details                                    |
-| `balance`          | REAL                                     | Account balance after transaction                   |
-| `piggy_bank`       | TEXT                                     | Optional: name of the savings jar or sub-account    |
-| `currency`         | TEXT                                     | e.g., USD, EUR, JPY                                 |
-
----
-
-## 📁 Folder Structure
-
-```bash
-PiggyNest/
-│
-├── backend/
-│   │                       
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py                   # FastAPI app entry point
-│   │   ├── config.py                   # Configuration management
-│   │   ├── dependencies.py             # Dependency injection (DB session, auth)
-│   │   │
-│   │   ├── api/                        # API routes
-│   │   │   └── v1/
-│   │   │       ├── __init__.py
-│   │   │       ├── transactions.py     # Transaction endpoints
-│   │   │       ├── accounts.py         # Account endpoints
-│   │   │       ├── categories.py       # Category endpoints
-│   │   │       ├── piggy_banks.py      # Piggy bank endpoints
-│   │   │       ├── reports.py          # Reports & analytics
-│   │   │       └── auth.py             # Authentication endpoints
-│   │   │
-│   │   ├── domain/                     # Core business logic (stateless)
-│   │   │   ├── accounts.py             # Account rules
-│   │   │   ├── transactions.py         # Transaction rules
-│   │   │   ├── categories.py           # Category rules
-│   │   │   ├── piggy_banks.py          # Piggy bank rules
-│   │   │   └── reports.py              # Report/aggregation logic
-│   │   │
-│   │   ├── models/                     # SQLAlchemy models
-│   │   │   ├── base.py                 # Base class (declarative_base)
-│   │   │   ├── account.py
-│   │   │   ├── transaction.py
-│   │   │   ├── category.py
-│   │   │   └── piggy_bank.py
-│   │   │
-│   │   ├── schemas/                    # Pydantic schemas (request/response)
-│   │   │   ├── account.py
-│   │   │   ├── transaction.py
-│   │   │   ├── category.py
-│   │   │   └── piggy_bank.py
-│   │   │
-│   │   ├── db/                         # Database setup & repositories
-│   │   │   ├── __init__.py
-│   │   │   ├── session.py              # Engine & SessionLocal
-│   │   │   ├── base.py                 # Base model metadata
-│   │   │   └── repositories/           # Data access layer
-│   │   │       ├── account_repo.py
-│   │   │       ├── transaction_repo.py
-│   │   │       ├── category_repo.py
-│   │   │       └── piggy_bank_repo.py
-│   │   │
-│   │   └── utils/                      # Helpers
-│   │       ├── date_utils.py
-│   │       └── validators.py
-│   │
-│   ├── tests/                        
-│   │   ├── __init__.py
-│   │   ├── conftest.py               # Test fixtures (DB session)
-│   │   ├── test_api/
-│   │   ├── test_core/
-│   │   └── test_services/
-│   │
-│   ├── requirements.txt              # (TODO)
-│   ├── pyproject.toml                # (TODO)
-│   ├── .env.example                  # (TODO)
-│   └── README.md      
-│
-├── docker/                           # (TODO) Docker configurations
-│   ├── Dockerfile.backend
-│   ├── Dockerfile.frontend
-│   └── docker-compose.yml
-│
-├── docs/                             # (TODO) Documentation
-│   ├── api/                          # (TODO) API documentation
-│   ├── setup.md                      # (TODO) Setup guide
-│   └── architecture.md               # (TODO) Architecture docs
-│
-├── frontend/                         # (TODO) Next.js/React frontend
-│   
-├── mobile/                           # (TODO) Flutter mobile app
-│
-├── scripts/                          # (TODO) Script
-│
-│
-├── .github/                          # (TODO) GitHub specific files
-│   └── workflows/                    # (TODO) CI/CD workflows
-│       ├── backend-tests.yml
-│       └── frontend-tests.yml
-│
-├── .gitattributes                    # Git attribute rules
-├── .gitignore                        # Git ignore rules
-├── .env.example                      # (TODO) Environment variables template
-├── DevNotes.md                       # Development notes
-├── LICENSE                           # (TODO) License file
-└── README.md                         # Main project README
-```
-
-## 💻 How to Run Locally
-
-### 1. Start the Backend (FastAPI)
 ```bash
 cd backend
 python3 -m venv venv
@@ -182,43 +32,31 @@ source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
-The backend API will run at `http://localhost:8000`.
+*The API will be live at `http://127.0.0.1:8000`*
+*(View the interactive Swagger API documentation at `/docs`)*
 
-### 2. Start the Frontend (Vite + React)
-Open a new terminal window:
+#### 2. Booting the Frontend (React App)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-The frontend application will be available at `http://localhost:5173`.
+*The breathtaking UI will launch on `http://localhost:5173`*
 
 ---
 
-## 📦 Deployment Recommendations
+### 🛠️ Interactive Developer CLI
 
-1. Frontend : Deploy on Vercel or Netlify
-2. Backend  : Deploy on Render or Railway (note: may sleep on free tier)
-3. Database : SQLite database
+PiggyNest ships with a fully autonomous diagnostic root CLI script allowing immediate, raw, and unbridled interaction with the backend and the actual SQLite Database schemas exactly as they reflect on disk.
 
-## 🔐 Notes & Considerations
+#### Launching the CLI
+Ensure your `backend/venv` virtual environment is universally activated (so that the `requests` HTTP wrapper library is present in your PATH).
+```bash
+source backend/venv/bin/activate
+python3 cli.py
+```
 
-- Free-tier backend services may sleep when idle, causing slow first-time responses
-- Handle OAuth2 credentials and Service Account keys securely
-- Implement basic client-side validation for better UX and data accuracy
-
-## 🚀 Future Expansion
-
-- User authentication & access control
-- Migrate to a production-grade database (e.g., PostgreSQL)
-- Enhanced analytics & charting features
-- Notifications, report export, and other advanced tools
-
-## 🙋‍♂️ About the Author — Ludwig
-- B.S. in Computer Science, National Central University
-- Master in School of Computing, National University of Singapore
-- Passionate about AI, deep learning, and full-stack development
-- Motivation: build a complete, practical full-stack system for personal use
-
-## 📜 License
-MIT License
+The script will launch a terminal interface:
+1. Provide an authenticated Email and Password payload (OAuth2 standard).
+2. Issue HTTP requests natively to pull PiggyBank arrays and format your transactions.
+3. Access an exclusive "DB Inspector" mode that natively fetches the `sqlite_master` map table and dumps rows from `.db` directly to console!

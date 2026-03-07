@@ -5,8 +5,8 @@ class PiggyBankRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, user_id: int, name: str) -> PiggyBank:
-        piggy_bank = PiggyBank(user_id=user_id, name=name)
+    def create(self, user_id: int, name: str, currency: str) -> PiggyBank:
+        piggy_bank = PiggyBank(user_id=user_id, name=name, currency=currency)
         self.db.add(piggy_bank)
         self.db.commit()
         self.db.refresh(piggy_bank)

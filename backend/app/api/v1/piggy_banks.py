@@ -16,11 +16,15 @@ def create(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Create a new PiggyBank account for the currently authenticated user.
+    """
     repo = PiggyBankRepository(db)
     try:
         return create_piggy_bank(
             user_id=current_user.id,
             name=payload.name,
+            currency=payload.currency,
             repo=repo,
         )
     except ValueError as e:
@@ -32,5 +36,25 @@ def list_all(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Fetch all PiggyBank accounts owned by the currently authenticated user.
+    """
     repo = PiggyBankRepository(db)
     return list_piggy_banks(current_user.id, repo)
+
+@router.delete("/{pb_id}")
+def delete_piggy_bank_api(
+    pb_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Delete a specific PiggyBank account, cascading deletion to all its transactions.
+    """
+    repo = PiggyBankRepository(db)
+    pb = repo.get_by_id(current_user.id, pb_id)
+    if not pb:
+        raise HTTPException(status_code=404, detail="Piggy bank not found")
+        
+    repo.delete(pb)
+    return {"success": True}

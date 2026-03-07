@@ -1,7 +1,7 @@
 def test_register_user(client):
     response = client.post(
         "/api/v1/auth/register",
-        json={"email": "test@example.com", "password": "securepassword"}
+        json={"username": "testuser", "email": "test@example.com", "password": "securepassword"}
     )
     assert response.status_code == 200, response.text
     data = response.json()
@@ -11,7 +11,7 @@ def test_register_user(client):
     # Test duplicate registration
     response_dup = client.post(
         "/api/v1/auth/register",
-        json={"email": "test@example.com", "password": "securepassword"}
+        json={"username": "testuser", "email": "test@example.com", "password": "securepassword"}
     )
     assert response_dup.status_code == 400
 
@@ -19,7 +19,7 @@ def test_login_user(client):
     # First register
     client.post(
         "/api/v1/auth/register",
-        json={"email": "login@example.com", "password": "mypassword"}
+        json={"username": "loginuser", "email": "login@example.com", "password": "mypassword"}
     )
     
     # Then login
@@ -36,7 +36,7 @@ def test_test_token(client):
     # Register and login
     client.post(
         "/api/v1/auth/register",
-        json={"email": "token@example.com", "password": "mypassword"}
+        json={"username": "tokenuser", "email": "token@example.com", "password": "mypassword"}
     )
     login_response = client.post(
         "/api/v1/auth/login",

@@ -27,12 +27,16 @@ def add_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Add a new transaction to a specific piggy bank"""
+    """
+    Add a new localized financial transaction (expense, deposit, income) 
+    to a specific PiggyBank owned by the user.
+    """
     get_user_piggy_bank(db, pb_id, current_user.id)
     
     transaction = Transaction(
         piggy_bank_id=pb_id,
         amount=payload.amount,
+        type=payload.type,
         category=payload.category,
         description=payload.description,
     )
@@ -51,7 +55,10 @@ def get_transactions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get transactions for a specific piggy bank"""
+    """
+    Retrieve all transactions (ordered chronologically descending) 
+    for a specific PiggyBank owned by the user.
+    """
     get_user_piggy_bank(db, pb_id, current_user.id)
     return db.query(Transaction).filter(Transaction.piggy_bank_id == pb_id).order_by(Transaction.date.desc()).all()
 
@@ -62,7 +69,9 @@ def delete_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Delete a transaction"""
+    """
+    Delete a specific transaction belonging to any nested PiggyBank owned by the User.
+    """
     transaction = db.query(Transaction).join(PiggyBank).filter(
         Transaction.id == transaction_id,
         PiggyBank.user_id == current_user.id
@@ -82,7 +91,10 @@ def get_balance(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get current balance of a piggy bank"""
+    """
+    Dynamically calculate and return the summation of all transactions 
+    to determine the active numeric balance of a PiggyBank.
+    """
     get_user_piggy_bank(db, pb_id, current_user.id)
     total = db.query(func.sum(Transaction.amount)).filter(Transaction.piggy_bank_id == pb_id).scalar()
     count = db.query(func.count(Transaction.id)).filter(Transaction.piggy_bank_id == pb_id).scalar()

@@ -41,6 +41,7 @@ def transfer_funds(
         debit_tx = Transaction(
             piggy_bank_id=source_pb.id,
             amount=-payload.amount,
+            type="transfer",
             category="Transfer Out",
             description=f"Transfer to {target_pb.name}: {payload.description}",
             date=now
@@ -49,6 +50,7 @@ def transfer_funds(
         credit_tx = Transaction(
             piggy_bank_id=target_pb.id,
             amount=payload.amount,
+            type="transfer",
             category="Transfer In",
             description=f"Transfer from {source_pb.name}: {payload.description}",
             date=now

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1 import auth, piggy_banks, transactions, transfers
+from app.api.v1 import auth, piggy_banks, transactions, transfers, categories, statistics
 from app.core.config import settings
 from app.db.base import Base, engine
 
@@ -43,6 +43,16 @@ app.include_router(
     transfers.router, 
     prefix=f"{settings.API_V1_PREFIX}/transfers", 
     tags=["Transfers"]
+)
+app.include_router(
+    categories.router,
+    prefix=f"{settings.API_V1_PREFIX}/categories",
+    tags=["Categories"]
+)
+app.include_router(
+    statistics.router,
+    prefix=f"{settings.API_V1_PREFIX}/statistics",
+    tags=["Statistics"]
 )
 
 @app.get("/")

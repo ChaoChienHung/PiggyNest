@@ -4,6 +4,7 @@ import { authApi } from '../api/auth';
 import { UserPlus } from 'lucide-react';
 
 export const Register = () => {
+    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,7 +25,7 @@ export const Register = () => {
         setIsLoading(true);
 
         try {
-            await authApi.register(email, password);
+            await authApi.register(username, email, password);
             // Auto login after register could be done here, or just redirect to login
             navigate('/login');
         } catch (err: any) {
@@ -52,6 +53,17 @@ export const Register = () => {
                 )}
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Username</label>
+                        <input
+                            type="text"
+                            required
+                            className="input-field"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="PiggyLover99"
+                        />
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-text-secondary mb-1">Email Address</label>
                         <input

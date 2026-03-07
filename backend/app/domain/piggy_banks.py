@@ -6,6 +6,7 @@ NAME_PATTERN = re.compile(r"^[\w\-]+$")
 def create_piggy_bank(
     user_id: int,
     name: str,
+    currency: str,
     repo: PiggyBankRepository,
 ):
     if not NAME_PATTERN.match(name):
@@ -17,7 +18,7 @@ def create_piggy_bank(
     if existing:
         raise ValueError("Piggy bank already exists for this user")
 
-    return repo.create(user_id, name)
+    return repo.create(user_id, name, currency)
 
 def list_piggy_banks(user_id: int, repo: PiggyBankRepository):
     return repo.list_by_user(user_id)

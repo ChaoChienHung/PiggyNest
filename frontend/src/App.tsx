@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { PiggyBankView } from './pages/PiggyBankView';
+import { Settings } from './pages/Settings';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/piggybanks/:id" element={<PiggyBankView />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
 
           {/* Fallback */}

@@ -4,7 +4,7 @@ import pytest
 def auth_headers(client):
     client.post(
         "/api/v1/auth/register",
-        json={"email": "pb_user@example.com", "password": "password"}
+        json={"username": "pb_user", "email": "pb_user@example.com", "password": "password"}
     )
     response = client.post(
         "/api/v1/auth/login",
