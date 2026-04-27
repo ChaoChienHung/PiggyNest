@@ -35,9 +35,9 @@ def print_header(title):
     different functional sections of the CLI.
     """
     length: int = len(title)
-    print(f"{'-' * length}")
+    print(f"{'=' * length}")
     print(f"{title}")
-    print(f"{'-' * length}")
+    print(f"{'=' * length}")
     print()
 
 
@@ -380,7 +380,5 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         # Catching Ctrl+C to exit cleanly without a traceback
-        print("---------------------------------------")
-        print("Process interrupted by user. Closing...")
-        print("---------------------------------------")
+        print_header("Process interrupted by user. Closing...")
         sys.exit(0)
