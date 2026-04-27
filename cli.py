@@ -171,6 +171,7 @@ def delete_piggybank():
                 print("✅ Deleted successfully.")
             else:
                 print("❌ Delete failed:", res)
+
     except ValueError:
         print("Input Error: Please enter a valid numerical ID.")
 
@@ -228,8 +229,8 @@ def edit_transaction():
         print("------------------------")
         for tx in txs[:10]:
             print(f"ID [{tx['id']}] {tx['date'][:10]} | {tx['type']} | {tx['amount']} | {tx['description']}")
-            
-        tx_id = int(input("\nEnter Transaction ID to Edit: "))
+
+        tx_id = int(input("Enter Transaction ID to Edit: "))
         
         # Locate the local object to show current values during prompt
         target_tx = next((t for t in txs if t['id'] == tx_id), None)
@@ -301,7 +302,7 @@ def inspect_db():
                 for r in rows:
                     print(r)
             except sqlite3.OperationalError:
-                print(f" Table '{table}' does not exist in schema.")
+                print(f"Table '{table}' does not exist in schema.")
                 
         conn.close()
     except Exception as e:
@@ -316,10 +317,7 @@ def main_loop():
     The main engine of the CLI. Manages state (Logged In vs Logged Out)
     and routes user input to the correct functions.
     """
-    print("=============================")
-    print("Welcome to PiggyNest CLI v1.0")
-    print("=============================")
-    print()
+    print_header("Welcome to PiggyNest CLI v1.0")
     
     while True:
         # State: Not Logged In
