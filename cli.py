@@ -1,44 +1,55 @@
 #!/usr/bin/env python3
+"""
+PiggyNest Interactive CLI Tool
+------------------------------
+A command-line interface to manage personal finances via a REST API 
+and inspect the underlying SQLite database directly for debugging.
+"""
+
 import requests
 import sqlite3
 import sys
 import os
 
-# -----------------------------------------
-# 全域設定與路徑配置 (Configuration & Globals)
-# -----------------------------------------
-# API 的基礎 URL，指向本地端運行的後端服務
+# -------------------------------------
+# SECTION: Configuration & Global State
+# -------------------------------------
+# The root URL for the backend API services.
 BASE_URL = "http://127.0.0.1:8000/api/v1"
 
-# 定義 SQLite 資料庫的絕對路徑，用於直接檢查底層數據
+# Absolute path to the local SQLite database. 
+# It assumes a specific folder structure: ./backend/data/bookkeeping.db
 DB_PATH = os.path.join(os.path.dirname(__file__), "backend", "data", "bookkeeping.db")
 
-# 全域變數，用於儲存 JWT 驗證權杖 (Token)
+# Global session variable. Once logged in, this stores the JWT string 
+# to authorize subsequent API requests.
 token = None
 
 
-# -----------------------
-# 介面輔助工具 (UI Helpers)
-# -----------------------
+# --------------------------------
+# SECTION: UI & Formatting Helpers
+# --------------------------------
 def print_header(title):
-    """印出美化的區段標題"""
+    """
+    Prints a visually distinct header to the console to separate 
+    different functional sections of the CLI.
+    """
     print(f"\n{'='*50}")
     print(f" {title}")
     print(f"{'='*50}")
 
 
-# --------------------------------------------
-# 核心 API 通訊封裝 (API Communication Wrappers)
-# --------------------------------------------
+# ------------------------------------------------
+# SECTION: API Communication Layer (REST Wrappers)
+# ------------------------------------------------
+# These functions encapsulate the 'requests' library to ensure 
+# the Bearer Token is automatically attached if available.
+
 def api_get(endpoint):
     """
-    封裝 GET 請求，自動帶入 Authorization Header
-    
-    Args:
-        endpoint (str): API 的端點路徑（例如: "/piggy-banks"）
-        
-    Returns:
-        dict: API 回傳的 JSON 格式資料
+    Performs an HTTP GET request.
+    :param endpoint: The API path (e.g., "/piggy-banks")
+    :return: Parsed JSON response as a dictionary/list.
     """
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     r = requests.get(f"{BASE_URL}{endpoint}", headers=headers)
@@ -46,41 +57,31 @@ def api_get(endpoint):
 
 def api_post(endpoint, json_data=None, data=None):
     """
-    封裝 POST 請求：
-    - 若傳入 data 參數，則使用 Form Data 格式 (用於 Login)
-    - 若傳入 json_data 參數，則使用 JSON 格式 (用於一般 API)
+    Performs an HTTP POST request.
+    Handles two types of payloads:
+    1. json_data: Used for standard API resource creation (Content-Type: application/json).
+    2. data: Used for OAuth2 login forms (Content-Type: application/x-www-form-urlencoded).
     """
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     if data:
+        # Form-encoded data (primarily for the /auth/login endpoint)
         r = requests.post(f"{BASE_URL}{endpoint}", data=data, headers=headers)
     else:
+        # JSON-encoded data for general resource creation
         r = requests.post(f"{BASE_URL}{endpoint}", json=json_data, headers=headers)
     return r.json()
 
 def api_delete(endpoint):
     """
-    封裝 DELETE 請求
-    
-    Args:
-        endpoint (str): API 的端點路徑
-        
-    Returns:
-        dict: API 回傳的 JSON 格式資料
+    Performs an HTTP DELETE request to remove a specific resource.
     """
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     r = requests.delete(f"{BASE_URL}{endpoint}", headers=headers)
     return r.json()
 
 def api_put(endpoint, json_data):
-    """ 
-    封裝 PUT 請求，用於更新現有資料
-    
-    Args:
-        endpoint (str): API 的端點路徑
-        json_data (dict): 要更新的資料
-        
-    Returns:
-        dict: API 回傳的 JSON 格式資料
+    """
+    Performs an HTTP PUT request to update an existing resource.
     """
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     r = requests.put(f"{BASE_URL}{endpoint}", json=json_data, headers=headers)
@@ -88,131 +89,108 @@ def api_put(endpoint, json_data):
 
 
 # -----------------------------
-# 使用者認證功能 (Authentication)
+# SECTION: Authentication Logic
 # -----------------------------
 def login():
     """
-    執行登入流程並取得 JWT Token
-    
-    Args:
-        None
-        
-    Returns:
-        bool: 登入是否成功
+    Prompts user for credentials and attempts to retrieve a JWT.
+    Updates the global 'token' variable upon success.
     """
     global token
-    print_header("身份驗證 (Authentication)")
-    email = input("電子郵件 (Email): ")
-    password = input("密碼 (Password): ")
+    print_header("User Authentication")
+    email = input("Email: ")
+    password = input("Password: ")
     
-    # 根據 OAuth2 標準，登入通常使用表單資料 (Form Data) 傳輸用戶名與密碼
+    # OAuth2 Password Flow typically requires form-data fields 'username' and 'password'
     resp = api_post("/auth/login", data={"username": email, "password": password})
+    
     if "access_token" in resp:
         token = resp["access_token"]
-        print("✅ 登入成功！")
+        print("✅ Login successful! Token acquired.")
         return True
     else:
-        print("❌ 登入失敗: ", resp.get("detail", "未知錯誤"))
+        # Gracefully handle login errors (e.g., 401 Unauthorized)
+        print("❌ Login failed: ", resp.get("detail", "Unknown error"))
         return False
 
 
-# -----------------------------------
-# 存錢筒管理功能 (PiggyBank Management)
-# -----------------------------------
+# -----------------------------
+# SECTION: PiggyBank Operations
+# -----------------------------
 def list_piggybanks():
     """
-    列出目前使用者所有的存錢筒及其餘額
-    
-    Args:
-        None
-        
-    Returns:
-        list: 存錢筒列表
+    Fetches all PiggyBanks owned by the user.
+    For each bank found, it makes a secondary API call to fetch the real-time balance.
     """
-    print_header("您的存錢筒 (Your PiggyBanks)")
+    print_header("Your PiggyBanks")
     banks = api_get("/piggy-banks")
+    
     if not isinstance(banks, list):
-        print("無法獲取資料。")
+        print("Error: Could not retrieve banks.")
         return
     if not banks:
-        print("尚未建立任何存錢筒。")
+        print("No PiggyBanks found. Create one first!")
         return
     
-    # 遍歷每個存錢筒並另外呼叫 API 獲取即時餘額
+    # Iterate through the list and display details
     for pb in banks:
+        # Get the calculated balance for this specific bank ID
         bal = api_get(f"/piggy-banks/{pb['id']}/balance")
-        print(f"[{pb['id']}] {pb['name']} ({pb['currency']}) - 目前餘額: {bal.get('balance', 0)}")
+        print(f"ID [{pb['id']}] | Name: {pb['name']} | Currency: {pb['currency']} | Balance: {bal.get('balance', 0)}")
     return banks
 
 def create_piggybank():
     """
-    建立新的存錢筒
-    
-    Args:
-        None
-        
-    Returns:
-        bool: 建立是否成功
+    Collects user input to initialize a new PiggyBank resource.
     """
-    print_header("建立存錢筒 (Create PiggyBank)")
-    name = input("名稱: ")
-    currency = input("貨幣單位 (預設 USD): ") or "USD"
+    print_header("Create New PiggyBank")
+    name = input("Bank Name: ")
+    currency = input("Currency (Default USD): ") or "USD"
+    
     res = api_post("/piggy-banks", json_data={"name": name, "currency": currency})
     if "id" in res:
-        print(f"✅ 存錢筒 '{name}' 建立成功！")
+        print(f"✅ PiggyBank '{name}' created successfully with ID {res['id']}.")
     else:
-        print("❌ 建立失敗:", res)
+        print("❌ Creation failed:", res)
 
 def delete_piggybank():
     """
-    刪除指定的存錢筒
-    
-    Args:
-        None
-        
-    Returns:
-        bool: 刪除是否成功
+    Deletes a PiggyBank after user confirmation.
     """
     banks = list_piggybanks()
     if not banks: return
     
     try:
-        pb_id = int(input("\n請輸入要刪除的存錢筒 ID: "))
-        confirm = input(f"確定要刪除 ID 為 {pb_id} 的存錢筒嗎？此動作無法復原 (y/N): ")
+        pb_id = int(input("Enter PiggyBank ID to PERMANENTLY DELETE: "))
+        confirm = input(f"Are you sure? This will delete all transactions in bank {pb_id}. (y/N): ")
         if confirm.lower() == 'y':
             res = api_delete(f"/piggy-banks/{pb_id}")
-            if res.get("success"):
-                print("✅ 刪除成功！")
+            if res.get("success") or "id" not in res: # Adjusting based on API response style
+                print("✅ Deleted successfully.")
             else:
-                print("❌ 刪除失敗:", res)
+                print("❌ Delete failed:", res)
     except ValueError:
-        print("請輸入有效的數字 ID。")
+        print("Input Error: Please enter a valid numerical ID.")
 
 
-# -----------------------------------
-# 交易紀錄管理 (Transaction Management)
-# -----------------------------------
+# -------------------------------
+# SECTION: Transaction Management
+# -------------------------------
 def add_transaction():
     """
-    在特定的存錢筒中新增一筆交易
-    
-    Args:
-        None
-        
-    Returns:
-        bool: 新增是否成功
+    Creates a new transaction entry. 
+    Logic: Automatically converts 'expense' or 'withdrawal' amounts to negative values.
     """
-    print_header("新增交易 (Add Transaction)")
+    print_header("Add New Transaction")
     try:
-        pb_id = int(input("存錢筒 ID: "))
-        amount = float(input("金額: "))
-        types = ['expense (支出)', 'income (收入)', 'deposit (存款)', 'withdrawal (提款)']
-        print(f"可選類型: {', '.join(types)}")
-        tx_type = input("類型 (預設 expense): ") or 'expense'
-        desc = input("備註/描述: ")
+        pb_id = int(input("Target PiggyBank ID: "))
+        amount = float(input("Amount: "))
+        print("Available Types: [expense, income, deposit, withdrawal]")
+        tx_type = input("Type (Default 'expense'): ") or 'expense'
+        desc = input("Description/Note: ")
         
-        # 簡單的邏輯：若是支出或提款，將金額轉為負數處理
-        if tx_type in ['expense', 'withdrawal']:
+        # Internal Logic: Ensure expenses are recorded as negative numbers for balance math
+        if tx_type.lower() in ['expense', 'withdrawal']:
             amount = -abs(amount)
             
         payload = {
@@ -223,176 +201,167 @@ def add_transaction():
         
         res = api_post(f"/piggy-banks/{pb_id}/transactions", json_data=payload)
         if "id" in res:
-            print("✅ 交易紀錄已成功新增！")
+            print("✅ Transaction recorded successfully!")
         else:
-            print("❌ 新增失敗:", res)
+            print("❌ Failed to record transaction:", res)
     except ValueError:
-        print("輸入格式錯誤（金額須為數字）。")
+        print("Input Error: Ensure ID is an integer and Amount is a number.")
 
 def edit_transaction():
     """
-    修改已存在的交易紀錄
-    
-    Args:
-        None
-        
-    Returns:
-        bool: 修改是否成功
+    Modifies an existing transaction.
+    This demonstrates a 'Patch' style update where only non-empty fields are sent to the API.
     """
-    print_header("編輯交易 (Edit Transaction)")
+    print_header("Edit Existing Transaction")
     try:
-        pb_id = int(input("輸入存錢筒 ID 以列出交易紀錄: "))
+        pb_id = int(input("Enter PiggyBank ID to view history: "))
         txs = api_get(f"/piggy-banks/{pb_id}/transactions")
+        
         if not txs or not isinstance(txs, list):
-            print("找不到任何交易紀錄。")
+            print("No history found for this bank.")
             return
             
-        print("\n最近的交易紀錄:")
-        for tx in txs[:10]: # 只列出前 10 筆
-            print(f"[{tx['id']}] {tx['date'][:10]} | {tx['type']} | {tx['amount']} | {tx['description']}")
+        print("------------------------")
+        print("Recent History (Last 10)")
+        print("------------------------")
+        for tx in txs[:10]:
+            print(f"ID [{tx['id']}] {tx['date'][:10]} | {tx['type']} | {tx['amount']} | {tx['description']}")
             
-        tx_id = int(input("\n請輸入欲修改的交易 ID: "))
+        tx_id = int(input("\nEnter Transaction ID to Edit: "))
+        
+        # Locate the local object to show current values during prompt
         target_tx = next((t for t in txs if t['id'] == tx_id), None)
         if not target_tx:
-            print("在該存錢筒中找不到此交易 ID。")
+            print("Transaction ID not found in current list.")
             return
             
-        print(f"\n正在編輯交易 {tx_id}。若不修改請直接按 Enter 跳過。")
-        amount_str = input(f"金額 ({target_tx['amount']}): ")
-        type_str = input(f"類型 ({target_tx['type']}): ")
-        desc_str = input(f"描述 ({target_tx['description']}): ")
-        cat_str = input(f"分類 ({target_tx['category'] or '無'}): ")
+        print(f"\nEditing ID {tx_id}. [Press Enter to keep the current value]")
+        amt_in = input(f"New Amount ({target_tx['amount']}): ")
+        type_in = input(f"New Type ({target_tx['type']}): ")
+        desc_in = input(f"New Description ({target_tx['description']}): ")
+        cat_in  = input(f"New Category ({target_tx['category'] or 'None'}): ")
         
-        # 僅將有更動的部分放入 payload
+        # Build the payload dynamically (partial update)
         payload = {}
-        if amount_str: payload['amount'] = float(amount_str)
-        if type_str: payload['type'] = type_str
-        if desc_str: payload['description'] = desc_str
-        if cat_str: payload['category'] = cat_str
+        if amt_in: payload['amount'] = float(amt_in)
+        if type_in: payload['type'] = type_in
+        if desc_in: payload['description'] = desc_in
+        if cat_in:  payload['category'] = cat_in
         
         if not payload:
-            print("未偵測到任何更動。")
+            print("No changes detected. Operation cancelled.")
             return
             
         res = api_put(f"/transactions/{tx_id}", json_data=payload)
         if "id" in res:
-            print("✅ 交易紀錄已更新！")
+            print("✅ Update successful!")
         else:
-            print("❌ 更新失敗:", res)
+            print("❌ Update failed:", res)
             
     except ValueError:
-        print("輸入格式錯誤。")
+        print("Input Error: Invalid data format.")
 
 
-# ----------------------------------
-# 資料庫直接診斷 (Database Inspection)
-# ----------------------------------
+# ----------------------------------------
+# SECTION: Debugging & Database Inspection
+# ----------------------------------------
 def inspect_db():
     """
-    直接讀取 SQLite 檔案，繞過 API 檢查原始數據（偵錯用）
-    
-    Args:
-        None
-        
-    Returns:
-        None
+    A developer-only tool to inspect the SQLite file directly.
+    Helpful for verifying that the API is persisting data correctly.
     """
-    print_header("原始資料庫檢查 (Raw Database Inspection)")
+    print_header("Direct SQLite Database Inspection")
+    
     if not os.path.exists(DB_PATH):
-        print(f"❌ 在路徑找不到資料庫檔案: {DB_PATH}")
+        print(f"❌ Database file not found at: {DB_PATH}")
         return
         
     try:
+        # Establish a read-only connection to the database
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        # 查詢所有表名
+        # Metadata check: List all tables in the schema
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = cursor.fetchall()
-        print("資料庫中的資料表:", [t[0] for t in tables])
+        print(f"Schema Tables: {[t[0] for t in tables]}")
         
-        # 抽樣印出前 3 筆資料
+        # Data check: Show a preview of the primary tables
         for table in ['users', 'piggy_banks', 'transactions']:
-            print(f"\n--- {table} 表的前 3 筆資料 ---")
+            print("-" * 100)
+            print(f"Preview: {table} (Top 3 Rows)")
+            print("-" * 100)
             try:
                 cursor.execute(f"SELECT * FROM {table} LIMIT 3")
                 rows = cursor.fetchall()
                 if not rows:
-                    print(" (目前為空)")
+                    print(" (Empty Table)")
                 for r in rows:
                     print(r)
             except sqlite3.OperationalError:
-                print(" 該資料表不存在。")
+                print(f" Table '{table}' does not exist in schema.")
                 
         conn.close()
     except Exception as e:
-        print("資料庫連線錯誤:", e)
+        print("SQLite Error:", e)
 
 
-# -----------------------------------------
-# 主迴圈與使用者介面控制 (Main Loop & UI Logic)
-# -----------------------------------------
+# ----------------------------
+# SECTION: Main Execution Loop
+# ----------------------------
 def main_loop():
     """
-    CLI 主程式入口
-    
-    Args:
-        None
-        
-    Returns:
-        None
+    The main engine of the CLI. Manages state (Logged In vs Logged Out)
+    and routes user input to the correct functions.
     """
-    print("歡迎使用 PiggyNest 互動式命令行工具！")
+    print("Welcome to PiggyNest CLI v1.0")
+    
     while True:
-        # 尚未登入時的選單
+        # STATE: NOT LOGGED IN
         if not token:
-            print("\n選項: (1) 登入 (q) 結束程式")
-            choice = input("> ")
+            print("\nOptions: (1) Login (q) Quit")
+            choice = input("> ").strip().lower()
             if choice == '1':
                 login()
             elif choice == 'q':
+                print("Exiting...")
                 break
-        # 登入後的選單
+        
+        # STATE: AUTHORIZED
         else:
-            print("\n--- 主選單 ---")
-            print("1) 列出存錢筒與餘額")
-            print("2) 建立新存錢筒")
-            print("3) 刪除存錢筒")
-            print("4) 新增交易紀錄")
-            print("5) 編輯交易紀錄")
-            print("6) 檢查原始資料庫 (Debug)")
-            print("q) 登出並退出")
-            choice = input("> ")
+            print("\n--- MAIN MENU ---")
+            print("1) View PiggyBanks & Balances")
+            print("2) Create New PiggyBank")
+            print("3) Delete a PiggyBank")
+            print("4) Add Transaction")
+            print("5) Edit Transaction")
+            print("6) Inspect Raw Database (Debug)")
+            print("q) Logout & Exit")
+            
+            choice = input("> ").strip().lower()
             
             if choice == '1':
                 list_piggybanks()
-
             elif choice == '2':
                 create_piggybank()
-
             elif choice == '3':
                 delete_piggybank()
-
             elif choice == '4':
                 add_transaction()
-
             elif choice == '5':
                 edit_transaction()
-
             elif choice == '6':
                 inspect_db()
-
             elif choice == 'q':
-                print("再見！")
+                print("Goodbye!")
                 break
-                
             else:
-                print("無效的選項，請重新輸入。")
+                print("Invalid choice. Please pick 1-6 or q.")
 
 if __name__ == "__main__":
     try:
         main_loop()
     except KeyboardInterrupt:
-        # 處理 Ctrl+C 強制結束的情境
-        print("\n偵測到中斷訊息，正在關閉程式...")
+        # Catching Ctrl+C to exit cleanly without a traceback
+        print("\nProcess interrupted by user. Closing...")
         sys.exit(0)
