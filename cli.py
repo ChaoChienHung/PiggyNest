@@ -340,14 +340,15 @@ def main_loop():
         # State: Authorized
         # -----------------
         else:
-            print("\n--- MAIN MENU ---")
-            print("1) View PiggyBanks & Balances")
-            print("2) Create New PiggyBank")
-            print("3) Delete a PiggyBank")
-            print("4) Add Transaction")
-            print("5) Edit Transaction")
-            print("6) Inspect Raw Database (Debug)")
-            print("q) Logout & Exit")
+            print_header("Main Menu")
+            print()
+            print("(1) View PiggyBanks & Balances")
+            print("(2) Create New PiggyBank")
+            print("(3) Delete a PiggyBank")
+            print("(4) Add Transaction")
+            print("(5) Edit Transaction")
+            print("(6) Inspect Raw Database (Debug)")
+            print("(q) Logout & Exit")
             
             choice = input("> ").strip().lower()
             
@@ -367,7 +368,7 @@ def main_loop():
                 print("Goodbye!")
                 break
             else:
-                print("Invalid choice. Please pick 1-6 or q.")
+                print("Invalid choice. Please pick (1-6) or (q).")
 
 if __name__ == "__main__":
     try:
