@@ -12,7 +12,7 @@ import sys
 import os
 
 # -------------------------------------
-# SECTION: Configuration & Global State
+# Section: Configuration & Global State
 # -------------------------------------
 # The root URL for the backend API services.
 BASE_URL = "http://127.0.0.1:8000/api/v1"
@@ -27,7 +27,7 @@ token = None
 
 
 # --------------------------------
-# SECTION: UI & Formatting Helpers
+# Section: UI & Formatting Helpers
 # --------------------------------
 def print_header(title):
     """
@@ -42,7 +42,7 @@ def print_header(title):
 
 
 # ------------------------------------------------
-# SECTION: API Communication Layer (REST Wrappers)
+# Section: API Communication Layer (REST Wrappers)
 # ------------------------------------------------
 # These functions encapsulate the 'requests' library to ensure 
 # the Bearer Token is automatically attached if available.
@@ -91,7 +91,7 @@ def api_put(endpoint, json_data):
 
 
 # -----------------------------
-# SECTION: Authentication Logic
+# Section: Authentication Logic
 # -----------------------------
 def login():
     """
@@ -117,7 +117,7 @@ def login():
 
 
 # -----------------------------
-# SECTION: PiggyBank Operations
+# Section: PiggyBank Operations
 # -----------------------------
 def list_piggybanks():
     """
@@ -176,7 +176,7 @@ def delete_piggybank():
 
 
 # -------------------------------
-# SECTION: Transaction Management
+# Section: Transaction Management
 # -------------------------------
 def add_transaction():
     """
@@ -265,7 +265,7 @@ def edit_transaction():
 
 
 # ----------------------------------------
-# SECTION: Debugging & Database Inspection
+# Section: Debugging & Database Inspection
 # ----------------------------------------
 def inspect_db():
     """
@@ -309,7 +309,7 @@ def inspect_db():
 
 
 # ----------------------------
-# SECTION: Main Execution Loop
+# Section: Main Execution Loop
 # ----------------------------
 def main_loop():
     """
