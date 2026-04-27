@@ -34,9 +34,11 @@ def print_header(title):
     Prints a visually distinct header to the console to separate 
     different functional sections of the CLI.
     """
-    print(f"\n{'='*50}")
-    print(f" {title}")
-    print(f"{'='*50}")
+    length: int = len(title)
+    print(f"{'-' * length}")
+    print(f"{title}")
+    print(f"{'-' * length}")
+    print()
 
 
 # ------------------------------------------------
@@ -314,20 +316,29 @@ def main_loop():
     The main engine of the CLI. Manages state (Logged In vs Logged Out)
     and routes user input to the correct functions.
     """
+    print("=============================")
     print("Welcome to PiggyNest CLI v1.0")
+    print("=============================")
+    print()
     
     while True:
-        # STATE: NOT LOGGED IN
+        # State: Not Logged In
+        # --------------------
         if not token:
-            print("\nOptions: (1) Login (q) Quit")
+            print("Options:")
+            print("(1) Login")
+            print("(q) Quit")
+            print()
             choice = input("> ").strip().lower()
             if choice == '1':
                 login()
+
             elif choice == 'q':
-                print("Exiting...")
+                print("Thanks for using PiggyNest! See you next time.")
                 break
         
-        # STATE: AUTHORIZED
+        # State: Authorized
+        # -----------------
         else:
             print("\n--- MAIN MENU ---")
             print("1) View PiggyBanks & Balances")
