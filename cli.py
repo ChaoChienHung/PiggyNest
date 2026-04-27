@@ -341,7 +341,6 @@ def main_loop():
         # -----------------
         else:
             print_header("Main Menu")
-            print()
             print("(1) View PiggyBanks & Balances")
             print("(2) Create New PiggyBank")
             print("(3) Delete a PiggyBank")
@@ -354,26 +353,36 @@ def main_loop():
             
             if choice == '1':
                 list_piggybanks()
+
             elif choice == '2':
                 create_piggybank()
+
             elif choice == '3':
                 delete_piggybank()
+
             elif choice == '4':
                 add_transaction()
+
             elif choice == '5':
                 edit_transaction()
+
             elif choice == '6':
                 inspect_db()
+
             elif choice == 'q':
                 print("Goodbye!")
                 break
+
             else:
                 print("Invalid choice. Please pick (1-6) or (q).")
 
 if __name__ == "__main__":
     try:
         main_loop()
+
     except KeyboardInterrupt:
         # Catching Ctrl+C to exit cleanly without a traceback
-        print("\nProcess interrupted by user. Closing...")
+        print("---------------------------------------")
+        print("Process interrupted by user. Closing...")
+        print("---------------------------------------")
         sys.exit(0)
