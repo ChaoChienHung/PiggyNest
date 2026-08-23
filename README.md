@@ -63,3 +63,4 @@ The script will launch a terminal interface:
 1. Provide an authenticated Email and Password payload (OAuth2 standard).
 2. Issue HTTP requests natively to pull PiggyBank arrays and format your transactions.
 3. Access an exclusive "DB Inspector" mode that natively fetches the `sqlite_master` map table and dumps rows from `.db` directly to console!
+# PiggyNest
