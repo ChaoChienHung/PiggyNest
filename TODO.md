@@ -1,0 +1,5 @@
+- [ ] 在一開始的 dashboard 顯示top3多錢的currency 然後在下面再用一個total revenue（就是挑一個國家currency 然後把所有不同currency的錢換算成那個currency的錢然後加起來）
+- [ ] 目前的Type跟Category的箭頭在entry裡太遠了
+- [ ] 用 Import 跟 Export csv 或 excel的功能
+- [ ] 掛一個 AI Chatbot 在右下角, 會根據我的記帳內容給我一些建議，或著一起制定一些金融規劃，比如說要省多少錢這樣
+- [ ] 可以加入每月計畫的功能，然後每個月初會提醒我能花多少錢，或者這個月有沒有超支等等，或著必要花費等等

@@ -1,0 +1,1056 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Cute Soft Pastel Palette */
+  --bg-primary: #fff8fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #fff1f4;
+
+  --text-primary: #4a3e4b;
+  --text-secondary: #8c768f;
+  --text-muted: #bda2c0;
+
+  --accent-primary: #ff8da1; /* Cute Piglet Pink */
+  --accent-hover: #ff738c;
+  --accent-light: #ffe5ea;
+
+  --success: #10b981; /* Green for Income badges */
+  --danger: #ff5e7e; /* Pink-Red for Expense badges */
+  --warning: #ffb703; /* Gold-Yellow for special warnings */
+  
+  --coin-gold: #ffd166; /* Shiny Gold Coin Yellow */
+  --coin-gold-hover: #ffc233;
+
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 141, 161, 0.15);
+
+  --font-main: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  /* Safari-compatible silky smooth animated drifting gradient background */
+  background: radial-gradient(circle at 10% 20%, rgba(255, 229, 234, 0.6) 0%, rgba(255, 229, 234, 0) 65%),
+              radial-gradient(circle at 90% 80%, rgba(255, 244, 214, 0.5) 0%, rgba(255, 244, 214, 0) 65%),
+              #fff8fa;
+  background-size: 200% 200%;
+  animation: softDrift 16s ease infinite alternate;
+}
+
+@keyframes softDrift {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-primary);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+a:hover {
+  color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+/* Missing text color utilities */
+.text-text-primary {
+  color: var(--text-primary) !important;
+}
+
+.text-text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 2px solid var(--glass-border);
+  border-radius: 24px;
+  box-shadow: 0 12px 32px -4px rgba(255, 141, 161, 0.1),
+              0 4px 12px -2px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+}
+
+.glass-panel:hover {
+  box-shadow: 0 20px 40px -8px rgba(255, 141, 161, 0.15),
+              0 6px 16px -2px rgba(0, 0, 0, 0.03);
+}
+
+/* Common Layouts */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Form Elements */
+.input-field {
+  width: 100%;
+  padding: 0.8rem 1.2rem;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 141, 161, 0.15);
+  border-radius: 16px;
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: 1.05rem;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+  outline: none;
+}
+
+.input-field:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 4px rgba(255, 141, 161, 0.18);
+  background-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.6rem;
+  font-weight: 600;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  font-size: 1.05rem;
+  gap: 0.5rem;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn-primary {
+  background-color: var(--accent-primary);
+  color: white;
+  box-shadow: 0 8px 20px -4px rgba(255, 141, 161, 0.4);
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+  box-shadow: 0 12px 24px -4px rgba(255, 141, 161, 0.55);
+  transform: translateY(-2px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid rgba(255, 141, 161, 0.15);
+  box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.02);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px -2px rgba(255, 141, 161, 0.1);
+}
+
+.btn-danger {
+  background-color: rgba(255, 94, 126, 0.1);
+  color: var(--danger);
+  border: 2px solid rgba(255, 94, 126, 0.15);
+}
+
+.btn-danger:hover {
+  background-color: var(--danger);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -2px rgba(255, 94, 126, 0.3);
+}
+
+/* Layout Utilities */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 0.75rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.mt-1 {
+  margin-top: 0.25rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.mt-8 {
+  margin-top: 2rem;
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mb-8 {
+  margin-bottom: 2rem;
+}
+
+.mb-10 {
+  margin-bottom: 2.5rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
+}
+
+.ml-4 {
+  margin-left: 1rem;
+}
+
+.p-2 {
+  padding: 0.5rem;
+}
+
+.p-4 {
+  padding: 1rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.p-8 {
+  padding: 2rem;
+}
+
+.py-1 {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.px-3 {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.text-xl {
+  font-size: 1.25rem;
+}
+
+.text-2xl {
+  font-size: 1.5rem;
+}
+
+.text-3xl {
+  font-size: 1.875rem;
+}
+
+.text-4xl {
+  font-size: 2.25rem;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.w-24 {
+  width: 6rem;
+}
+
+.h-auto {
+  height: auto;
+}
+
+.transition-colors {
+  transition: color 0.15s ease-in-out;
+}
+
+/* Alignment & layout utility classes */
+.text-left {
+  text-align: left;
+}
+.text-right {
+  text-align: right;
+}
+.text-center {
+  text-align: center;
+}
+.border-collapse {
+  border-collapse: collapse;
+}
+.whitespace-nowrap {
+  white-space: nowrap;
+}
+
+/* Custom styles for tables */
+table {
+  border-spacing: 0;
+  border-collapse: separate;
+  font-size: 1.1rem; /* Explicit bump up for all table header and cell text */
+}
+
+table tr:first-child th:first-child {
+  border-top-left-radius: 20px;
+}
+table tr:first-child th:last-child {
+  border-top-right-radius: 20px;
+}
+table tr:last-child td:first-child {
+  border-bottom-left-radius: 20px;
+}
+table tr:last-child td:last-child {
+  border-bottom-right-radius: 20px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Cute Floating Animation */
+@keyframes floatPiggy {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-16px) rotate(1.5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.animate-float-piggy {
+  animation: floatPiggy 4.5s ease-in-out infinite;
+}
+
+/* Gold Coin Falling Animation */
+@keyframes coinDrop {
+  0% {
+    transform: translateY(-280px) rotateY(0deg) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(40px) rotateY(540deg) scale(1);
+  }
+  95% {
+    opacity: 0.8;
+    transform: translateY(85px) rotateY(720deg) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(105px) rotateY(800deg) scale(0.1);
+  }
+}
+
+.animate-coin-1 {
+  animation: coinDrop 3.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+.animate-coin-2 {
+  animation: coinDrop 3.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  animation-delay: 1.1s;
+}
+.animate-coin-3 {
+  animation: coinDrop 3.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  animation-delay: 2.2s;
+}
+
+/* Cute Star Sparkle Animation */
+@keyframes sparkleStar {
+  0%, 100% { transform: scale(0.8) rotate(0deg); opacity: 0.3; }
+  50% { transform: scale(1.2) rotate(180deg); opacity: 1; }
+}
+
+.animate-sparkle {
+  animation: sparkleStar 2.5s ease-in-out infinite;
+}
+
+/* Responsive Split Screen Layout - Compact Floating Card */
+.auth-page-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+  overflow: hidden;
+}
+
+.split-screen-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2px solid var(--glass-border);
+  border-radius: 32px;
+  box-shadow: 0 24px 64px -16px rgba(255, 141, 161, 0.28),
+              0 8px 24px -6px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (min-width: 768px) {
+  .split-screen-card {
+    max-width: 900px;
+    height: 580px;
+    flex-direction: row;
+  }
+}
+
+.split-screen-left {
+  display: none;
+  width: 50%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 229, 234, 0.6) 0%, rgba(255, 229, 234, 0) 60%),
+              radial-gradient(circle at 70% 70%, rgba(255, 244, 214, 0.3) 0%, rgba(255, 244, 214, 0) 60%),
+              rgba(255, 255, 255, 0.45);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .split-screen-left {
+    display: flex;
+    border-right: 2px solid var(--glass-border);
+  }
+}
+
+.split-screen-right {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2.2rem 2rem;
+}
+
+@media (min-width: 768px) {
+  .split-screen-right {
+    width: 50%;
+    padding: 2.5rem 3.5rem;
+  }
+}
+
+
+/* Dynamic bouncy scaling hover for cards */
+.glass-panel.hover-bounce {
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.glass-panel.hover-bounce:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: var(--accent-primary);
+  box-shadow: 0 24px 48px -12px rgba(255, 141, 161, 0.22),
+              0 8px 24px -4px rgba(0, 0, 0, 0.04);
+}
+
+/* Custom Grid Utilities to support Tailwind class names */
+.grid {
+  display: grid;
+}
+
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.gap-6 {
+  gap: 1.5rem;
+}
+
+.gap-8 {
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Horizontal Carousel styles */
+.carousel-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 2.5rem;
+}
+
+.carousel-container {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  gap: 1.5rem;
+  padding: 0.75rem 2.5rem;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.carousel-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.carousel-container {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.carousel-card {
+  flex: 0 0 320px; /* Force card to have a fixed width of 320px */
+  max-width: 320px;
+}
+
+/* Carousel control arrow buttons */
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px solid var(--glass-border);
+  box-shadow: 0 8px 24px -4px rgba(255, 141, 161, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.carousel-arrow:hover {
+  background: var(--accent-light);
+  color: var(--accent-hover);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 12px 32px -4px rgba(255, 141, 161, 0.35);
+  border-color: rgba(255, 141, 161, 0.3);
+}
+
+.carousel-arrow:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.carousel-arrow.left {
+  left: 0.5rem;
+}
+
+.carousel-arrow.right {
+  right: 0.5rem;
+}
+
+/* On smaller screens where the container stretches to the viewport edge, 
+   bring the left arrow inside and shift the right arrow to the left of the piglet FAB */
+@media (max-width: 1280px) {
+  .carousel-arrow.left {
+    left: 0.5rem;
+  }
+  .carousel-arrow.right {
+    right: 6.25rem;
+  }
+}
+
+/* Inline Pig Options Menu 🐷 Horizontal left spit coin next to New PiggyBank button */
+.inline-fab-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 44px;
+}
+
+/* Capture bridge to keep hover state active when mouse travels to the left to click on the gold coin */
+.inline-fab-container::before {
+  content: "";
+  position: absolute;
+  top: -15px;
+  bottom: -15px;
+  right: 0;
+  left: -80px; /* Covers the area to the left where the coin spits out */
+  z-index: 0;
+  pointer-events: none; /* Ignore pointer events by default */
+  background: transparent;
+}
+
+.inline-fab-container:hover::before {
+  pointer-events: auto; /* Capture pointer events while hovered so the bridge is active! */
+}
+
+.inline-fab-trigger {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  border: 2px solid var(--accent-light);
+  box-shadow: 0 4px 12px rgba(255, 141, 161, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  font-size: 1.4rem;
+  z-index: 2;
+}
+
+.inline-fab-container:hover .inline-fab-trigger {
+  transform: scale(1.15) rotate(15deg);
+  background: var(--accent-hover);
+  box-shadow: 0 6px 16px rgba(255, 141, 161, 0.4);
+}
+
+.inline-fab-options {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  right: 58px; /* Positioned to the left of the trigger with an elegant gap */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(20px) scale(0.8);
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 1;
+}
+
+/* Reveal single gold coin option horizontally to the left on hover */
+.inline-fab-container:hover .inline-fab-options {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0) scale(1);
+}
+
+.inline-fab-coin {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--coin-gold);
+  border: 2px solid #ffb703;
+  box-shadow: 0 4px 10px rgba(255, 183, 3, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4a3e4b;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+
+.inline-fab-coin:hover {
+  background: var(--coin-gold-hover);
+  transform: scale(1.15) translateY(-1px);
+  box-shadow: 0 6px 14px rgba(255, 183, 3, 0.5);
+}
+
+.inline-fab-coin:active {
+  transform: scale(0.95);
+}
+
+/* Tooltip for the coin option, positioned above the coin */
+.inline-fab-tooltip {
+  position: absolute;
+  bottom: 46px; /* Floating above */
+  left: 50%;
+  transform: translateX(-50%) translateY(5px);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid var(--glass-border);
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  box-shadow: 0 4px 12px rgba(255, 141, 161, 0.1);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.inline-fab-coin:hover .inline-fab-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Balance Card Styles in PiggyBankView */
+.balance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2.25rem !important;
+}
+
+.balance-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.balance-card-title {
+  font-size: 2.75rem; /* Bumped up for grand, unmistakable bank name presence */
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.balance-card-subtitle {
+  font-size: 1.2rem; /* Bumped up for better readability */
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.balance-card-divider {
+  height: 1px;
+  background: var(--glass-border);
+  width: 100%;
+}
+
+.balance-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.balance-card-label {
+  font-size: 1.3rem; /* Bumped up for clear Current Balance label */
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.balance-card-amount {
+  font-size: 3.25rem;
+  font-weight: 750; /* Elegant semi-bold-bold weight, not too heavy, matching net worth amount */
+  color: var(--accent-primary);
+  margin: 0;
+  line-height: 1;
+  text-shadow: 0 4px 12px rgba(255, 141, 161, 0.15);
+}
+
+/* Page Layout Container & Spacing Tweaks */
+.page-layout-container {
+  padding-top: 2.7rem !important; /* Reduced by 40% from 4.5rem to elegantly lift the page structure */
+  padding-bottom: 4rem !important;
+}
+
+.back-to-dashboard-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 1.2rem; /* Bumped up for comfortable navigation readability */
+  font-weight: 600;
+  margin-bottom: 2.25rem !important;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  width: fit-content;
+  text-decoration: none;
+}
+
+.back-to-dashboard-link:hover {
+  color: var(--text-primary);
+  transform: translateX(-6px); /* Gorgeous sleek micro-animation on hover */
+}
+
+.dashboard-nav-btn {
+  font-size: 1.2rem !important; /* Scale up font size to match body scale */
+  padding: 0.7rem 1.3rem !important; /* Spacious padding */
+  font-weight: 600 !important;
+  border-radius: 14px !important;
+}
+
+/* Dashboard Premium Typography Scalings */
+.dashboard-title {
+  font-size: 2.5rem !important;
+  font-weight: 800 !important;
+  color: var(--text-primary) !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+}
+
+.welcome-subtext {
+  font-size: 1.35rem !important; /* Bumped up for warm welcoming presence */
+  color: var(--text-muted) !important;
+  margin-top: 0.5rem !important;
+  font-weight: 500 !important;
+}
+
+.networth-label {
+  font-size: 1.3rem !important; /* Bumped up to match balance-card-label */
+  font-weight: 600 !important;
+  color: var(--text-secondary) !important;
+  margin-bottom: 0.6rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.networth-amount {
+  font-size: 2.0rem !important; /* Bumped up to match grand visual presence */
+  font-weight: 600 !important;
+  color: var(--text-primary) !important;
+  letter-spacing: -0.02em !important;
+  margin: 0 !important;
+  line-height: 1.1 !important;
+}
+
+.dashboard-section-title {
+  font-size: 1.85rem !important; /* Bumped up to match transactions-section-title */
+  font-weight: 750 !important;
+  color: var(--text-primary) !important;
+  margin: 0 !important;
+}
+
+.transactions-section-title {
+  font-size: 1.85rem !important; /* Bumped up to match bold section heading hierarchy */
+  font-weight: 750 !important;
+  color: var(--text-primary) !important;
+  margin: 0 !important;
+}
+
+/* ============================================
+   ConfirmModal — Premium Glassmorphism Dialog
+   ============================================ */
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes iconBounce {
+  0%   { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.confirm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(74, 62, 75, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: modalFadeIn 0.25s ease forwards;
+}
+
+.confirm-modal-panel {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 2.5rem 2.5rem 2rem;
+  max-width: 420px;
+  width: 90vw;
+  box-shadow:
+    0 24px 80px rgba(255, 141, 161, 0.12),
+    0 8px 32px rgba(74, 62, 75, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  text-align: center;
+  animation: modalSlideUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.confirm-modal-icon-ring {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  animation: iconBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s both;
+}
+
+.confirm-modal-icon {
+  line-height: 1;
+}
+
+.confirm-modal-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.6rem;
+}
+
+.confirm-modal-message {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0 0 1.75rem;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.confirm-modal-btn {
+  font-family: var(--font-main);
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 0.75rem 1.8rem;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  min-width: 110px;
+}
+
+.confirm-modal-btn:active {
+  transform: scale(0.96);
+}
+
+.confirm-modal-btn-cancel {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+.confirm-modal-btn-cancel:hover {
+  background: var(--glass-border);
+  color: var(--text-primary);
+}
+
+.confirm-modal-btn-confirm {
+  color: #fff;
+}
+.confirm-modal-btn-confirm:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}

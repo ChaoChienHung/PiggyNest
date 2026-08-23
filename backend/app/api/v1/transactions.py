@@ -1,0 +1,141 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from typing import List, Optional
+
+from app.db.session import get_db
+from app.models.transaction import Transaction
+from app.models.piggy_bank import PiggyBank
+from app.schemas.transaction import TransactionCreate, TransactionRead, TransactionUpdate
+from app.api.deps import get_current_user
+from app.models.user import User
+
+router = APIRouter()
+
+def get_user_piggy_bank(db: Session, pb_id: int, user_id: int):
+    pb = db.query(PiggyBank).filter(
+        PiggyBank.id == pb_id, PiggyBank.user_id == user_id
+    ).first()
+    if not pb:
+        raise HTTPException(status_code=404, detail="Piggy bank not found or not owned by user")
+    return pb
+
+@router.post("/piggy-banks/{pb_id}/transactions", response_model=TransactionRead)
+def add_transaction(
+    pb_id: int,
+    payload: TransactionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Add a new localized financial transaction (expense, deposit, income) 
+    to a specific PiggyBank owned by the user.
+    """
+    get_user_piggy_bank(db, pb_id, current_user.id)
+    
+    transaction = Transaction(
+        piggy_bank_id=pb_id,
+        amount=payload.amount,
+        type=payload.type,
+        category=payload.category,
+        description=payload.description,
+    )
+    if payload.date:
+        transaction.date = payload.date
+
+    db.add(transaction)
+    db.commit()
+    db.refresh(transaction)
+    return transaction
+
+
+@router.get("/piggy-banks/{pb_id}/transactions", response_model=List[TransactionRead])
+def get_transactions(
+    pb_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieve all transactions (ordered chronologically descending) 
+    for a specific PiggyBank owned by the user.
+    """
+    get_user_piggy_bank(db, pb_id, current_user.id)
+    return db.query(Transaction).filter(Transaction.piggy_bank_id == pb_id).order_by(Transaction.date.desc()).all()
+
+
+@router.delete("/transactions/{transaction_id}")
+def delete_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Delete a specific transaction belonging to any nested PiggyBank owned by the User.
+    """
+    transaction = db.query(Transaction).join(PiggyBank).filter(
+        Transaction.id == transaction_id,
+        PiggyBank.user_id == current_user.id
+    ).first()
+    
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+        
+    db.delete(transaction)
+    db.commit()
+    return {"success": True}
+
+
+@router.get("/piggy-banks/{pb_id}/balance")
+def get_balance(
+    pb_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Dynamically calculate and return the summation of all transactions 
+    to determine the active numeric balance of a PiggyBank.
+    """
+    get_user_piggy_bank(db, pb_id, current_user.id)
+    total = db.query(func.sum(Transaction.amount)).filter(Transaction.piggy_bank_id == pb_id).scalar()
+    count = db.query(func.count(Transaction.id)).filter(Transaction.piggy_bank_id == pb_id).scalar()
+    
+    return {
+        "balance": float(total or 0.0),
+        "transaction_count": count or 0,
+    }
+
+@router.put("/transactions/{transaction_id}", response_model=TransactionRead)
+def update_transaction(
+    transaction_id: int,
+    payload: TransactionUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Update a specific transaction belonging to any nested PiggyBank owned by the User.
+    """
+    transaction = db.query(Transaction).join(PiggyBank).filter(
+        Transaction.id == transaction_id,
+        PiggyBank.user_id == current_user.id
+    ).first()
+    
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+        
+    if payload.amount is not None:
+        # If type is expense but amount is positive, or vice versa, let's keep consistency.
+        # But normally the frontend sends negative for expense and positive for income.
+        # Let's trust the frontend's raw amount.
+        transaction.amount = payload.amount
+    if payload.type is not None:
+        transaction.type = payload.type
+    if payload.category is not None:
+        transaction.category = payload.category
+    if payload.description is not None:
+        transaction.description = payload.description
+    if payload.date is not None:
+        transaction.date = payload.date
+        
+    db.commit()
+    db.refresh(transaction)
+    return transaction
