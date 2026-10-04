@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../api/auth';
-import { ArrowLeft, User, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, User, AlertTriangle, Download, Upload } from 'lucide-react';
+import { backupApi } from '../api/backup';
 
 export const Settings = () => {
     const { user, logout, updateUser } = useAuth();
@@ -11,6 +12,40 @@ export const Settings = () => {
     const [isUpdating, setIsUpdating] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
+    const [backupMessage, setBackupMessage] = useState('');
+    const [backupError, setBackupError] = useState('');
+    const [isImporting, setIsImporting] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleExport = async () => {
+        setBackupError('');
+        setIsExporting(true);
+        try {
+            await backupApi.export();
+        } catch (err) {
+            console.error(err);
+            setBackupError('Could not export your backup.');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+        setBackupError('');
+        setBackupMessage('');
+        setIsImporting(true);
+        try {
+            const result = await backupApi.import(file);
+            setBackupMessage(`Imported ${result.piggy_banks_imported} piggy banks, ${result.transactions_imported} transactions, and ${result.categories_imported} categories. Return to Dashboard to see them.`);
+        } catch (err: any) {
+            setBackupError(err.response?.data?.detail || 'Could not import this backup.');
+        } finally {
+            setIsImporting(false);
+        }
+    };
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -95,6 +130,24 @@ export const Settings = () => {
                         </button>
                     </div>
                 </form>
+            </div>
+
+            <div className="glass-panel p-8 mb-8">
+                <h2 className="text-xl font-semibold mb-2">Backup your Piggy Banks</h2>
+                <p className="text-text-secondary text-sm mb-6">
+                    Export all your piggy banks and transactions to one Excel file. Import adds the banks in a backup to this account. If a bank name already exists, the whole import is rejected; no existing data is replaced.
+                </p>
+                {backupMessage && <p className="mb-4 text-success" role="status">{backupMessage}</p>}
+                {backupError && <p className="mb-4 text-danger" role="alert">{backupError}</p>}
+                <div className="flex flex-wrap gap-3">
+                    <button type="button" className="btn btn-secondary" onClick={handleExport} disabled={isExporting}>
+                        <Download size={18} /> {isExporting ? 'Exporting...' : 'Export Excel'}
+                    </button>
+                    <label className="btn btn-primary cursor-pointer">
+                        <Upload size={18} /> {isImporting ? 'Importing...' : 'Import Excel'}
+                        <input type="file" accept=".xlsx" className="sr-only" onChange={handleImport} disabled={isImporting} />
+                    </label>
+                </div>
             </div>
 
             <div className="glass-panel p-8 border border-danger border-opacity-30 border-t-4 border-t-danger">

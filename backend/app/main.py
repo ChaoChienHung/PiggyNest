@@ -1,11 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1 import auth, piggy_banks, transactions, transfers, categories, statistics
+from app.api.v1 import auth, piggy_banks, transactions, transfers, categories, statistics, backup
 from app.core.config import settings
 from app.db.base import Base, engine
+from sqlalchemy import inspect, text
 
 # Create the DB tables (Note: in production use Alembic migrations instead)
 Base.metadata.create_all(bind=engine)
+if "transfer_group_id" not in {column["name"] for column in inspect(engine).get_columns("transactions")}:
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE transactions ADD COLUMN transfer_group_id VARCHAR(36)"))
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -54,6 +58,7 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}/statistics",
     tags=["Statistics"]
 )
+app.include_router(backup.router, prefix=f"{settings.API_V1_PREFIX}/backup", tags=["Backup"])
 
 @app.get("/")
 def read_root():

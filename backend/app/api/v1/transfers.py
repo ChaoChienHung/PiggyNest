@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime
+from uuid import uuid4
 
 from app.db.session import get_db
 from app.models.transaction import Transaction
@@ -37,6 +38,7 @@ def transfer_funds(
     # Perform atomic transfer
     try:
         now = datetime.utcnow()
+        transfer_group_id = str(uuid4())
         # Debit source
         debit_tx = Transaction(
             piggy_bank_id=source_pb.id,
@@ -44,7 +46,8 @@ def transfer_funds(
             type="transfer",
             category="Transfer Out",
             description=f"Transfer to {target_pb.name}: {payload.description}",
-            date=now
+            date=now,
+            transfer_group_id=transfer_group_id,
         )
         # Credit target
         credit_tx = Transaction(
@@ -53,7 +56,8 @@ def transfer_funds(
             type="transfer",
             category="Transfer In",
             description=f"Transfer from {source_pb.name}: {payload.description}",
-            date=now
+            date=now,
+            transfer_group_id=transfer_group_id,
         )
 
         db.add(debit_tx)

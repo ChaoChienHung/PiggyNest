@@ -17,6 +17,7 @@ class TransactionRead(BaseModel):
     Schema for serializing a Transaction record back to the client.
     """
     id: int
+    transaction_id: str
     piggy_bank_id: int
     amount: float
     type: str

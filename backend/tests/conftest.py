@@ -1,8 +1,16 @@
 import pytest
+import os
+import tempfile
+from pathlib import Path
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+
+# app.main initializes its configured database at import time. Keep tests away
+# from the developer's real bookkeeping database.
+_startup_db_dir = tempfile.TemporaryDirectory(prefix="piggynest-tests-")
+os.environ["DATABASE_URL"] = f"sqlite:///{Path(_startup_db_dir.name) / 'startup.db'}"
 
 from app.main import app
 from app.db.base import Base

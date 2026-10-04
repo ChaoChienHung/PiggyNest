@@ -79,8 +79,15 @@ def delete_transaction(
     
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
-        
-    db.delete(transaction)
+    if transaction.transfer_group_id:
+        pair = db.query(Transaction).join(PiggyBank).filter(
+            Transaction.transfer_group_id == transaction.transfer_group_id,
+            PiggyBank.user_id == current_user.id,
+        ).all()
+        for leg in pair:
+            db.delete(leg)
+    else:
+        db.delete(transaction)
     db.commit()
     return {"success": True}
 
@@ -121,6 +128,8 @@ def update_transaction(
     
     if not transaction:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    if transaction.transfer_group_id:
+        raise HTTPException(status_code=400, detail="Delete and recreate a linked transfer to change it")
         
     if payload.amount is not None:
         # If type is expense but amount is positive, or vice versa, let's keep consistency.

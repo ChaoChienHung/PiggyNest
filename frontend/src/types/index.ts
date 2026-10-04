@@ -19,6 +19,7 @@ export interface Category {
 }
 
 export interface Transaction {
+  transaction_id: string;
   id: number;
   piggy_bank_id: number;
   amount: number;

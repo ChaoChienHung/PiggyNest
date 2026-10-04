@@ -63,4 +63,30 @@ The script will launch a terminal interface:
 1. Provide an authenticated Email and Password payload (OAuth2 standard).
 2. Issue HTTP requests natively to pull PiggyBank arrays and format your transactions.
 3. Access an exclusive "DB Inspector" mode that natively fetches the `sqlite_master` map table and dumps rows from `.db` directly to console!
-# PiggyNest
+# Excel backups
+
+In **Settings → Backup your Piggy Banks**, export one `.xlsx` file containing
+`Piggy Banks`, `Transactions`, and `Categories` sheets. Import accepts the same format and adds
+its banks and transactions to the signed-in account in one database transaction.
+An existing bank name rejects the entire import, so importing the same file twice
+does not duplicate entries. The import limit is 10 MB and 100,000 rows per sheet.
+
+Both rows of a new transfer carry the same logical `transaction_id`; their
+`entry_id` values identify the individual debit and credit records. The exporter also
+pairs older transfers when their date, amount, bank names and descriptions identify
+a unique match. Ambiguous older transfers remain separate rows, with their
+original balances preserved. Deleting a linked transfer deletes both sides.
+
+Install backend dependencies from `backend/requirements.txt` before starting the
+API; the workbook feature uses `openpyxl`.
+
+## Development test account
+
+For local manual feature testing, use **Bob** in the development database
+`backend/data/bookkeeping.db` (with the API started from `backend/`):
+
+- Email / login: `bob@piggynest.test`
+- Password: `BobTest2026!`
+
+Bob is a disposable test account. Keep manual test data under Bob; automated
+tests use a separate database. These credentials are for local development only.

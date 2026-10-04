@@ -28,6 +28,13 @@ class Transaction(Base):
     
     date = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Both legs of a transfer share this stable identifier. Ordinary entries are null.
+    transfer_group_id = Column(String(36), nullable=True, index=True)
 
     # Relationships
     piggy_bank = relationship("PiggyBank", back_populates="transactions")
+
+    @property
+    def transaction_id(self):
+        """One logical ID for both transfer legs; a unique ID for other entries."""
+        return self.transfer_group_id or f"entry:{self.id}"

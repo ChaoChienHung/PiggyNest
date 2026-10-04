@@ -624,7 +624,7 @@ export const PiggyBankView = () => {
                                             {tx.amount > 0 ? '+' : ''}{cSym}{tx.amount.toFixed(2)}
                                         </td>
                                         <td className="p-4 text-center" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', border: 'none' }}>
-                                            <button
+                                            {tx.transaction_id === `entry:${tx.id}` && <button
                                                 onClick={() => {
                                                     setEditingTxId(tx.id);
                                                     setAmount(Math.abs(tx.amount).toString());
@@ -651,12 +651,12 @@ export const PiggyBankView = () => {
                                                 style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                             >
                                                 <Pencil size={14} />
-                                            </button>
+                                            </button>}
                                             <button
                                                 onClick={() => {
                                                     showModal({
                                                         title: 'Delete Transaction',
-                                                        message: 'Are you sure you want to delete this transaction? This action cannot be undone.',
+                                                        message: tx.transaction_id !== `entry:${tx.id}` ? 'Delete both sides of this transfer? This action cannot be undone.' : 'Are you sure you want to delete this transaction? This action cannot be undone.',
                                                         variant: 'danger',
                                                         confirmText: 'Delete',
                                                         onConfirm: async () => {
