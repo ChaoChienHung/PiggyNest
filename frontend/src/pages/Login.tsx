@@ -113,6 +113,11 @@ export const Login = () => {
                         </button>
                     </form>
 
+                    <div className="flex justify-center gap-4 text-xs font-semibold" style={{ marginTop: '1rem', color: 'var(--accent-primary)' }}>
+                        <Link to="/recover-username">Forgot username?</Link>
+                        <Link to="/reset-password">Forgot password?</Link>
+                    </div>
+
                     <p className="text-center text-xs font-semibold" style={{ marginTop: '1.75rem', color: 'var(--text-secondary)' }}>
                         Don't have an account?{' '}
                         <Link to="/register" className="font-bold" style={{ color: 'var(--accent-primary)', textDecoration: 'underline' }}>

@@ -14,6 +14,8 @@
 - A bank transfer (`transfer_out` or `transfer_in`) is one signed transaction with its own `entry:<id>` logical transaction ID. Do not infer that every unpaired historical transfer is broken; classify it with `backend/repair_transfer_ids.py` after review.
 - Exclude PiggyBank transfers from income and spending totals. Keep bank transfer direction consistent with its signed amount.
 - Keep the desktop and mobile transaction flows usable. Shared visual tokens live in `frontend/src/index.css`.
+- Recovery requests must not reveal whether an email exists or return a reset code. Keep codes short-lived, single-use, attempt-limited, and delivered only to the registered address; invalidate old tokens after a password reset.
+- Keep Excel backup add-only. Multi-location use points clients to one shared backend; do not silently merge or overwrite independently edited PiggyBanks by local numeric ID.
 
 ## Verification
 

@@ -34,7 +34,7 @@ This README is the shared entry point for users and agents: terminology, setup, 
 | [`docs/`](docs/) | Feature guides, architecture, design rationale, and technology stack. |
 | `data/` | Local database, backups, and import reports. This entire folder is ignored by Git. |
 
-Start with [feature guides](docs/features.md) to see which folders implement a workflow. For deeper context, read [architecture](docs/architecture.md), [design decisions](docs/design-decisions.md), [technology stack](docs/tech-stack.md), or [current work](docs/backlog.md). Add a feature guide when a workflow spans folders, and link it back to this map instead of copying the folder descriptions.
+Start with [feature guides](docs/features.md) to see which folders implement a workflow. For deeper context, read [architecture](docs/architecture.md), [design decisions](docs/design-decisions.md), [technology stack](docs/tech-stack.md), [account recovery](docs/account-recovery.md), [data synchronization](docs/data-sync.md), or [current work](docs/backlog.md). Add a feature guide when a workflow spans folders, and link it back to this map instead of copying the folder descriptions.
 
 ### ✨ Core Features
 - **Breathtaking Pink & Gold Theme 🐷:** Redesigned with a beautiful drifting radial background, bouncy transitions, custom form fields, and rounded cards.
@@ -77,6 +77,8 @@ npm install
 npm run dev
 ```
 *The breathtaking UI will launch on `http://localhost:5173`*
+
+To use the same ledger from two locations, run one reachable backend and configure both frontends with `VITE_API_BASE_URL` and CLIs with `PIGGYNEST_API_URL`. See [shared backend configuration](docs/data-sync.md#shared-backend-configuration). Excel backup is for export and restore; it does not merge two independently edited databases.
 
 ---
 

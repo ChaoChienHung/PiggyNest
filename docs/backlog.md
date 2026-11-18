@@ -9,3 +9,5 @@
 - Split the large frontend bundle by route if initial load performance becomes a concern.
 - Decide whether bank transfers need a dedicated counterparty field, and define currency conversion before allowing cross-currency PiggyBank transfers.
 - Stop tracking generated Python bytecode. Earlier commits still contain SQLite databases, including the disposable Bob test account; `.gitignore` protects future commits but does not erase Git history. A history rewrite would need a separate coordinated decision.
+- Verify email ownership at registration and provide shared gateway rate limits before deploying account recovery across multiple API workers.
+- If offline multi-device editing is required, follow the stable-ID and conflict design in [data synchronization](data-sync.md); Excel backup is currently add-only.

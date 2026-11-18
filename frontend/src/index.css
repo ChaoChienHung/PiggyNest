@@ -512,6 +512,16 @@ table tr:last-child td:last-child {
   }
 }
 
+.recovery-page {
+  overflow: visible;
+}
+
+@media (min-width: 768px) {
+  .recovery-card-expanded {
+    height: 740px;
+  }
+}
+
 .split-screen-left {
   display: none;
   width: 50%;

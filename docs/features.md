@@ -6,6 +6,8 @@ Use the [repository guide](../README.md#repository-guide) for each folder's over
 
 Users register and sign in through the browser. The API authenticates requests and scopes PiggyBanks, categories, transactions, and backups to the signed-in user.
 
+The sign-in page also offers username reminders and email-code password resets. See [account recovery](account-recovery.md) for the flow, mail configuration, and security limits.
+
 Look in [`frontend/`](../frontend/) for the screens and API calls, and [`backend/`](../backend/) for authentication, authorization, and tests.
 
 ## PiggyBanks and transactions
@@ -23,6 +25,8 @@ Look in [`frontend/`](../frontend/) for the transfer form and ledger actions, an
 ## Backups and legacy imports
 
 Users can export and import an Excel backup from the browser. A separate backend import tool reads legacy CSV files, imports clear transactions, and leaves possible PiggyBank transfers in a local review report. See [persistence and backup](architecture.md#persistence-and-backup) and [transfer repair](transfer-repair.md).
+
+Excel import assigns new local numeric IDs. It does not merge two independently edited copies of the same PiggyBank. See [backup identity and future synchronization](data-sync.md).
 
 Look in [`frontend/`](../frontend/) for backup controls, [`backend/`](../backend/) for validation and import logic, and `data/` for the local database and review reports. The `data/` directory is ignored by Git.
 

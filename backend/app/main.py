@@ -10,6 +10,9 @@ Base.metadata.create_all(bind=engine)
 if "transfer_group_id" not in {column["name"] for column in inspect(engine).get_columns("transactions")}:
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE transactions ADD COLUMN transfer_group_id VARCHAR(36)"))
+if "token_version" not in {column["name"] for column in inspect(engine).get_columns("users")}:
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0"))
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

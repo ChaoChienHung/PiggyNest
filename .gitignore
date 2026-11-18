@@ -4,6 +4,9 @@
 /venv
 server/credentials.json
 server/token.json
+.env
+.env.*
+!.env.example
 
 # Local SQLite databases and their journals
 /data/

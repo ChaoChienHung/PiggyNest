@@ -12,6 +12,12 @@ The API is organized by resource under `app/api/v1/`, with route composition in 
 
 Two signed transactions preserve each PiggyBank's ledger while a shared UUID identifies one PiggyBank transfer. The two transactions are committed, edited, or deleted together. A bank transfer is a separate, single signed transaction with its own ID because the other account is outside the application. This distinction keeps payments to other people from being mistaken for broken PiggyBank transfers. Cross-currency PiggyBank transfers are rejected because the product has no exchange-rate model. Global spending excludes PiggyBank transfers. Legacy data is paired only when evidence is unique; ambiguous transactions require a person to mark a bank transfer or confirm a pair.
 
+## Multiple locations and account recovery
+
+Two independent SQLite databases can assign the same numeric transaction ID to different records. The Excel importer remaps these IDs safely but cannot merge separate edits to the same PiggyBank. The chosen multi-location path is one shared backend with one persistent database, configured through the frontend and CLI API URLs. This avoids introducing a conflict algorithm into the backup format. Offline synchronization remains a separate proposal in [data synchronization](data-sync.md).
+
+Email is the login identifier, while username is a display name. A reminder email helps users recover the latter; an eight-digit, short-lived code authorizes a password reset for a mailbox holder. The code is stored as a keyed digest, limited by time and attempts, and never returned by the API. Resetting the password increments the token version so old bearer tokens stop working. The flow and its remaining deployment requirements are in [account recovery](account-recovery.md).
+
 ## Visual design
 
 The May 2026 visual refresh chose a pink and gold palette (`#ff8da1`, `#ffd166`) with cream backgrounds. `frontend/src/index.css` contains theme tokens, a drifting radial background, focus and button transitions, and lifted bank cards. The login and registration pages use a responsive split-screen layout, with an inline SVG pig and CSS-animated coins. Inline SVG avoids separate bitmap assets and stays sharp at different display sizes, at the cost of more JSX and CSS to maintain.

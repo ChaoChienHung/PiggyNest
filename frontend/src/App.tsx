@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { AccountRecovery } from './pages/AccountRecovery';
 import { Dashboard } from './pages/Dashboard';
 import { PiggyBankView } from './pages/PiggyBankView';
 import { Settings } from './pages/Settings';
@@ -16,6 +17,8 @@ function App() {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/recover-username" element={<AccountRecovery mode="username" />} />
+          <Route path="/reset-password" element={<AccountRecovery mode="password" />} />
 
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>

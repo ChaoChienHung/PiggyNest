@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     SECRET_KEY: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 465
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
     
     # ------------------
     # Default Categories

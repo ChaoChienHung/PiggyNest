@@ -11,19 +11,10 @@ export const authApi = {
         formData.append('username', email); // OAuth2 expects username
         formData.append('password', password);
 
-        // We don't use the JSON apiClient here because FastAPI expects x-www-form-urlencoded for login by default with OAuth2PasswordRequestForm
-        const response = await fetch('http://127.0.0.1:8000/api/v1/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: formData.toString(),
+        const { data } = await apiClient.post('/auth/login', formData, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         });
-
-        if (!response.ok) {
-            throw new Error('Login failed');
-        }
-        return response.json();
+        return data;
     },
 
     /**
@@ -32,6 +23,18 @@ export const authApi = {
     register: async (username: string, email: string, password: string): Promise<User> => {
         const { data } = await apiClient.post('/auth/register', { username, email, password });
         return data;
+    },
+
+    remindUsername: async (email: string): Promise<void> => {
+        await apiClient.post('/auth/recovery/username', { email });
+    },
+
+    requestPasswordReset: async (email: string): Promise<void> => {
+        await apiClient.post('/auth/recovery/password', { email });
+    },
+
+    confirmPasswordReset: async (email: string, code: string, newPassword: string): Promise<void> => {
+        await apiClient.post('/auth/recovery/password/confirm', { email, code, new_password: newPassword });
     },
 
     /**

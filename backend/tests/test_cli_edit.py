@@ -53,3 +53,11 @@ def test_cli_edits_piggybank_transfer_without_changing_direction(monkeypatch):
     assert seen == {"endpoint": "/transactions/7", "payload": {
         "amount": -40, "description": "Corrected note", "date": "2025-03-01T00:00:00",
     }}
+
+
+def test_remote_cli_does_not_inspect_unrelated_local_database(monkeypatch, capsys):
+    monkeypatch.setenv("PIGGYNEST_API_URL", "https://piggynest.example/api/v1/")
+    cli = load_cli()
+    assert cli.BASE_URL == "https://piggynest.example/api/v1"
+    cli.inspect_db()
+    assert "local-only" in capsys.readouterr().out

@@ -17,7 +17,8 @@ from datetime import date
 # Section: Configuration & Global State
 # -------------------------------------
 # The root URL for the backend API services.
-BASE_URL = "http://127.0.0.1:8000/api/v1"
+LOCAL_API_URL = "http://127.0.0.1:8000/api/v1"
+BASE_URL = os.environ.get("PIGGYNEST_API_URL", LOCAL_API_URL).rstrip("/")
 
 # Absolute path to the local SQLite database. 
 # Local database lives in the repository's Git-ignored data directory.
@@ -274,6 +275,9 @@ def inspect_db():
     Helpful for verifying that the API is persisting data correctly.
     """
     print_header("Direct SQLite Database Inspection")
+    if BASE_URL != LOCAL_API_URL:
+        print("DB Inspector is local-only; the CLI is connected to a different API.")
+        return
     
     if not os.path.exists(DB_PATH):
         print(f"❌ Database file not found at: {DB_PATH}")
@@ -281,7 +285,7 @@ def inspect_db():
         
     try:
         # Establish a read-only connection to the database
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
         cursor = conn.cursor()
         
         # Metadata check: List all tables in the schema

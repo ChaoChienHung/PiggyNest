@@ -8,6 +8,7 @@ This list reflects the checked-in application manifests and imports. Versions ar
 | Validation and settings | Pydantic, pydantic-settings | Request/response schemas and environment configuration |
 | Persistence | SQLAlchemy, SQLite | ORM models, sessions, and local database |
 | Authentication | python-jose, passlib, bcrypt | JWT bearer tokens and password hashes |
+| Recovery email | Python `smtplib`, `ssl`, `email` | TLS SMTP delivery for username reminders and password reset codes |
 | Excel backup | openpyxl | `.xlsx` export and import |
 | API tests | pytest, HTTPX/FastAPI TestClient | Isolated endpoint tests |
 | Web app | React, TypeScript, React Router | UI, typing, and client-side routing |
