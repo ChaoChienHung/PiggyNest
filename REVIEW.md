@@ -2,6 +2,11 @@
 
 ## Awaiting review
 
+- [ ] Direct PiggyBank transaction page navigation
+  - **Delivered:** Up to five numbered page buttons follow the current page, shifting back at the end, with an ellipsis and last-page shortcut. Previous/Next and a labeled page-number field support direct navigation; invalid or out-of-range entries show an error without moving the page.
+  - **Evidence:** Frontend build and lint passed. An isolated browser check with 61 Bob-shaped transactions and ten rows per page exercised numbered links, Enter, empty/non-integer/out-of-range errors, and 1280px/390px widths. The check made no database changes; an earlier API-based check cleaned all 61 temporary Bob transactions and restored the original page size.
+  - **Review focus:** Try a long real PiggyBank list and confirm the page links and input feel clear on desktop and mobile.
+
 - [ ] Empty transaction descriptions and Qashier merchant labels
   - **Delivered:** Cleaned all 111 null-like transaction descriptions across the local database through SQLAlchemy. Specific categories supply most labels; IDs 367, 498, and 539 use generic type labels because no merchant or source is recorded. Renamed 3 `Qashier-MUYOO` entries to `Bread` and 20 `Qashier-AGZ Food` entries to `Lunch` or `Dinner` using other same-day meal descriptions; when neither existed, used the owner-approved arbitrary choice.
   - **Evidence:** Backup and per-ID before/after audit are in ignored `data/backups/piggynest-before-description-cleanup-*.db` and `data/description-cleanup-*.json`. Comparing 2,077 rows before and after found 134 Description changes and no changes to other transaction fields. Backend tests passed (46); the cleanup is idempotent in its test.
@@ -36,6 +41,16 @@
   - **Delivered:** Dashboard and PiggyBank view open the same Profile, Display, Backup, and Danger Zone content in a modal; `/settings` opens it directly over Dashboard. Closing by Escape, backdrop, or close button returns focus to the opener and preserves page scroll. Display changes update the page underneath through the shared user context.
   - **Evidence:** Frontend build and lint passed. Desktop/mobile Bob browser checks covered focus cycling, Escape, direct link, viewport fit, and scroll restoration; changing the date format inside the modal immediately changed the PiggyBank list, then the original format was restored.
   - **Review focus:** Try Settings and each close method on desktop and mobile, including long modal scrolling.
+
+- [ ] Scalable expense category charts
+  - **Delivered:** Dashboard and PiggyBank analytics use one shared pie chart with a compact category-count control, scrollable sorted category panel, amounts, and percentages. Slice hover and click show category details. Rounded shares sum to exactly 100.0%.
+  - **Evidence:** Frontend build and lint passed. Bob-only tests with 30 temporary categories showed both panels scroll without horizontal overflow; all temporary transactions were removed. The percentage helper summed to 100% for 2, 3, and 30-category fixtures. An isolated 390px layout check confirmed the panel stays inside the viewport.
+  - **Review focus:** Inspect the slice tooltip and panel placement on desktop and mobile, including very long category names.
+
+- [ ] PiggyBank transaction sorting and filtering
+  - **Delivered:** The transaction list sorts by date or signed amount in either direction, filters by multiple categories and an optional typed date range, shows a matching count and empty state, and pages the filtered result. The date range also applies to PiggyBank analytics; PiggyBank transfers stay out of income and expense charts.
+  - **Evidence:** Frontend build and lint passed. Four temporary Bob transactions confirmed category and date counts, amount sorting, and no mobile horizontal overflow; the test rows were deleted.
+  - **Review focus:** Check the controls with a long ledger, including date-format changes and filtered pagination.
 
 - [ ] Excel backup controls in Account Settings
   - **Delivered:** Replaced the exposed native file picker with matching Export Excel and Import Excel buttons in `frontend/src/pages/Settings.tsx` and `frontend/src/index.css`.

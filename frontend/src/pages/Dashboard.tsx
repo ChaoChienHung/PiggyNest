@@ -3,13 +3,16 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { piggybanksApi } from '../api/piggybanks';
 import type { PiggyBank, Balance } from '../types';
-import { Plus, Wallet, LogOut, ArrowRight, Settings } from 'lucide-react';
+import { Plus, LogOut, ArrowRight, Settings, Eye, EyeOff } from 'lucide-react';
 import { StatisticsCharts } from '../components/StatisticsCharts';
 import { FloatingTools } from '../components/FloatingTools';
 import { ThemedSelect } from '../components/ThemedSelect';
 import { SettingsDialog } from '../components/SettingsDialog';
 import { ConfirmModal, type ModalVariant } from '../components/ConfirmModal';
 import { formatMoney } from '../utils/money';
+import { useRates } from '../context/useRates';
+import { convertAmount, displayCurrencyOptions } from '../utils/currency';
+import { authApi } from '../api/auth';
 
 interface PiggyBankWithBalance extends PiggyBank {
     details?: Balance;
@@ -20,7 +23,8 @@ interface PiggyBankWithBalance extends PiggyBank {
  * Manages the aggregation of PiggyBanks, total Net Worth calculation, and Analytics mounting.
  */
 export const Dashboard = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, updateUser } = useAuth();
+    const { rates, isLoading: ratesLoading } = useRates();
 
     const [piggyBanks, setPiggyBanks] = useState<PiggyBankWithBalance[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -102,14 +106,32 @@ export const Dashboard = () => {
         }
     };
 
-    /**
-     * Compute total user balance separated by currency to prevent inaccurate cross-currency math.
-     */
+    /** Sum original balances by currency before converting each currency group. */
     const balancesByCurrency = piggyBanks.reduce((acc, pb) => {
         const bal = pb.details?.balance || 0;
         acc[pb.currency] = (acc[pb.currency] || 0) + bal;
         return acc;
     }, {} as Record<string, number>);
+    const displayCurrency = user?.display_currency ?? 'NTD';
+    const currencyRows = Object.entries(balancesByCurrency).map(([currency, original]) => ({
+        currency, original, converted: convertAmount(original, currency, displayCurrency, rates),
+    })).sort((a, b) => (b.converted?.amount ?? -Infinity) - (a.converted?.amount ?? -Infinity));
+    const missingRates = currencyRows.filter(row => !row.converted).map(row => row.currency);
+    const netWorth = missingRates.length === 0 ? currencyRows.reduce((sum, row) => sum + (row.converted?.amount ?? 0), 0) : null;
+    const hidden = user?.net_worth_hidden ?? false;
+    const rateTooltip = currencyRows.map(row => row.converted && row.currency !== displayCurrency
+        ? `${row.currency}: ${row.converted.explanation}; set ${row.converted.updatedAt}` : '').filter(Boolean).join('\n');
+    const convertedByBank = new Map(piggyBanks.map(bank => [bank.id,
+        convertAmount(bank.details?.balance ?? 0, bank.currency, displayCurrency, rates)]));
+
+    const changeDisplayCurrency = async (currency: string) => {
+        try { updateUser(await authApi.updateDisplayCurrency(currency)); }
+        catch (error) { console.error('Could not save display currency', error); }
+    };
+    const toggleNetWorth = async () => {
+        try { updateUser(await authApi.updateNetWorthHidden(!hidden)); }
+        catch (error) { console.error('Could not save net worth visibility', error); }
+    };
 
     if (isLoading) {
         return <div className="p-8 text-center text-muted animate-fade-in">Loading dashboard...</div>;
@@ -117,12 +139,12 @@ export const Dashboard = () => {
 
     return (
         <div className="container page-layout-container animate-fade-in">
-            <header className="flex justify-between items-center mb-10">
+            <header className="flex justify-between items-center mb-10 dashboard-header">
                 <div>
                     <h1 className="dashboard-title">Dashboard</h1>
                     <p className="welcome-subtext">Welcome back, {user?.username || user?.email}</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 dashboard-header-actions">
                     <button ref={settingsButtonRef} type="button" onClick={() => setSettingsOpen(true)} className="btn btn-secondary dashboard-nav-btn">
                         <Settings size={18} /> Settings
                     </button>
@@ -132,25 +154,39 @@ export const Dashboard = () => {
                 </div>
             </header>
 
-            <div className="glass-panel p-8 mb-10 flex items-center justify-between">
-                <div>
+            <div className="glass-panel p-8 mb-10 networth-card">
+                <div className="networth-main">
                     <p className="networth-label">Total Net Worth</p>
-                    {Object.entries(balancesByCurrency).length > 0 ? (
-                        Object.entries(balancesByCurrency).map(([currency, total]) => (
-                            <h2 key={currency} className="networth-amount">
-                                {formatMoney(total, currency)}
-                            </h2>
-                        ))
-                    ) : (
-                        <h2 className="networth-amount">$0.00</h2>
-                    )}
-                </div>
-                <div className="p-4 bg-accent-light rounded-2xl text-accent-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Wallet size={36} />
+                    <div className="networth-headline">
+                        <h2 className="networth-amount" title={!hidden ? rateTooltip : undefined}>
+                            {hidden ? '****' : ratesLoading ? 'Loading rates…' : netWorth === null ? 'Rate needed' : formatMoney(netWorth, displayCurrency)}
+                        </h2>
+                        <ThemedSelect
+                            ariaLabel="Net worth display currency"
+                            className="networth-currency-select"
+                            value={displayCurrency}
+                            onChange={changeDisplayCurrency}
+                            options={displayCurrencyOptions(piggyBanks.map(bank => bank.currency), displayCurrency)}
+                        />
+                        <button type="button" className="btn btn-secondary networth-eye" onClick={toggleNetWorth} aria-label={hidden ? 'Show net worth amounts' : 'Hide net worth amounts'}>
+                            {hidden ? <Eye size={18} /> : <EyeOff size={18} />}
+                        </button>
+                    </div>
+                    {!ratesLoading && missingRates.length > 0 && !hidden && <p className="text-sm text-danger">
+                        Rate needed for {missingRates.join(', ')}. <button type="button" className="networth-settings-link" onClick={() => setSettingsOpen(true)}>Open Settings</button>
+                    </p>}
+                    {!ratesLoading && currencyRows.length > 0 && <div className="networth-breakdown">
+                        {currencyRows.slice(0, 5).map(row => <div className="networth-breakdown-row" key={row.currency} title={!hidden && row.converted ? `${row.converted.explanation}${row.converted.updatedAt ? `; set ${row.converted.updatedAt}` : ''}` : undefined}>
+                            <span>{row.currency}</span>
+                            <strong>{hidden ? '****' : formatMoney(row.original, row.currency)}</strong>
+                            <span>{hidden ? '****' : netWorth !== null && row.converted && netWorth !== 0 ? `${(row.converted.amount / netWorth * 100).toFixed(1)}%` : '—'}</span>
+                        </div>)}
+                    </div>}
                 </div>
             </div>
 
-            <StatisticsCharts showAnalytics={showAnalytics} setShowAnalytics={setShowAnalytics} />
+            <StatisticsCharts showAnalytics={showAnalytics} setShowAnalytics={setShowAnalytics} onOpenSettings={() => setSettingsOpen(true)} />
+            <div className="dashboard-reports-link"><Link to="/reports" className="btn btn-secondary">Reports</Link></div>
 
             <div className="flex justify-between items-center mb-6">
                 <h3 className="dashboard-section-title">Piggy Banks</h3>
@@ -230,6 +266,11 @@ export const Dashboard = () => {
 
                                 <p className="text-text-secondary mb-1" style={{ fontSize: '1.0rem', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Current Balance</p>
                                 <p className="font-bold text-text-primary" style={{ fontSize: '1.65rem' }}>{formatMoney(pb.details?.balance ?? 0, pb.currency)}</p>
+                                {pb.currency !== displayCurrency && <p className="text-sm text-text-secondary" title={convertedByBank.get(pb.id)?.explanation && convertedByBank.get(pb.id)?.updatedAt
+                                    ? `${convertedByBank.get(pb.id)?.explanation}; set ${convertedByBank.get(pb.id)?.updatedAt}` : undefined}>
+                                    {ratesLoading ? 'Loading rate…' : convertedByBank.get(pb.id)
+                                        ? `≈ ${formatMoney(convertedByBank.get(pb.id)!.amount, displayCurrency)}` : 'Rate needed in Settings'}
+                                </p>}
 
                                 <div className="flex justify-between items-center mt-auto pt-4" style={{ marginTop: 'auto' }}>
                                     <p className="text-muted" style={{ fontSize: '1.0rem' }}>

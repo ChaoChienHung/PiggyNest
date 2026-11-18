@@ -69,6 +69,16 @@ export const authApi = {
         return data;
     },
 
+    updateDisplayCurrency: async (currency: string): Promise<User> => {
+        const { data } = await apiClient.put('/auth/me', { display_currency: currency });
+        return data;
+    },
+
+    updateNetWorthHidden: async (hidden: boolean): Promise<User> => {
+        const { data } = await apiClient.put('/auth/me', { net_worth_hidden: hidden });
+        return data;
+    },
+
     /**
      * Permanently deletes the authenticated user and ALL of their associated data.
      */

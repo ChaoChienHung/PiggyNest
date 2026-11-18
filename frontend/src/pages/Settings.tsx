@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/useAuth';
 import { authApi } from '../api/auth';
 import { User, AlertTriangle, Download, Upload, LayoutList } from 'lucide-react';
@@ -7,9 +7,25 @@ import { getApiError } from '../api/client';
 import type { User as UserProfile } from '../types';
 import { DATE_FORMATS, asDateFormat, formatDate, todayIsoDate } from '../utils/dates';
 import { ThemedSelect } from '../components/ThemedSelect';
+import { piggybanksApi } from '../api/piggybanks';
+import { useRates } from '../context/useRates';
+import { displayCurrencyOptions } from '../utils/currency';
 
 export const Settings = () => {
     const { user, logout, updateUser } = useAuth();
+    const { rates, saveRate } = useRates();
+    const [heldCurrencies, setHeldCurrencies] = useState<string[]>([]);
+    const [rateDrafts, setRateDrafts] = useState<Record<string, string>>({});
+    const [rateErrors, setRateErrors] = useState<Record<string, string>>({});
+    const [savingRate, setSavingRate] = useState<string | null>(null);
+
+    useEffect(() => {
+        let active = true;
+        piggybanksApi.list().then((banks: { currency: string }[]) => {
+            if (active) setHeldCurrencies([...new Set(banks.map(bank => bank.currency))].sort());
+        }).catch(error => console.error('Could not load held currencies', error));
+        return () => { active = false; };
+    }, []);
 
     const [username, setUsername] = useState(user?.username || '');
     const [isUpdating, setIsUpdating] = useState(false);
@@ -38,6 +54,28 @@ export const Settings = () => {
             setIsSavingDisplay(false);
         }
     };
+
+    const saveCurrencyRate = async (currency: string) => {
+        const value = (rateDrafts[currency] ?? rates.find(rate => rate.currency === currency)?.rate_to_ntd.toString() ?? '').trim();
+        if (!/^\d+(?:\.\d{1,4})?$/.test(value) || Number(value) <= 0 || !Number.isFinite(Number(value))) {
+            setRateErrors(current => ({ ...current, [currency]: 'Enter a positive rate with up to four decimal places.' }));
+            return;
+        }
+        setSavingRate(currency);
+        setRateErrors(current => ({ ...current, [currency]: '' }));
+        try {
+            await saveRate(currency, Number(value));
+            setRateDrafts(current => ({ ...current, [currency]: value }));
+        } catch (err) {
+            setRateErrors(current => ({ ...current, [currency]: getApiError(err, 'Could not save this rate.') }));
+        } finally {
+            setSavingRate(null);
+        }
+    };
+
+    // NTD is the common reference, even when another display currency is selected.
+    const rateCurrencies = [...new Set([...heldCurrencies, user?.display_currency ?? 'NTD'])]
+        .filter(currency => currency !== 'NTD').sort();
 
     const handleExport = async () => {
         setBackupError('');
@@ -190,6 +228,45 @@ export const Settings = () => {
                             Example: {formatDate(todayIsoDate(), asDateFormat(user?.date_format))}. Dates are typed in this format too.
                         </p>
                     </div>
+                    <div className="settings-field">
+                        <label htmlFor="display-currency" className="text-sm font-medium text-text-secondary">Display currency</label>
+                        <ThemedSelect
+                            id="display-currency"
+                            className="settings-select"
+                            value={user?.display_currency ?? 'NTD'}
+                            onChange={(value) => saveDisplay(() => authApi.updateDisplayCurrency(value))}
+                            disabled={isSavingDisplay}
+                            options={displayCurrencyOptions(heldCurrencies, user?.display_currency)}
+                        />
+                    </div>
+                </div>
+                <div className="settings-rates">
+                    <h3 className="font-semibold">Fixed exchange rates</h3>
+                    <p className="text-sm text-text-secondary">Rates are for display only. Enter how many NTD one unit of each currency is worth.</p>
+                    {rateCurrencies.length === 0 && <p className="text-sm text-muted">No other currencies need a rate yet.</p>}
+                    {rateCurrencies.map(currency => {
+                        const saved = rates.find(rate => rate.currency === currency);
+                        return <div key={currency} className="settings-rate-row">
+                            <label htmlFor={`rate-${currency}`}>1 {currency} =</label>
+                            <input
+                                id={`rate-${currency}`}
+                                className="input-field"
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="23.50"
+                                value={rateDrafts[currency] ?? saved?.rate_to_ntd.toString() ?? ''}
+                                onChange={event => setRateDrafts(current => ({ ...current, [currency]: event.target.value }))}
+                                aria-invalid={!!rateErrors[currency]}
+                                aria-describedby={rateErrors[currency] ? `rate-error-${currency}` : undefined}
+                            />
+                            <span>NTD</span>
+                            <button type="button" className="btn btn-secondary" disabled={savingRate !== null} onClick={() => saveCurrencyRate(currency)}>
+                                {savingRate === currency ? 'Saving…' : 'Save'}
+                            </button>
+                            {saved && <span className="text-xs text-muted">Updated {formatDate(saved.updated_at, asDateFormat(user?.date_format))}</span>}
+                            {rateErrors[currency] && <span id={`rate-error-${currency}`} className="text-sm text-danger" role="alert">{rateErrors[currency]}</span>}
+                        </div>;
+                    })}
                 </div>
             </div>
 

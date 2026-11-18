@@ -8,21 +8,8 @@
 
 ## Agent-ready
 
-- [ ] Make the expense category chart scale to many categories.
-  - **Context:** With many categories, the legend under the Expense Categories pie wraps into several rows and pushes into the chart.
-  - **Scope:** Replace the inline legend with one compact control (for example, "18 categories") that opens a small panel on hover, focus, or tap. The panel lists every category vertically with its color, amount, and percentage, sorted largest first, and scrolls when long. Hovering or tapping a pie slice shows that category's name, amount, and percentage. Apply to both the Dashboard and PiggyBank analytics.
-  - **Acceptance:** The pie keeps its size with 5 or 30 categories; every category's percentage is readable from the panel or the slice tooltip; percentages sum to 100% after rounding; works on desktop and mobile.
-
-- [ ] Sort and filter transactions in a PiggyBank.
-  - **Scope:** Controls above the transaction list: sort by date (default) or amount, ascending or descending; filter by one or more categories and by a date range (from and to, either optional, typed in the user's date format). Show the number of matching transactions and a clear-filters action. Paging (transactions per page) applies to the filtered result. PiggyBank analytics gets the same date range control.
-  - **Acceptance:** Sorting and filtering update the list without reloading the page; the default view is newest first with no filters; filters reset when leaving the PiggyBank; an empty result shows a clear message; controls fit on mobile.
-
-- [ ] Add direct page navigation to the PiggyBank transaction list.
-  - **Context:** The list currently has Previous/Next controls and a `Page X of Y` label, but no way to select a numbered page or enter a page number.
-  - **Scope:** Show up to five consecutive page buttons starting at the current page, shifting the window back near the end so five pages remain visible when available. For example, on page 12 of 46, show `< 12 13 14 15 16 … 46 >`; the last page is a direct shortcut after an ellipsis when it is outside the window. Highlight the current page. Add a labeled page-number input with a page-number placeholder; pressing Enter jumps to that page. Derive the maximum from the current total page count, including after the page-size setting or future filters change.
-  - **Acceptance:** Clicking a page number or pressing Enter with an integer from 1 through the current last page changes the visible transactions; an empty, non-integer, below-1, or above-last-page entry shows an error and keeps the current page. Previous/Next remain available and disabled at their respective ends. Controls and error text are usable on desktop and mobile, including keyboard navigation.
-
 - [ ] Convert balances between currencies for display, using fixed rates the user sets.
+  - **Progress:** Per-user rates, validation, Settings editing, conversion, net worth, analytics, and Reports are implemented. Waiting for the owner's default SGD → NTD rate before seeding new and existing accounts without a saved SGD rate.
   - **Decision:** For now, use fixed exchange rates instead of a rate API. Each user sets them in Settings in one format: one row per currency they hold other than the display currency, read as `1 SGD = [ 23.50 ] NTD` with a number field (positive, up to 4 decimal places). New users start from a built-in default rate that the owner provides when this is implemented, so totals work before the user edits anything. The default display currency is NTD and can be switched. Conversion is for display only and never changes stored amounts.
   - **Scope:** Per-user rate table and display currency on the backend (alongside date format), validated and saved through the user settings API; a Settings section to view and edit rates, showing when each was last changed; one shared frontend helper for converted amounts, which converts through NTD when neither currency is NTD. Required by the net worth card and Dashboard analytics below.
   - **Acceptance:** Any balance can be shown in NTD or SGD; hovering a converted amount shows the rate used and when it was set; editing a rate updates every converted total immediately; a currency with no rate shows a clear "rate needed" prompt linking to Settings instead of a wrong total. Backend tests cover per-user rates and validation.

@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserUpdate, UserResponse
+from app.schemas.user import UserCreate, UserUpdate, UserResponse, CurrencyRateUpdate, CurrencyRateResponse, Currency
 from app.schemas.token import Token
 from app.models.piggy_bank import PiggyBank
 from app.models.transaction import Transaction
@@ -16,6 +16,7 @@ from app.core import security
 from app.core.config import settings
 from app.core.recovery_email import mail_is_configured, send_recovery_email
 from app.models.recovery import RecoveryChallenge
+from app.models.currency_rate import CurrencyRate
 from app.schemas.recovery import PasswordResetConfirm, RecoveryEmail
 from app.api.deps import get_current_user
 
@@ -190,9 +191,40 @@ def update_user(
         current_user.transactions_per_page = user_in.transactions_per_page
     if user_in.date_format is not None:
         current_user.date_format = user_in.date_format
+    if user_in.display_currency is not None:
+        current_user.display_currency = user_in.display_currency
+    if user_in.net_worth_hidden is not None:
+        current_user.net_worth_hidden = user_in.net_worth_hidden
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.get("/me/rates", response_model=list[CurrencyRateResponse])
+def list_currency_rates(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    return db.query(CurrencyRate).filter(CurrencyRate.user_id == current_user.id).order_by(CurrencyRate.currency).all()
+
+
+@router.put("/me/rates/{currency}", response_model=CurrencyRateResponse)
+def set_currency_rate(
+    currency: Currency, payload: CurrencyRateUpdate,
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    if currency == "NTD":
+        raise HTTPException(status_code=422, detail="NTD is the reference currency and does not need a rate")
+    rate = db.query(CurrencyRate).filter(
+        CurrencyRate.user_id == current_user.id, CurrencyRate.currency == currency,
+    ).first()
+    if rate is None:
+        rate = CurrencyRate(user_id=current_user.id, currency=currency)
+        db.add(rate)
+    rate.rate_to_ntd = payload.rate_to_ntd
+    rate.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(rate)
+    return rate
 
 @router.delete("/me")
 def delete_user(
@@ -211,6 +243,7 @@ def delete_user(
         db.query(PiggyBank).filter(PiggyBank.user_id == current_user.id).delete(synchronize_session=False)
     
     db.query(Category).filter(Category.user_id == current_user.id).delete(synchronize_session=False)
+    db.query(CurrencyRate).filter(CurrencyRate.user_id == current_user.id).delete(synchronize_session=False)
     db.query(RecoveryChallenge).filter(RecoveryChallenge.user_id == current_user.id).delete(synchronize_session=False)
     
     db.delete(current_user)

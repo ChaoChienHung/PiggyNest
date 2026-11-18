@@ -122,3 +122,36 @@ def test_existing_test_domain_account_can_load_profile(client, db):
     })
     assert profile.status_code == 200, profile.text
     assert profile.json()["email"] == "local_bob@piggynest.test"
+
+
+def test_currency_rates_and_display_currency_are_per_user(client):
+    def login(name):
+        client.post("/api/v1/auth/register", json={
+            "username": name, "email": f"{name}@example.com", "password": "password"})
+        token = client.post("/api/v1/auth/login", data={
+            "username": f"{name}@example.com", "password": "password"}).json()["access_token"]
+        return {"Authorization": f"Bearer {token}"}
+
+    first, second = login("rate_a"), login("rate_b")
+    profile = client.post("/api/v1/auth/test-token", headers=first).json()
+    assert profile["display_currency"] == "NTD"
+    assert client.put("/api/v1/auth/me", headers=first, json={"display_currency": "SGD"}).json()["display_currency"] == "SGD"
+    assert client.put("/api/v1/auth/me", headers=first, json={"display_currency": "Abc"}).status_code == 422
+    assert client.post("/api/v1/auth/test-token", headers=second).json()["display_currency"] == "NTD"
+    assert profile["net_worth_hidden"] is False
+    assert client.put("/api/v1/auth/me", headers=first, json={"net_worth_hidden": True}).json()["net_worth_hidden"] is True
+    assert client.post("/api/v1/auth/test-token", headers=second).json()["net_worth_hidden"] is False
+
+    url = "/api/v1/auth/me/rates/SGD"
+    response = client.put(url, headers=first, json={"rate_to_ntd": "23.5012"})
+    assert response.status_code == 200, response.text
+    assert response.json()["rate_to_ntd"] == 23.5012
+    assert response.json()["updated_at"]
+    assert client.get("/api/v1/auth/me/rates", headers=first).json()[0]["currency"] == "SGD"
+    assert client.get("/api/v1/auth/me/rates", headers=second).json() == []
+    for bad in (0, -1, "23.12345", "NaN", "Infinity"):
+        assert client.put(url, headers=first, json={"rate_to_ntd": bad}).status_code == 422
+    assert client.put("/api/v1/auth/me/rates/NTD", headers=first, json={"rate_to_ntd": 1}).status_code == 422
+    assert client.put(url, headers=second, json={"rate_to_ntd": 24}).status_code == 200
+    assert client.get("/api/v1/auth/me/rates", headers=first).json()[0]["rate_to_ntd"] == 23.5012
+    assert client.put("/api/v1/auth/me/rates/AUD", headers=first, json={"rate_to_ntd": 21}).status_code == 200

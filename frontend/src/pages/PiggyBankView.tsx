@@ -5,16 +5,18 @@ import { transactionsApi } from '../api/transactions';
 import { categoriesApi } from '../api/categories';
 import type { Transaction, PiggyBank, Balance, Category } from '../types';
 import { ArrowLeft, ArrowUpRight, ArrowDownRight, ArrowRight, Plus, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ConfirmModal, type ModalVariant } from '../components/ConfirmModal';
 import { FloatingTools } from '../components/FloatingTools';
 import { ThemedSelect } from '../components/ThemedSelect';
 import { SettingsDialog } from '../components/SettingsDialog';
+import { ExpenseCategoryChart } from '../components/ExpenseCategoryChart';
 import { formatMoney } from '../utils/money';
 import { useAuth } from '../context/useAuth';
+import { useRates } from '../context/useRates';
+import { convertAmount } from '../utils/currency';
 import { asDateFormat, formatDate, isoDatePart, parseDate, todayIsoDate } from '../utils/dates';
 
-const CATEGORY_COLORS = ['#ff8da1', '#ffd166', '#ffb703', '#ff5e7e', '#ffc2d1', '#f59e0b', '#ec4899', '#8b5cf6'];
 const transferNote = (description?: string) => {
     const note = description || '';
     const separator = note.indexOf(': ');
@@ -45,10 +47,20 @@ export const PiggyBankView = () => {
     const [showAdd, setShowAdd] = useState(false);
     const [editingTxId, setEditingTxId] = useState<number | null>(null);
     const { user } = useAuth();
+    const { rates, isLoading: ratesLoading } = useRates();
     const dateFormat = asDateFormat(user?.date_format);
     // 0 means show every transaction on one page.
     const pageSize = user?.transactions_per_page ?? 20;
     const [page, setPage] = useState(1);
+    const [pageInput, setPageInput] = useState('');
+    const [pageError, setPageError] = useState('');
+    const [sortField, setSortField] = useState<'date' | 'amount'>('date');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+    const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+    const [dateFromText, setDateFromText] = useState('');
+    const [dateToText, setDateToText] = useState('');
+    const [appliedFrom, setAppliedFrom] = useState<string | null>(null);
+    const [appliedTo, setAppliedTo] = useState<string | null>(null);
     const editingTransaction = transactions.find(tx => tx.id === editingTxId);
     const [amount, setAmount] = useState('');
     const [type, setType] = useState('expense');
@@ -79,6 +91,18 @@ export const PiggyBankView = () => {
         setModalOpen(true);
     }, []);
     const closeModal = useCallback(() => setModalOpen(false), []);
+
+    const changeDateRange = (fromText: string, toText: string) => {
+        setDateFromText(fromText);
+        setDateToText(toText);
+        const from = fromText.trim() ? parseDate(fromText, dateFormat) : null;
+        const to = toText.trim() ? parseDate(toText, dateFormat) : null;
+        if ((!fromText.trim() || from) && (!toText.trim() || to) && (!from || !to || from <= to)) {
+            setAppliedFrom(from);
+            setAppliedTo(to);
+            setPage(1);
+        }
+    };
 
     /**
      * Re-fetches all critical data relating to this specific PiggyBank.
@@ -204,16 +228,45 @@ export const PiggyBankView = () => {
     if (isLoading) return <div className="p-8 text-center text-muted animate-fade-in">Loading...</div>;
     if (!bank) return <div className="p-8 text-center text-danger animate-fade-in">PiggyBank not found.</div>;
 
-    const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(transactions.length / pageSize)) : 1;
+    const parsedFrom = dateFromText.trim() ? parseDate(dateFromText, dateFormat) : null;
+    const parsedTo = dateToText.trim() ? parseDate(dateToText, dateFormat) : null;
+    const dateRangeError = dateFromText.trim() && !parsedFrom ? `Start date must use ${dateFormat}.`
+        : dateToText.trim() && !parsedTo ? `End date must use ${dateFormat}.`
+        : parsedFrom && parsedTo && parsedFrom > parsedTo ? 'Start date must be on or before end date.' : '';
+    const inDateRange = (tx: Transaction) => {
+        const day = isoDatePart(tx.date);
+        return (!appliedFrom || day >= appliedFrom) && (!appliedTo || day <= appliedTo);
+    };
+    const matchingTransactions = transactions.filter(tx =>
+        inDateRange(tx) && (categoryFilters.length === 0 || categoryFilters.includes(tx.category || ''))
+    ).sort((a, b) => {
+        const result = sortField === 'date'
+            ? isoDatePart(a.date).localeCompare(isoDatePart(b.date))
+            : a.amount - b.amount;
+        return (sortDirection === 'asc' ? result : -result) || b.id - a.id;
+    });
+    const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(matchingTransactions.length / pageSize)) : 1;
     // Deleting the last row of the final page leaves the user on the new last page.
     const currentPage = Math.min(page, totalPages);
+    const pageWindowStart = Math.min(currentPage, Math.max(1, totalPages - 4));
+    const pageWindowEnd = Math.min(totalPages, pageWindowStart + 4);
+    const nearbyPages = Array.from({ length: pageWindowEnd - pageWindowStart + 1 }, (_, index) => pageWindowStart + index);
+    const goToPage = (target: number) => {
+        setPage(target);
+        setPageError('');
+        setPageInput('');
+    };
     const visibleTransactions = pageSize > 0
-        ? transactions.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-        : transactions;
-    const firstShown = transactions.length === 0 ? 0 : (currentPage - 1) * (pageSize || transactions.length) + 1;
+        ? matchingTransactions.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+        : matchingTransactions;
+    const firstShown = matchingTransactions.length === 0 ? 0 : (currentPage - 1) * (pageSize || matchingTransactions.length) + 1;
     const lastShown = firstShown + visibleTransactions.length - 1;
+    const filterCategories = [...new Set(transactions.map(tx => tx.category || ''))].sort((a, b) => a.localeCompare(b));
+    const analyticsTransactions = transactions.filter(inDateRange);
 
     const transferTargets = allBanks.filter(b => b.id !== bank.id);
+    const displayCurrency = user?.display_currency ?? 'NTD';
+    const convertedBalance = convertAmount(balance?.balance ?? 0, bank.currency, displayCurrency, rates);
     const targetBank = allBanks.find(b => b.id === Number(targetBankId));
     const isCrossCurrencyCreate = type === 'transfer' && editingTxId === null && !!targetBank && targetBank.currency !== bank.currency;
     const counterpart = transferPair && editingTxId !== null
@@ -233,15 +286,19 @@ export const PiggyBankView = () => {
     // One point per calendar day: the end-of-day balance plus that day's money in and out.
     // `t` is UTC midnight of the date, so the time axis spaces days evenly in any time zone.
     const dailyTotals = new Map<string, { income: number; expense: number; net: number }>();
-    for (const tx of transactions) {
+    for (const tx of analyticsTransactions) {
         const day = isoDatePart(tx.date);
         const totals = dailyTotals.get(day) ?? { income: 0, expense: 0, net: 0 };
-        if (tx.amount > 0) totals.income += tx.amount;
-        else totals.expense += Math.abs(tx.amount);
+        if (tx.type !== 'transfer') {
+            if (tx.amount > 0) totals.income += tx.amount;
+            else totals.expense += Math.abs(tx.amount);
+        }
         totals.net += tx.amount;
         dailyTotals.set(day, totals);
     }
-    let runningBalance = 0;
+    let runningBalance = appliedFrom
+        ? transactions.filter(tx => isoDatePart(tx.date) < appliedFrom).reduce((sum, tx) => sum + tx.amount, 0)
+        : 0;
     const lineChartData = [...dailyTotals.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([day, totals]) => {
@@ -280,12 +337,13 @@ export const PiggyBankView = () => {
 
     // Group monthly for Bar Chart
     const monthlyTotals: Record<string, { month: string, income: number, expense: number }> = {};
-    transactions.forEach(tx => {
+    analyticsTransactions.forEach(tx => {
         const date = new Date(tx.date);
         const monthStr = date.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
         if (!monthlyTotals[monthStr]) {
             monthlyTotals[monthStr] = { month: monthStr, income: 0, expense: 0 };
         }
+        if (tx.type === 'transfer') return;
         if (tx.amount > 0) {
             monthlyTotals[monthStr].income += tx.amount;
         } else {
@@ -296,8 +354,8 @@ export const PiggyBankView = () => {
 
     // Group category totals for Pie Chart
     const catTotals: Record<string, number> = {};
-    transactions.forEach(tx => {
-        if (tx.amount < 0 && tx.category) {
+    analyticsTransactions.forEach(tx => {
+        if (tx.type !== 'transfer' && tx.amount < 0 && tx.category) {
             catTotals[tx.category] = (catTotals[tx.category] || 0) + Math.abs(tx.amount);
         }
     });
@@ -488,7 +546,10 @@ export const PiggyBankView = () => {
                 <Link to="/" className="back-to-dashboard-link">
                     <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
                 </Link>
-                <button ref={settingsButtonRef} type="button" className="btn btn-secondary" onClick={() => setSettingsOpen(true)}>Settings</button>
+                <div className="piggybank-header-actions">
+                    <Link to={`/reports?bank=${bank.id}`} className="btn btn-secondary">Reports</Link>
+                    <button ref={settingsButtonRef} type="button" className="btn btn-secondary" onClick={() => setSettingsOpen(true)}>Settings</button>
+                </div>
             </div>
 
             <div className="glass-panel balance-card mb-8">
@@ -504,6 +565,12 @@ export const PiggyBankView = () => {
                     <h2 className="balance-card-amount">
                         {formatMoney(balance?.balance ?? 0, bank.currency)}
                     </h2>
+                    {bank.currency !== displayCurrency && <p className="text-sm text-text-secondary" title={convertedBalance?.updatedAt
+                        ? `${convertedBalance.explanation}; set ${convertedBalance.updatedAt}` : undefined}>
+                        {ratesLoading ? 'Loading rate…' : convertedBalance
+                            ? `≈ ${formatMoney(convertedBalance.amount, displayCurrency)}`
+                            : <button type="button" className="networth-settings-link" onClick={() => setSettingsOpen(true)}>Rate needed — open Settings</button>}
+                    </p>}
                 </div>
             </div>
 
@@ -533,6 +600,75 @@ export const PiggyBankView = () => {
             </div>
 
             {showAdd && editingTxId === null && transactionForm}
+
+            <div className="glass-panel transaction-filter-panel mb-8">
+                <div className="transaction-filter-grid">
+                    <div>
+                        <label htmlFor="transaction-sort" className="text-sm font-medium text-text-secondary">Sort by</label>
+                        <ThemedSelect
+                            id="transaction-sort"
+                            value={sortField}
+                            onChange={(value) => { setSortField(value as 'date' | 'amount'); setPage(1); }}
+                            options={[{ value: 'date', label: 'Date' }, { value: 'amount', label: 'Amount' }]}
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="transaction-direction" className="text-sm font-medium text-text-secondary">Order</label>
+                        <ThemedSelect
+                            id="transaction-direction"
+                            value={sortDirection}
+                            onChange={(value) => { setSortDirection(value as 'asc' | 'desc'); setPage(1); }}
+                            options={[{ value: 'desc', label: 'Descending' }, { value: 'asc', label: 'Ascending' }]}
+                        />
+                    </div>
+                    <details className="transaction-category-filter">
+                        <summary>Categories{categoryFilters.length ? ` (${categoryFilters.length})` : ' (all)'}</summary>
+                        <div className="transaction-category-options">
+                            {filterCategories.length ? filterCategories.map(category => (
+                                <label key={category || 'uncategorized'}>
+                                    <input
+                                        type="checkbox"
+                                        checked={categoryFilters.includes(category)}
+                                        onChange={(event) => {
+                                            setCategoryFilters(current => event.target.checked
+                                                ? [...current, category]
+                                                : current.filter(item => item !== category));
+                                            setPage(1);
+                                        }}
+                                    />
+                                    {category || 'Uncategorized'}
+                                </label>
+                            )) : <p className="text-muted text-sm">No categories yet.</p>}
+                        </div>
+                    </details>
+                    <div>
+                        <label htmlFor="filter-date-from" className="text-sm font-medium text-text-secondary">From ({dateFormat})</label>
+                        <input id="filter-date-from" type="text" className="input-field" placeholder={dateFormat}
+                            value={dateFromText} onChange={event => changeDateRange(event.target.value, dateToText)}
+                            aria-invalid={!!dateRangeError} />
+                    </div>
+                    <div>
+                        <label htmlFor="filter-date-to" className="text-sm font-medium text-text-secondary">To ({dateFormat})</label>
+                        <input id="filter-date-to" type="text" className="input-field" placeholder={dateFormat}
+                            value={dateToText} onChange={event => changeDateRange(dateFromText, event.target.value)}
+                            aria-invalid={!!dateRangeError} />
+                    </div>
+                </div>
+                {dateRangeError && <p className="text-sm text-danger" role="alert">{dateRangeError} The previous valid range remains applied.</p>}
+                <div className="transaction-filter-footer">
+                    <p className="text-sm text-muted">{matchingTransactions.length} matching transactions. Date range also applies to analytics.</p>
+                    <button type="button" className="btn btn-secondary text-sm" onClick={() => {
+                        setSortField('date');
+                        setSortDirection('desc');
+                        setCategoryFilters([]);
+                        setDateFromText('');
+                        setDateToText('');
+                        setAppliedFrom(null);
+                        setAppliedTo(null);
+                        setPage(1);
+                    }}>Clear filters</button>
+                </div>
+            </div>
 
             {showAnalytics && (
                 <div className="glass-panel p-6 mb-8 animate-fade-in">
@@ -659,39 +795,7 @@ export const PiggyBankView = () => {
 
                             {/* Pie Chart: Expense Breakdown by Category */}
                             <div>
-                                <h4 className="text-center font-semibold mb-4 text-text-secondary">Expense Categories</h4>
-                                <div style={{ height: '250px', width: '100%' }}>
-                                    {pieData.length > 0 ? (
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={pieData}
-                                                    cx="50%"
-                                                    cy="50%"
-                                                    labelLine={false}
-                                                    outerRadius={80}
-                                                    fill="#8884d8"
-                                                    dataKey="value"
-                                                >
-                                                    {pieData.map((_, index) => (
-                                                        <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip
-                                                    contentStyle={{ 
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                                                        border: '2px solid rgba(255, 141, 161, 0.2)', 
-                                                        borderRadius: '16px',
-                                                        color: '#4a3e4b' 
-                                                    }}
-                                                />
-                                                <Legend />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    ) : (
-                                        <div className="flex h-full items-center justify-center text-muted text-sm pb-8">No categorized expenses.</div>
-                                    )}
-                                </div>
+                                <ExpenseCategoryChart data={pieData} currency={bank.currency} />
                             </div>
                         </div>
                     )}
@@ -699,8 +803,8 @@ export const PiggyBankView = () => {
             )}
 
             <div className="glass-panel transaction-table-panel">
-                {transactions.length === 0 ? (
-                    <div className="p-8 text-center text-muted">No transactions found.</div>
+                {matchingTransactions.length === 0 ? (
+                    <div className="p-8 text-center text-muted">{transactions.length ? 'No transactions match these filters.' : 'No transactions found.'}</div>
                 ) : (
                     <table className="w-full text-left border-collapse transaction-table">
                         <thead>
@@ -866,29 +970,73 @@ export const PiggyBankView = () => {
                 {totalPages > 1 && (
                     <nav className="transaction-pagination" aria-label="Transaction pages">
                         <span className="text-sm text-muted">
-                            {firstShown}–{lastShown} of {transactions.length}
+                            {firstShown}–{lastShown} of {matchingTransactions.length}
                         </span>
                         <div className="transaction-pagination-controls">
                             <button
                                 type="button"
                                 className="btn btn-secondary transaction-page-button"
-                                onClick={() => setPage(currentPage - 1)}
+                                onClick={() => goToPage(currentPage - 1)}
                                 disabled={currentPage === 1}
                                 aria-label="Previous page"
                             >
                                 <ChevronLeft size={16} />
                             </button>
-                            <span className="text-sm" aria-current="page">Page {currentPage} of {totalPages}</span>
+                            {nearbyPages.map(number => (
+                                <button
+                                    key={number}
+                                    type="button"
+                                    className={`btn btn-secondary transaction-page-button${number === currentPage ? ' is-current' : ''}`}
+                                    onClick={() => goToPage(number)}
+                                    aria-current={number === currentPage ? 'page' : undefined}
+                                    aria-label={`Page ${number}`}
+                                >
+                                    {number}
+                                </button>
+                            ))}
+                            {pageWindowEnd < totalPages && (
+                                <>
+                                    {pageWindowEnd < totalPages - 1 && <span className="transaction-page-ellipsis" aria-hidden="true">…</span>}
+                                    <button type="button" className="btn btn-secondary transaction-page-button" onClick={() => goToPage(totalPages)} aria-label={`Page ${totalPages}`}>
+                                        {totalPages}
+                                    </button>
+                                </>
+                            )}
                             <button
                                 type="button"
                                 className="btn btn-secondary transaction-page-button"
-                                onClick={() => setPage(currentPage + 1)}
+                                onClick={() => goToPage(currentPage + 1)}
                                 disabled={currentPage === totalPages}
                                 aria-label="Next page"
                             >
                                 <ChevronRight size={16} />
                             </button>
                         </div>
+                        <form className="transaction-page-jump" onSubmit={event => {
+                            event.preventDefault();
+                            const text = pageInput.trim();
+                            const target = Number(text);
+                            if (!/^\d+$/.test(text) || !Number.isSafeInteger(target) || target < 1 || target > totalPages) {
+                                setPageError(`Enter a whole page number from 1 to ${totalPages}.`);
+                                return;
+                            }
+                            goToPage(target);
+                        }}>
+                            <label htmlFor="transaction-page-input">Go to page</label>
+                            <input
+                                id="transaction-page-input"
+                                type="text"
+                                inputMode="numeric"
+                                className="input-field"
+                                placeholder={`1–${totalPages}`}
+                                value={pageInput}
+                                onChange={event => { setPageInput(event.target.value); setPageError(''); }}
+                                aria-invalid={!!pageError}
+                                aria-describedby={pageError ? 'transaction-page-error' : undefined}
+                            />
+                            <button type="submit" className="btn btn-secondary">Go</button>
+                            {pageError && <span id="transaction-page-error" className="text-sm text-danger" role="alert">{pageError}</span>}
+                        </form>
                     </nav>
                 )}
             </div>

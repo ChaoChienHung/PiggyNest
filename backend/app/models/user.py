@@ -24,4 +24,6 @@ class User(Base):
     transactions_per_page = Column(Integer, nullable=False, default=20, server_default="20")
     # Display and input format for dates in every client; the API always uses ISO 8601.
     date_format = Column(String(10), nullable=False, default="YYYY-MM-DD", server_default="YYYY-MM-DD")
+    display_currency = Column(String(10), nullable=False, default="NTD", server_default="NTD")
+    net_worth_hidden = Column(Boolean, nullable=False, default=False, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -21,6 +21,12 @@ if "transactions_per_page" not in {column["name"] for column in inspect(engine).
 if "date_format" not in {column["name"] for column in inspect(engine).get_columns("users")}:
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE users ADD COLUMN date_format VARCHAR(10) NOT NULL DEFAULT 'YYYY-MM-DD'"))
+if "display_currency" not in {column["name"] for column in inspect(engine).get_columns("users")}:
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE users ADD COLUMN display_currency VARCHAR(10) NOT NULL DEFAULT 'NTD'"))
+if "net_worth_hidden" not in {column["name"] for column in inspect(engine).get_columns("users")}:
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE users ADD COLUMN net_worth_hidden BOOLEAN NOT NULL DEFAULT 0"))
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

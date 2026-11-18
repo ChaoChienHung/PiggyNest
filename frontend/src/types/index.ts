@@ -6,6 +6,8 @@ export interface User {
   transactions_per_page: number;
   /** YYYY-MM-DD, DD/MM/YYYY, or MM/DD/YYYY; the API itself always uses ISO dates. */
   date_format: string;
+  display_currency: string;
+  net_worth_hidden: boolean;
 }
 
 export interface PiggyBank {

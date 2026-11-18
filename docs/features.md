@@ -32,6 +32,6 @@ Look in [`frontend/`](../frontend/) for backup controls, [`backend/`](../backend
 
 ## Statistics and reports
 
-The browser displays balances and category charts from the API. PiggyBank transfers are excluded from global income and spending totals; bank transfers follow their signed direction.
+The browser combines selected PiggyBanks in the account's display currency using each user's fixed NTD reference rates. The Dashboard shows one net worth total and combined balance, income, spending, and category charts. The Reports view shows numeric summaries by day, month, and year; empty calendar periods count in averages. PiggyBank transfers are excluded from income and spending totals; bank transfers follow their signed direction. Conversion changes display values only, never stored ledger amounts.
 
 Look in [`frontend/`](../frontend/) for charts and report views, and [`backend/`](../backend/) for calculations and tests.

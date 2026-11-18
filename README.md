@@ -7,7 +7,7 @@ PiggyNest is a personal finance app for tracking money across separate PiggyBank
 - **Accounts:** Register and sign in with email. With SMTP configured, users can receive a username reminder or a code to reset a forgotten password.
 - **PiggyBanks and transactions:** Keep a balance for each PiggyBank and currency. Add, categorize, and edit transactions by ID in the browser or CLI.
 - **Transfers:** Move money between owned PiggyBanks with two linked transactions, or record a transfer to or from an outside account with one transaction.
-- **Reports:** View balances, cash flow, and spending by category.
+- **Reports:** Compare PiggyBanks in one display currency with fixed rates, view combined charts, and inspect daily, monthly, and yearly numeric summaries.
 - **Backups:** Export and import Excel backups. Import adds new PiggyBanks; it does not merge independently edited copies of an existing PiggyBank.
 - **Multiple locations:** Point browser and CLI clients at one shared backend to use the same ledger from different places.
 

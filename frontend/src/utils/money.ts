@@ -16,5 +16,5 @@ export const getCurrencySymbol = (currency: string) => {
  */
 export const formatMoney = (amount: number, currency: string, showPlus = false) => {
     const sign = amount < 0 ? '-' : showPlus && amount > 0 ? '+' : '';
-    return `${sign}${getCurrencySymbol(currency)}${Math.abs(amount).toFixed(2)}`;
+    return `${sign}${getCurrencySymbol(currency)}${Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };

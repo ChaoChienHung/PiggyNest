@@ -24,6 +24,8 @@ Older `type=transfer` transactions may lack `transfer_group_id`; some are histor
 
 Balances sum signed integer minor units within a PiggyBank, then convert to the currency's major unit for the API. The current supported currencies (NTD and SGD) both have two decimal places. API and Excel import reject sub-cent values. Global income and spending statistics also accumulate integer minor units and exclude PiggyBank transfers, since moving funds between owned PiggyBanks does not change overall income or expense.
 
+Each user has a display currency and optional fixed rates quoted as NTD per one unit of another currency. `GET /api/v1/auth/me/rates` and `PUT /api/v1/auth/me/rates/{currency}` read and save only the authenticated user's rates, with an update time and at most four decimal places. Browser conversion goes through NTD when neither source nor display currency is NTD. A missing rate must be shown to the user instead of silently treating currencies as equal. The Dashboard and Reports fetch the signed transactions of selected PiggyBanks, convert each amount for display, and aggregate them by calendar period; PiggyBank transfer rows affect the balance but not income or spending. The older `/statistics` endpoint still returns native-currency aggregates and is not used for the combined Dashboard charts.
+
 ## Persistence and backup
 
 The default database URL points to the repository's Git-ignored `data/piggynest.db`, independent of the API process's working directory. The API creates it on first startup. A fresh clone needs a newly registered test account. Automated tests override the URL and use an isolated SQLite database.
