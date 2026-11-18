@@ -10,6 +10,7 @@ import { rateSummary } from '../utils/currency';
 import { ThemedSelect } from './ThemedSelect';
 import { ExpenseCategoryChart } from './ExpenseCategoryChart';
 import { FilterPicker } from './FilterPicker';
+import { DateTextField } from './DateTextField';
 
 interface StatisticsChartsProps {
     showAnalytics?: boolean;
@@ -79,10 +80,10 @@ export const StatisticsCharts = ({ showAnalytics: visible, setShowAnalytics, onO
                 selected={selected} onChange={setSelectedIds} emptyLabel="None" clearLabel="Clear all" />
         </div>
         <div className="analytics-date-filter">
-            <label>From <input className="input-field" type="text" placeholder={dateFormat} value={fromText}
-                onChange={event => applyRange(event.target.value, toText)} /></label>
-            <label>To <input className="input-field" type="text" placeholder={dateFormat} value={toText}
-                onChange={event => applyRange(fromText, event.target.value)} /></label>
+            <DateTextField id="analytics-date-from" label="From" value={fromText}
+                onChange={value => applyRange(value, toText)} dateFormat={dateFormat} invalid={!!rangeError} />
+            <DateTextField id="analytics-date-to" label="To" value={toText}
+                onChange={value => applyRange(fromText, value)} dateFormat={dateFormat} invalid={!!rangeError} />
             {rangeError && <span className="text-sm text-danger" role="alert">{rangeError}</span>}
         </div>
         {selected.length === 0 ? <p className="text-muted text-center p-8">Select a PiggyBank to see analytics.</p>

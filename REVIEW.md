@@ -2,6 +2,11 @@
 
 ## Awaiting review
 
+- [ ] Close category filters and choose dates from a calendar
+  - **Delivered:** PiggyBank Categories closes when clicking outside or pressing Escape. All seven browser date entry fields now keep manual typing and add a themed calendar icon button; choosing a date formats the text using the account's date format.
+  - **Evidence:** Frontend build/lint passed. An isolated desktop browser check verified outside click and Escape, calendar button calls, a selected date appearing as `25/12/2026`, and the controls on PiggyBank, Dashboard analytics, and Reports. A separate Chromium check opened the real native date picker without errors. No database rows were changed.
+  - **Review focus:** Try the native calendar picker and manual date entry together, including a non-default date format. Mobile layout polish remains deferred in `TODO.md`.
+
 - [ ] Desktop filter menus and transaction Type width
   - **Delivered:** The PiggyBank Categories menu now opens below its field without stretching the filter row. Dashboard and Reports use compact searchable PiggyBank/category menus with fixed-height scrolling lists; bulk actions sit inside the menus as themed buttons. The transaction Type control fills its grid column to reduce the visual gap before Date.
   - **Evidence:** Frontend build/lint passed. An isolated desktop browser check with eight PiggyBanks and 30 categories confirmed Reports filter height stays fixed, the list scrolls and searches, bulk actions work, and Type and Date controls both measure 263px wide. Dashboard filter actions and Reports preselection still worked in a second browser check.

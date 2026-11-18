@@ -10,6 +10,7 @@ import { fillReportPeriods, metricSummary } from '../utils/reportMath';
 import { formatMoney } from '../utils/money';
 import { ThemedSelect } from '../components/ThemedSelect';
 import { FilterPicker } from '../components/FilterPicker';
+import { DateTextField } from '../components/DateTextField';
 import { displayCurrencyOptions, rateSummary } from '../utils/currency';
 
 const intervals = [
@@ -73,10 +74,10 @@ export const Reports = () => {
                 <FilterPicker label="Categories" options={categoryOptions.map(category => ({ value: category, label: category || 'Uncategorized' }))}
                     selected={categories} onChange={setCategories} emptyLabel="All" clearLabel="All categories" emptyMeansAll />
             <div className="analytics-date-filter">
-                <label>From <input className="input-field" type="text" placeholder={dateFormat} value={fromText}
-                    onChange={event => applyRange(event.target.value, toText)} /></label>
-                <label>To <input className="input-field" type="text" placeholder={dateFormat} value={toText}
-                    onChange={event => applyRange(fromText, event.target.value)} /></label>
+                <DateTextField id="reports-date-from" label="From" value={fromText}
+                    onChange={value => applyRange(value, toText)} dateFormat={dateFormat} invalid={!!rangeError} />
+                <DateTextField id="reports-date-to" label="To" value={toText}
+                    onChange={value => applyRange(fromText, value)} dateFormat={dateFormat} invalid={!!rangeError} />
                 {rangeError && <span className="text-sm text-danger" role="alert">{rangeError}</span>}
             </div>
             </div>

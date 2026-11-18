@@ -11,6 +11,7 @@ import { FloatingTools } from '../components/FloatingTools';
 import { ThemedSelect } from '../components/ThemedSelect';
 import { SettingsDialog } from '../components/SettingsDialog';
 import { ExpenseCategoryChart } from '../components/ExpenseCategoryChart';
+import { DateTextField } from '../components/DateTextField';
 import { formatMoney } from '../utils/money';
 import { useAuth } from '../context/useAuth';
 import { useRates } from '../context/useRates';
@@ -57,6 +58,7 @@ export const PiggyBankView = () => {
     const [sortField, setSortField] = useState<'date' | 'amount'>('date');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+    const categoryFilterRef = React.useRef<HTMLDetailsElement>(null);
     const [dateFromText, setDateFromText] = useState('');
     const [dateToText, setDateToText] = useState('');
     const [appliedFrom, setAppliedFrom] = useState<string | null>(null);
@@ -137,6 +139,26 @@ export const PiggyBankView = () => {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    useEffect(() => {
+        const closeOutside = (event: PointerEvent) => {
+            if (categoryFilterRef.current && !categoryFilterRef.current.contains(event.target as Node)) {
+                categoryFilterRef.current.open = false;
+            }
+        };
+        const closeEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && categoryFilterRef.current?.open) {
+                categoryFilterRef.current.open = false;
+                categoryFilterRef.current.querySelector<HTMLElement>('summary')?.focus();
+            }
+        };
+        document.addEventListener('pointerdown', closeOutside);
+        document.addEventListener('keydown', closeEscape);
+        return () => {
+            document.removeEventListener('pointerdown', closeOutside);
+            document.removeEventListener('keydown', closeEscape);
+        };
+    }, []);
 
     /**
      * Primary form submission handler for injecting new transactions.
@@ -392,19 +414,8 @@ export const PiggyBankView = () => {
                     />
                 </div>
 
-                <div>
-                        <label htmlFor="transaction-date" className="block text-sm font-medium text-text-secondary mb-1">Date ({dateFormat})</label>
-                        <input
-                            id="transaction-date"
-                            type="text"
-                            required
-                            className="input-field"
-                            value={txDate}
-                            onChange={(e) => setTxDate(e.target.value)}
-                            placeholder={dateFormat}
-                            autoComplete="off"
-                        />
-                </div>
+                <DateTextField id="transaction-date" label={`Date (${dateFormat})`} value={txDate}
+                    onChange={setTxDate} dateFormat={dateFormat} required />
 
                 {type === 'transfer' && editingTxId === null && (
                     <div>
@@ -621,7 +632,7 @@ export const PiggyBankView = () => {
                             options={[{ value: 'desc', label: 'Descending' }, { value: 'asc', label: 'Ascending' }]}
                         />
                     </div>
-                    <details className="transaction-category-filter">
+                    <details ref={categoryFilterRef} className="transaction-category-filter">
                         <summary>Categories{categoryFilters.length ? ` (${categoryFilters.length})` : ' (all)'}</summary>
                         <div className="transaction-category-options">
                             {filterCategories.length ? filterCategories.map(category => (
@@ -641,18 +652,10 @@ export const PiggyBankView = () => {
                             )) : <p className="text-muted text-sm">No categories yet.</p>}
                         </div>
                     </details>
-                    <div>
-                        <label htmlFor="filter-date-from" className="text-sm font-medium text-text-secondary">From ({dateFormat})</label>
-                        <input id="filter-date-from" type="text" className="input-field" placeholder={dateFormat}
-                            value={dateFromText} onChange={event => changeDateRange(event.target.value, dateToText)}
-                            aria-invalid={!!dateRangeError} />
-                    </div>
-                    <div>
-                        <label htmlFor="filter-date-to" className="text-sm font-medium text-text-secondary">To ({dateFormat})</label>
-                        <input id="filter-date-to" type="text" className="input-field" placeholder={dateFormat}
-                            value={dateToText} onChange={event => changeDateRange(dateFromText, event.target.value)}
-                            aria-invalid={!!dateRangeError} />
-                    </div>
+                    <DateTextField id="filter-date-from" label={`From (${dateFormat})`} value={dateFromText}
+                        onChange={value => changeDateRange(value, dateToText)} dateFormat={dateFormat} invalid={!!dateRangeError} />
+                    <DateTextField id="filter-date-to" label={`To (${dateFormat})`} value={dateToText}
+                        onChange={value => changeDateRange(dateFromText, value)} dateFormat={dateFormat} invalid={!!dateRangeError} />
                 </div>
                 {dateRangeError && <p className="text-sm text-danger" role="alert">{dateRangeError} The previous valid range remains applied.</p>}
                 <div className="transaction-filter-footer">
