@@ -8,6 +8,11 @@
 
 ## Agent-ready
 
+- [ ] Replace empty transaction descriptions with meaningful text.
+  - **Context:** Some descriptions are SQL `NULL`, blank, or the literal string `Null`; for example, an Interest transaction should say `Interest`.
+  - **Scope:** Audit all users' transactions by ID, infer a description from the transaction category, type, transfer counterparty, or verified source record, and update through SQLAlchemy. Record any cases where those facts do not support a specific description before choosing a generic type-based label.
+  - **Acceptance:** No transaction retains a null-like description; Interest entries read `Interest`; every changed ID has an auditable before/after record; amounts, dates, categories, balances, and transfer links are unchanged. Re-running the cleanup makes no further changes.
+
 - [ ] Replace the default website icon with a PiggyNest icon.
   - **Context:** The frontend still ships the Vite starter icon.
   - **Scope:** Browser favicon and related page metadata in `frontend/`; use one recognizable pig or PiggyBank design that fits the existing theme.
