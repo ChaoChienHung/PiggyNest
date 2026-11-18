@@ -2,6 +2,11 @@
 
 ## Awaiting review
 
+- [ ] Desktop filter menus and transaction Type width
+  - **Delivered:** The PiggyBank Categories menu now opens below its field without stretching the filter row. Dashboard and Reports use compact searchable PiggyBank/category menus with fixed-height scrolling lists; bulk actions sit inside the menus as themed buttons. The transaction Type control fills its grid column to reduce the visual gap before Date.
+  - **Evidence:** Frontend build/lint passed. An isolated desktop browser check with eight PiggyBanks and 30 categories confirmed Reports filter height stays fixed, the list scrolls and searches, bulk actions work, and Type and Date controls both measure 263px wide. Dashboard filter actions and Reports preselection still worked in a second browser check.
+  - **Review focus:** Open the affected filters and transaction form on desktop. Mobile polish is deferred in `TODO.md` at the owner's request.
+
 - [ ] Fixed-rate currency display
   - **Delivered:** Each user has a display currency and NTD reference rates in Settings. The owner-selected default is `1 SGD = 24.00 NTD` for new accounts; startup fills only missing SGD rates for existing accounts. Rates accept positive values with at most four decimals and show their last update date. Conversion through NTD changes display figures only; missing rates show a Settings prompt.
   - **Evidence:** Backend suite passed (52), including per-user isolation, input validation, account defaults, and an idempotent backfill that preserves custom rates. Bob's local profile showed its new 24.00 rate. Frontend build/lint and conversion tests passed; isolated desktop/mobile browser checks changed 24 to 25 and observed immediate updates in net worth, analytics, and Reports without database writes.

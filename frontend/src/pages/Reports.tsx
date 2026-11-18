@@ -9,6 +9,7 @@ import { convertLedger, summarizePeriods } from '../utils/ledgerAnalytics';
 import { fillReportPeriods, metricSummary } from '../utils/reportMath';
 import { formatMoney } from '../utils/money';
 import { ThemedSelect } from '../components/ThemedSelect';
+import { FilterPicker } from '../components/FilterPicker';
 import { displayCurrencyOptions, rateSummary } from '../utils/currency';
 
 const intervals = [
@@ -65,32 +66,19 @@ export const Reports = () => {
                 onChange={async value => { try { updateUser(await authApi.updateDisplayCurrency(value)); } catch (err) { console.error(err); } }}
                 options={displayCurrencyOptions(banks.map(bank => bank.currency), displayCurrency)} />
         </header>
-        <section className="glass-panel p-6 mb-8" aria-label="Report filters">
-            <div className="analytics-bank-filter">
-                <strong>PiggyBanks</strong>
-                <button type="button" className="analytics-filter-action" onClick={() => setSelectedIds(banks.map(bank => bank.id))}>Select all</button>
-                <button type="button" className="analytics-filter-action" onClick={() => setSelectedIds([])}>Clear all</button>
-                <div className="analytics-bank-chips">{banks.map(bank => <label className={`analytics-bank-chip${selected.includes(bank.id) ? ' is-selected' : ''}`} key={bank.id}>
-                    <input type="checkbox" checked={selected.includes(bank.id)} onChange={() => setSelectedIds(current => {
-                        const values = current ?? banks.map(item => item.id);
-                        return values.includes(bank.id) ? values.filter(id => id !== bank.id) : [...values, bank.id];
-                    })} />{bank.name} ({bank.currency})
-                </label>)}</div>
-            </div>
-            <div className="analytics-bank-filter">
-                <strong>Categories</strong>
-                <button type="button" className="analytics-filter-action" onClick={() => setCategories([])}>All categories</button>
-                <div className="analytics-bank-chips">{categoryOptions.map(category => <label className={`analytics-bank-chip${categories.includes(category) ? ' is-selected' : ''}`} key={category}>
-                    <input type="checkbox" checked={categories.includes(category)} onChange={() => setCategories(current => current.includes(category)
-                        ? current.filter(name => name !== category) : [...current, category])} />{category || 'Uncategorized'}
-                </label>)}</div>
-            </div>
+        <section className="glass-panel p-6 mb-8 reports-filter-panel" aria-label="Report filters">
+            <div className="reports-filter-grid">
+                <FilterPicker label="PiggyBanks" options={banks.map(bank => ({ value: bank.id, label: `${bank.name} (${bank.currency})` }))}
+                    selected={selected} onChange={values => { setSelectedIds(values); setCategories([]); }} emptyLabel="None" clearLabel="Clear all" />
+                <FilterPicker label="Categories" options={categoryOptions.map(category => ({ value: category, label: category || 'Uncategorized' }))}
+                    selected={categories} onChange={setCategories} emptyLabel="All" clearLabel="All categories" emptyMeansAll />
             <div className="analytics-date-filter">
                 <label>From <input className="input-field" type="text" placeholder={dateFormat} value={fromText}
                     onChange={event => applyRange(event.target.value, toText)} /></label>
                 <label>To <input className="input-field" type="text" placeholder={dateFormat} value={toText}
                     onChange={event => applyRange(fromText, event.target.value)} /></label>
                 {rangeError && <span className="text-sm text-danger" role="alert">{rangeError}</span>}
+            </div>
             </div>
         </section>
         <p className="text-sm text-text-secondary mb-6">Averages include periods with no transactions. Without a date filter, periods run from the first to the last matching transaction. PiggyBank transfers are excluded from income and spending.</p>

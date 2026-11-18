@@ -9,6 +9,7 @@ import { formatMoney } from '../utils/money';
 import { rateSummary } from '../utils/currency';
 import { ThemedSelect } from './ThemedSelect';
 import { ExpenseCategoryChart } from './ExpenseCategoryChart';
+import { FilterPicker } from './FilterPicker';
 
 interface StatisticsChartsProps {
     showAnalytics?: boolean;
@@ -73,19 +74,9 @@ export const StatisticsCharts = ({ showAnalytics: visible, setShowAnalytics, onO
             </div>
         </div>
         {error && <p role="alert" className="text-danger">{error}</p>}
-        <div className="analytics-bank-filter" aria-label="PiggyBank filter">
-            <span className="text-sm font-semibold">PiggyBanks</span>
-            <button type="button" className="analytics-filter-action" onClick={() => setSelectedIds(banks.map(bank => bank.id))}>Select all</button>
-            <button type="button" className="analytics-filter-action" onClick={() => setSelectedIds([])}>Clear all</button>
-            <div className="analytics-bank-chips">
-                {banks.map(bank => <label key={bank.id} className={`analytics-bank-chip${selected.includes(bank.id) ? ' is-selected' : ''}`}>
-                    <input type="checkbox" checked={selected.includes(bank.id)} onChange={() => setSelectedIds(current => {
-                        const values = current ?? banks.map(item => item.id);
-                        return values.includes(bank.id) ? values.filter(id => id !== bank.id) : [...values, bank.id];
-                    })} />
-                    {bank.name} ({bank.currency})
-                </label>)}
-            </div>
+        <div className="analytics-picker-row">
+            <FilterPicker label="PiggyBanks" options={banks.map(bank => ({ value: bank.id, label: `${bank.name} (${bank.currency})` }))}
+                selected={selected} onChange={setSelectedIds} emptyLabel="None" clearLabel="Clear all" />
         </div>
         <div className="analytics-date-filter">
             <label>From <input className="input-field" type="text" placeholder={dateFormat} value={fromText}
