@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { authApi } from '../api/auth';
@@ -17,6 +17,7 @@ export const Settings = () => {
     const [backupError, setBackupError] = useState('');
     const [isImporting, setIsImporting] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     const handleExport = async () => {
         setBackupError('');
@@ -140,14 +141,27 @@ export const Settings = () => {
                 </p>
                 {backupMessage && <p className="mb-4 text-success" role="status">{backupMessage}</p>}
                 {backupError && <p className="mb-4 text-danger" role="alert">{backupError}</p>}
-                <div className="flex flex-wrap gap-3">
-                    <button type="button" className="btn btn-secondary" onClick={handleExport} disabled={isExporting}>
+                <div className="backup-actions">
+                    <button type="button" className="btn btn-secondary backup-action-button" onClick={handleExport} disabled={isExporting}>
                         <Download size={18} /> {isExporting ? 'Exporting...' : 'Export Excel'}
                     </button>
-                    <label className="btn btn-primary cursor-pointer">
+                    <button
+                        type="button"
+                        className="btn btn-primary backup-action-button"
+                        onClick={() => importInputRef.current?.click()}
+                        disabled={isImporting}
+                    >
                         <Upload size={18} /> {isImporting ? 'Importing...' : 'Import Excel'}
-                        <input type="file" accept=".xlsx" className="sr-only" onChange={handleImport} disabled={isImporting} />
-                    </label>
+                    </button>
+                    <input
+                        ref={importInputRef}
+                        type="file"
+                        accept=".xlsx"
+                        className="backup-file-input"
+                        aria-label="Select an Excel backup to import"
+                        onChange={handleImport}
+                        disabled={isImporting}
+                    />
                 </div>
             </div>
 

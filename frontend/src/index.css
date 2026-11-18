@@ -177,6 +177,27 @@ a:hover {
   box-shadow: none;
 }
 
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.backup-action-button {
+  min-width: 10.5rem;
+}
+
+.backup-file-input {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .backup-actions,
+  .backup-action-button {
+    width: 100%;
+  }
+}
+
 .btn-secondary {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
