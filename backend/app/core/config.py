@@ -10,6 +10,9 @@ from pydantic_settings import BaseSettings
 from pydantic import Field
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+LOCAL_DATA_DIR = PROJECT_ROOT / "data"
+
 
 class Settings(BaseSettings):
     # ------------
@@ -32,9 +35,9 @@ class Settings(BaseSettings):
     # -----
     # Paths
     # -----
-    BASE_DIR: Path = Path(__file__).parent.parent.parent.parent
-    DATA_BASE_DIR: str = "./data"
-    USER_DATA_DIR: str = "./data/user"
+    BASE_DIR: Path = PROJECT_ROOT
+    DATA_BASE_DIR: str = str(LOCAL_DATA_DIR)
+    USER_DATA_DIR: str = str(LOCAL_DATA_DIR / "user")
     CONFIG_FILE: str = "./config/config.yaml"
     
     # ------------
@@ -48,7 +51,7 @@ class Settings(BaseSettings):
     # --------
     # Database
     # --------
-    DATABASE_URL: str = "sqlite:///./data/piggynest.db"
+    DATABASE_URL: str = f"sqlite:///{LOCAL_DATA_DIR / 'piggynest.db'}"
     
     # --------
     # Security

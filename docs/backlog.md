@@ -7,5 +7,5 @@
 - Decide whether the CSV/pandas bookkeeping modules and root CLI remain supported; update dependencies or remove them after that decision.
 - Consider route-level service extraction when transaction workflows grow, and centralize shared authentication and ownership queries.
 - Split the large frontend bundle by route if initial load performance becomes a concern.
-- Decide whether external transfers need a dedicated counterparty field, and define currency conversion before allowing cross-currency internal transfers.
+- Decide whether bank transfers need a dedicated counterparty field, and define currency conversion before allowing cross-currency PiggyBank transfers.
 - Stop tracking generated Python bytecode. Earlier commits still contain SQLite databases, including the disposable Bob test account; `.gitignore` protects future commits but does not erase Git history. A history rewrite would need a separate coordinated decision.

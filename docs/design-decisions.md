@@ -10,7 +10,7 @@ The API is organized by resource under `app/api/v1/`, with route composition in 
 
 ## Transfer integrity
 
-Two signed rows preserve each bank's ledger while a shared UUID identifies one internal transfer. The two rows are committed or deleted together. An external transfer is a separate, single signed row with its own ID because the other account is outside the application. This distinction keeps external payments from being mistaken for broken internal transfers. Cross-currency internal transfers are rejected because the product has no exchange-rate model. Global spending excludes internal transfers. Legacy data is paired only when evidence is unique; ambiguous rows require a person to mark an external entry or confirm a pair.
+Two signed transactions preserve each PiggyBank's ledger while a shared UUID identifies one PiggyBank transfer. The two transactions are committed, edited, or deleted together. A bank transfer is a separate, single signed transaction with its own ID because the other account is outside the application. This distinction keeps payments to other people from being mistaken for broken PiggyBank transfers. Cross-currency PiggyBank transfers are rejected because the product has no exchange-rate model. Global spending excludes PiggyBank transfers. Legacy data is paired only when evidence is unique; ambiguous transactions require a person to mark a bank transfer or confirm a pair.
 
 ## Visual design
 

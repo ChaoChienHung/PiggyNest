@@ -1,8 +1,9 @@
 import sqlite3
 import os
+from app.core.config import LOCAL_DATA_DIR
 
 def migrate():
-    db_path = './data/piggynest.db'
+    db_path = LOCAL_DATA_DIR / 'piggynest.db'
     if not os.path.exists(db_path):
         print("DB not found at", db_path)
         return

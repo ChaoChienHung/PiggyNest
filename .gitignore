@@ -6,6 +6,8 @@ server/credentials.json
 server/token.json
 
 # Local SQLite databases and their journals
+/data/
+/backend/data/
 *.db
 *.db-*
 *.sqlite

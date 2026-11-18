@@ -1,6 +1,6 @@
 # PiggyNest backend
 
-Start from this directory so the default SQLite database resolves to `data/piggynest.db`:
+Start from this directory. The default SQLite database lives in the repository's Git-ignored `data/piggynest.db`, independent of the process's working directory:
 
 ```bash
 python3 -m venv venv

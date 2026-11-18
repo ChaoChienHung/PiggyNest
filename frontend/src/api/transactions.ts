@@ -1,6 +1,14 @@
 import { apiClient } from './client';
 import type { Transaction } from '../types';
 
+export interface TransactionChanges {
+    amount?: number;
+    type?: string;
+    description?: string | null;
+    category?: string | null;
+    date?: string;
+}
+
 export const transactionsApi = {
     /**
      * Lists all transactions belonging to a specific PiggyBank id.
@@ -37,14 +45,8 @@ export const transactionsApi = {
     /**
      * Updates an existing transaction.
      */
-    update: async (transactionId: number, amount: number, type: string, description: string, category: string, date?: string) => {
-        const { data } = await apiClient.put(`/transactions/${transactionId}`, {
-            amount,
-            type,
-            description,
-            category,
-            date,
-        });
+    update: async (transactionId: number, changes: TransactionChanges): Promise<Transaction> => {
+        const { data } = await apiClient.put(`/transactions/${transactionId}`, changes);
         return data;
     },
     /**

@@ -9,6 +9,11 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { ConfirmModal, type ModalVariant } from '../components/ConfirmModal';
 
 const CATEGORY_COLORS = ['#ff8da1', '#ffd166', '#ffb703', '#ff5e7e', '#ffc2d1', '#f59e0b', '#ec4899', '#8b5cf6'];
+const transferNote = (description?: string) => {
+    const note = description || '';
+    const separator = note.indexOf(': ');
+    return separator >= 0 ? note.slice(separator + 2) : note;
+};
 
 /**
  * Dedicated view for a single PiggyBank account.
@@ -31,6 +36,7 @@ export const PiggyBankView = () => {
     // Form states
     const [showAdd, setShowAdd] = useState(false);
     const [editingTxId, setEditingTxId] = useState<number | null>(null);
+    const editingTransaction = transactions.find(tx => tx.id === editingTxId);
     const [amount, setAmount] = useState('');
     const [type, setType] = useState('expense');
     const [desc, setDesc] = useState('');
@@ -119,7 +125,17 @@ export const PiggyBankView = () => {
                 if (txDate) {
                     finalDate = new Date(txDate).toISOString();
                 }
-                await transactionsApi.update(editingTxId, finalAmount, type, desc, finalCategoryName, finalDate);
+                if (editingTransaction?.type === 'transfer') {
+                    const signedAmount = editingTransaction.amount < 0 ? -Math.abs(finalAmount) : Math.abs(finalAmount);
+                    await transactionsApi.update(editingTxId, {
+                        amount: signedAmount, description: desc, date: finalDate,
+                    });
+                } else {
+                    await transactionsApi.update(editingTxId, {
+                        amount: finalAmount, type, description: desc,
+                        category: finalCategoryName, date: finalDate,
+                    });
+                }
             } else if (type === 'transfer') {
                 if (!targetBankId) {
                     showModal({ title: 'Missing Target', message: 'Please select a target Piggy Bank for transfer.', variant: 'warning', alertOnly: true, onConfirm: closeModal });
@@ -291,18 +307,19 @@ export const PiggyBankView = () => {
                                 className="input-field"
                                 value={type}
                                 onChange={(e) => setType(e.target.value)}
+                                disabled={editingTransaction?.type === 'transfer'}
                             >
                                 <option value="expense">Expense</option>
                                 <option value="income">Income</option>
                                 <option value="withdrawal">Withdrawal</option>
                                 <option value="deposit">Deposit</option>
-                                <option value="transfer_out">Transfer Out (external)</option>
-                                <option value="transfer_in">Transfer In (external)</option>
-                                {editingTxId === null && <option value="transfer">Transfer between PiggyBanks</option>}
+                                <option value="transfer_out">Bank Transfer Out</option>
+                                <option value="transfer_in">Bank Transfer In</option>
+                                {(editingTxId === null || type === 'transfer') && <option value="transfer">PiggyBank Transfer</option>}
                             </select>
                         </div>
 
-                        {type !== 'transfer' && (
+                        {(type !== 'transfer' || editingTxId !== null) && (
                             <div>
                                 <label className="block text-sm font-medium text-text-secondary mb-1">Date</label>
                                 <input
@@ -315,7 +332,7 @@ export const PiggyBankView = () => {
                             </div>
                         )}
 
-                        {type === 'transfer' && (
+                        {type === 'transfer' && editingTxId === null && (
                             <div>
                                 <label className="block text-sm font-medium text-text-secondary mb-1">Transfer To</label>
                                 <select
@@ -383,7 +400,7 @@ export const PiggyBankView = () => {
                         )}
 
                         <div className={type === 'transfer' ? "md:col-span-2" : ""}>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">Description</label>
+                            <label className="block text-sm font-medium text-text-secondary mb-1">{type === 'transfer' ? 'Transfer Note' : 'Description'}</label>
                             <input
                                 type="text"
                                 className="input-field"
@@ -594,7 +611,7 @@ export const PiggyBankView = () => {
                                     textClass = 'text-success';
                                 } else if (isTransfer) {
                                     icon = <ArrowRight size={14} className="mr-1" />;
-                                    typeLabel = tx.type === 'transfer_out' ? 'Transfer Out' : tx.type === 'transfer_in' ? 'Transfer In' : 'Transfer';
+                                    typeLabel = tx.type === 'transfer_out' ? 'Bank Transfer Out' : tx.type === 'transfer_in' ? 'Bank Transfer In' : 'PiggyBank Transfer';
                                     badgeClass = 'bg-accent-light text-accent-primary';
                                     if (tx.amount > 0) {
                                         textClass = 'text-success';
@@ -607,6 +624,7 @@ export const PiggyBankView = () => {
                                     <tr key={tx.id} className="border-b border-glass-border hover:bg-white hover:bg-opacity-5 transition-colors">
                                         <td className="p-4 whitespace-nowrap">
                                             {new Date(tx.date).toLocaleDateString()}
+                                            <div className="text-xs text-muted">ID #{tx.id}</div>
                                         </td>
                                         <td className="p-4">
                                             <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
@@ -626,12 +644,12 @@ export const PiggyBankView = () => {
                                             {tx.amount > 0 ? '+' : ''}{cSym}{tx.amount.toFixed(2)}
                                         </td>
                                         <td className="p-4 text-center" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', border: 'none' }}>
-                                            {tx.type !== 'transfer' && <button
+                                            {(tx.type !== 'transfer' || tx.transaction_id !== `entry:${tx.id}`) && <button
                                                 onClick={() => {
                                                     setEditingTxId(tx.id);
                                                     setAmount(Math.abs(tx.amount).toString());
                                                     setType(tx.type);
-                                                    setDesc(tx.description || '');
+                                                    setDesc(tx.type === 'transfer' ? transferNote(tx.description) : tx.description || '');
                                                     setTxDate(new Date(tx.date).toISOString().split('T')[0]);
                                                     
                                                     // Resolve category selection
@@ -658,7 +676,7 @@ export const PiggyBankView = () => {
                                                 onClick={() => {
                                                     showModal({
                                                         title: 'Delete Transaction',
-                                                        message: tx.type === 'transfer' ? 'Delete both sides of this transfer? This action cannot be undone.' : 'Are you sure you want to delete this transaction? This action cannot be undone.',
+                                                        message: tx.type === 'transfer' ? 'Delete both sides of this PiggyBank transfer? This action cannot be undone.' : 'Are you sure you want to delete this transaction? This action cannot be undone.',
                                                         variant: 'danger',
                                                         confirmText: 'Delete',
                                                         onConfirm: async () => {

@@ -1,9 +1,3 @@
 # PiggyNest documentation
 
-- [Architecture](architecture.md): current application boundaries, data flow, and transfer invariants.
-- [Technology stack](tech-stack.md): dependencies actually used by the running application.
-- [Design decisions](design-decisions.md): rationale consolidated from the former development notes.
-- [Backlog](backlog.md): remaining ideas and known architecture work.
-- [Historical transfer repair](transfer-repair.md): audit and classify old transfers without shared IDs.
-
-The root [README](../README.md) has setup and user-facing features. This directory is the source of truth for engineering design notes.
+The [repository guide](../README.md#repository-guide) is the shared entry point. The [feature guides](features.md) connect each workflow to the folders that implement it. Detailed engineering contracts live in the other documents in this directory; keep long explanations here and keep the repository guide at folder level.

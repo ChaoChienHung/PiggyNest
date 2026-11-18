@@ -195,3 +195,69 @@ def test_external_transfer_is_one_entry_with_own_id(client, auth_headers, piggy_
     assert sum(row["expense"] for row in stats) == 25
     assert client.delete(f"/api/v1/transactions/{entry['id']}", headers=auth_headers).status_code == 200
     assert client.get(f"/api/v1/piggy-banks/{piggy_bank_id}/transactions", headers=auth_headers).json() == []
+
+
+def test_edit_transaction_by_id_changes_amount_category_note_and_date(client, auth_headers, piggy_bank_id):
+    created = client.post(f"/api/v1/piggy-banks/{piggy_bank_id}/transactions", headers=auth_headers,
+                          json={"type": "expense", "amount": -12, "category": "Meal", "description": "Old"}).json()
+    tx_id = created["id"]
+    assert client.get(f"/api/v1/transactions/{tx_id}", headers=auth_headers).json()["id"] == tx_id
+    updated = client.put(f"/api/v1/transactions/{tx_id}", headers=auth_headers, json={
+        "amount": -18, "category": "Transport", "description": "New note", "date": "2025-03-01T00:00:00",
+    })
+    assert updated.status_code == 200
+    assert {key: updated.json()[key] for key in ("id", "amount", "category", "description")} == {
+        "id": tx_id, "amount": -18, "category": "Transport", "description": "New note",
+    }
+    assert updated.json()["date"].startswith("2025-03-01")
+    assert client.get(f"/api/v1/piggy-banks/{piggy_bank_id}/balance", headers=auth_headers).json()["balance"] == -18
+    cleared = client.put(f"/api/v1/transactions/{tx_id}", headers=auth_headers,
+                         json={"category": None, "description": None})
+    assert cleared.status_code == 200
+    assert cleared.json()["category"] is None and cleared.json()["description"] is None
+
+
+def test_edit_piggybank_transfer_updates_both_entries(client, auth_headers, piggy_bank_id):
+    target = client.post("/api/v1/piggy-banks", headers=auth_headers, json={"name": "Target"}).json()["id"]
+    created = client.post("/api/v1/transfers", headers=auth_headers, json={
+        "source_piggy_bank_id": piggy_bank_id, "target_piggy_bank_id": target,
+        "amount": 25, "description": "Old note",
+    }).json()
+    debit_id, credit_id = created["entry_ids"]
+    updated = client.put(f"/api/v1/transactions/{debit_id}", headers=auth_headers, json={
+        "amount": -40, "description": "Corrected note", "date": "2025-03-01T00:00:00",
+    })
+    assert updated.status_code == 200
+    debit = client.get(f"/api/v1/transactions/{debit_id}", headers=auth_headers).json()
+    credit = client.get(f"/api/v1/transactions/{credit_id}", headers=auth_headers).json()
+    assert (debit["amount"], credit["amount"]) == (-40, 40)
+    assert debit["transaction_id"] == credit["transaction_id"] == created["transaction_id"]
+    assert debit["description"] == "Transfer to Target: Corrected note"
+    assert credit["description"] == "Transfer from Transactions_Bank: Corrected note"
+    assert debit["date"] == credit["date"]
+    assert debit["date"].startswith("2025-03-01")
+    assert client.get(f"/api/v1/piggy-banks/{piggy_bank_id}/balance", headers=auth_headers).json()["balance"] == -40
+    assert client.get(f"/api/v1/piggy-banks/{target}/balance", headers=auth_headers).json()["balance"] == 40
+    assert client.put(f"/api/v1/transactions/{credit_id}", headers=auth_headers,
+                      json={"amount": 50}).status_code == 200
+    assert client.get(f"/api/v1/transactions/{debit_id}", headers=auth_headers).json()["amount"] == -50
+    assert client.get(f"/api/v1/transactions/{credit_id}", headers=auth_headers).json()["amount"] == 50
+    assert client.put(f"/api/v1/transactions/{credit_id}", headers=auth_headers,
+                      json={"amount": -50}).status_code == 400
+    assert client.put(f"/api/v1/transactions/{debit_id}", headers=auth_headers,
+                      json={"category": "Meal"}).status_code == 400
+
+
+def test_edit_transaction_is_scoped_to_owner(client, auth_headers, piggy_bank_id):
+    tx_id = client.post(f"/api/v1/piggy-banks/{piggy_bank_id}/transactions", headers=auth_headers,
+                        json={"amount": -5}).json()["id"]
+    client.post("/api/v1/auth/register", json={
+        "username": "another_user", "email": "another@example.com", "password": "password",
+    })
+    token = client.post("/api/v1/auth/login", data={
+        "username": "another@example.com", "password": "password",
+    }).json()["access_token"]
+    other = {"Authorization": f"Bearer {token}"}
+    assert client.get(f"/api/v1/transactions/{tx_id}", headers=other).status_code == 404
+    assert client.put(f"/api/v1/transactions/{tx_id}", headers=other, json={"amount": -50}).status_code == 404
+    assert client.get(f"/api/v1/transactions/{tx_id}", headers=auth_headers).json()["amount"] == -5

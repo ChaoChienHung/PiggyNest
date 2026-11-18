@@ -10,7 +10,7 @@ class Transaction(Base):
     Attributes:
         id (int): Primary key.
         piggy_bank_id (int): Foreign key linking to the associated PiggyBank.
-        amount (float): The absolute monetary value of the transaction.
+        amount (float): The signed monetary value of the transaction.
         type (str): The transaction classification (e.g., 'expense', 'income', 'transfer').
         category (str): Optional categorical string tag.
         description (str): Optional user-provided context notes.

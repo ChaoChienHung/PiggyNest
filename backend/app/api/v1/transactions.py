@@ -13,6 +13,15 @@ from app.domain.transfer_links import legacy_transfer_pairs
 
 router = APIRouter()
 
+
+def get_user_transaction(db: Session, transaction_id: int, user_id: int):
+    transaction = db.query(Transaction).join(PiggyBank).filter(
+        Transaction.id == transaction_id, PiggyBank.user_id == user_id,
+    ).first()
+    if transaction is None:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return transaction
+
 def get_user_piggy_bank(db: Session, pb_id: int, user_id: int):
     pb = db.query(PiggyBank).filter(
         PiggyBank.id == pb_id, PiggyBank.user_id == user_id
@@ -78,13 +87,7 @@ def delete_transaction(
     """
     Delete a specific transaction belonging to any nested PiggyBank owned by the User.
     """
-    transaction = db.query(Transaction).join(PiggyBank).filter(
-        Transaction.id == transaction_id,
-        PiggyBank.user_id == current_user.id
-    ).first()
-    
-    if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+    transaction = get_user_transaction(db, transaction_id, current_user.id)
     if transaction.transfer_group_id:
         pair = db.query(Transaction).join(PiggyBank).filter(
             Transaction.transfer_group_id == transaction.transfer_group_id,
@@ -106,6 +109,16 @@ def delete_transaction(
         db.delete(transaction)
     db.commit()
     return {"success": True}
+
+
+@router.get("/transactions/{transaction_id}", response_model=TransactionRead)
+def get_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Fetch one transaction by its numeric ID for the authenticated user."""
+    return get_user_transaction(db, transaction_id, current_user.id)
 
 
 @router.get("/piggy-banks/{pb_id}/balance")
@@ -137,17 +150,38 @@ def update_transaction(
     """
     Update a specific transaction belonging to any nested PiggyBank owned by the User.
     """
-    transaction = db.query(Transaction).join(PiggyBank).filter(
-        Transaction.id == transaction_id,
-        PiggyBank.user_id == current_user.id
-    ).first()
-    
-    if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+    transaction = get_user_transaction(db, transaction_id, current_user.id)
     if transaction.transfer_group_id:
-        raise HTTPException(status_code=400, detail="Delete and recreate a linked transfer to change it")
-    if transaction.type == "transfer" or payload.type == "transfer":
-        raise HTTPException(status_code=400, detail="Use /transfers to create transfers; delete and recreate to change them")
+        pair = db.query(Transaction).join(PiggyBank).filter(
+            Transaction.transfer_group_id == transaction.transfer_group_id,
+            PiggyBank.user_id == current_user.id,
+        ).all()
+        debit = next((leg for leg in pair if leg.amount < 0), None)
+        credit = next((leg for leg in pair if leg.amount > 0), None)
+        if (len(pair) != 2 or debit is None or credit is None
+                or debit.type != "transfer" or credit.type != "transfer"
+                or debit.piggy_bank_id == credit.piggy_bank_id
+                or abs(debit.amount + credit.amount) > 1e-8):
+            raise HTTPException(status_code=409, detail="PiggyBank transfer entries are inconsistent")
+        if payload.type is not None or "category" in payload.model_fields_set:
+            raise HTTPException(status_code=400, detail="PiggyBank transfer type and directional categories cannot be changed")
+        if payload.amount is not None:
+            if payload.amount == 0 or (payload.amount > 0) != (transaction.amount > 0):
+                raise HTTPException(status_code=400, detail="Amount must keep this transfer entry's direction")
+            debit.amount = -abs(payload.amount)
+            credit.amount = abs(payload.amount)
+        if "description" in payload.model_fields_set:
+            note = payload.description or ""
+            debit.description = f"Transfer to {credit.piggy_bank.name}: {note}"
+            credit.description = f"Transfer from {debit.piggy_bank.name}: {note}"
+        if payload.date is not None:
+            debit.date = payload.date
+            credit.date = payload.date
+        db.commit()
+        db.refresh(transaction)
+        return transaction
+    if transaction.type == "transfer":
+        raise HTTPException(status_code=409, detail="Repair this historical transfer before editing")
     updated_type = payload.type or transaction.type
     updated_amount = payload.amount if payload.amount is not None else transaction.amount
     if ((updated_type == "transfer_out" and updated_amount >= 0)
@@ -161,9 +195,9 @@ def update_transaction(
         transaction.amount = payload.amount
     if payload.type is not None:
         transaction.type = payload.type
-    if payload.category is not None:
+    if "category" in payload.model_fields_set:
         transaction.category = payload.category
-    if payload.description is not None:
+    if "description" in payload.model_fields_set:
         transaction.description = payload.description
     if payload.date is not None:
         transaction.date = payload.date

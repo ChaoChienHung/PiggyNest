@@ -10,6 +10,8 @@ import requests
 import sqlite3
 import sys
 import os
+import math
+from datetime import date
 
 # -------------------------------------
 # Section: Configuration & Global State
@@ -18,8 +20,8 @@ import os
 BASE_URL = "http://127.0.0.1:8000/api/v1"
 
 # Absolute path to the local SQLite database. 
-# It assumes a specific folder structure: ./backend/data/piggynest.db
-DB_PATH = os.path.join(os.path.dirname(__file__), "backend", "data", "piggynest.db")
+# Local database lives in the repository's Git-ignored data directory.
+DB_PATH = os.path.join(os.path.dirname(__file__), "data", "piggynest.db")
 
 # Global session variable. Once logged in, this stores the JWT string 
 # to authorize subsequent API requests.
@@ -212,57 +214,55 @@ def add_transaction():
 
 def edit_transaction():
     """
-    Modifies an existing transaction.
-    This demonstrates a 'Patch' style update where only non-empty fields are sent to the API.
+    Modifies a transaction directly by its numeric ID through the authenticated API.
+    Empty input keeps the current value; '-' clears a note or category.
     """
     print_header("Edit Existing Transaction")
     try:
-        pb_id = int(input("Enter PiggyBank ID to view history: "))
-        txs = api_get(f"/piggy-banks/{pb_id}/transactions")
-        
-        if not txs or not isinstance(txs, list):
-            print("No history found for this bank.")
-            return
-            
-        print("------------------------")
-        print("Recent History (Last 10)")
-        print("------------------------")
-        for tx in txs[:10]:
-            print(f"ID [{tx['id']}] {tx['date'][:10]} | {tx['type']} | {tx['amount']} | {tx['description']}")
-
         tx_id = int(input("Enter Transaction ID to Edit: "))
-        
-        # Locate the local object to show current values during prompt
-        target_tx = next((t for t in txs if t['id'] == tx_id), None)
-        if not target_tx:
-            print("Transaction ID not found in current list.")
+        target_tx = api_get(f"/transactions/{tx_id}")
+        if not isinstance(target_tx, dict) or "id" not in target_tx:
+            print("Transaction not found or not owned by this user:", target_tx)
             return
-            
+
+        is_piggybank_transfer = target_tx["type"] == "transfer"
+        if is_piggybank_transfer and target_tx["transaction_id"] == f"entry:{tx_id}":
+            print("This historical transfer needs repair before it can be edited.")
+            return
+        description = target_tx.get("description") or ""
+        if is_piggybank_transfer:
+            description = description.partition(": ")[2]
         print(f"\nEditing ID {tx_id}. [Press Enter to keep the current value]")
-        amt_in = input(f"New Amount ({target_tx['amount']}): ")
-        type_in = input(f"New Type ({target_tx['type']}): ")
-        desc_in = input(f"New Description ({target_tx['description']}): ")
-        cat_in  = input(f"New Category ({target_tx['category'] or 'None'}): ")
-        
-        # Build the payload dynamically (partial update)
+        amt_in = input(f"New signed amount ({target_tx['amount']}): ").strip()
+        type_in = "" if is_piggybank_transfer else input(f"New Type ({target_tx['type']}): ").strip()
+        desc_in = input(f"New note ({description or 'None'}; '-' clears): ")
+        cat_in = "" if is_piggybank_transfer else input(f"New Category ({target_tx['category'] or 'None'}; '-' clears): ")
+        date_in = input(f"New date YYYY-MM-DD ({target_tx['date'][:10]}): ").strip()
+
         payload = {}
-        if amt_in: payload['amount'] = float(amt_in)
+        if amt_in:
+            amount = float(amt_in)
+            if not math.isfinite(amount):
+                raise ValueError("Amount must be finite")
+            payload['amount'] = amount
         if type_in: payload['type'] = type_in
-        if desc_in: payload['description'] = desc_in
-        if cat_in:  payload['category'] = cat_in
-        
+        if desc_in:
+            payload['description'] = ("" if is_piggybank_transfer else None) if desc_in == "-" else desc_in
+        if cat_in: payload['category'] = None if cat_in == "-" else cat_in
+        if date_in: payload['date'] = date.fromisoformat(date_in).isoformat() + "T00:00:00"
+
         if not payload:
             print("No changes detected. Operation cancelled.")
             return
-            
+
         res = api_put(f"/transactions/{tx_id}", json_data=payload)
         if "id" in res:
             print("✅ Update successful!")
         else:
             print("❌ Update failed:", res)
-            
+
     except ValueError:
-        print("Input Error: Invalid data format.")
+        print("Input Error: Enter a valid numeric ID, signed amount, and ISO date.")
 
 
 # ----------------------------------------
