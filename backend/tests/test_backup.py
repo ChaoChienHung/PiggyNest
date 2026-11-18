@@ -132,3 +132,36 @@ def test_external_transfer_backup_round_trip(client):
     entries = client.get(f"/api/v1/piggy-banks/{imported_bank}/transactions", headers=target).json()
     assert len(entries) == 1 and entries[0]["type"] == "transfer_out"
     assert entries[0]["transaction_id"] == f"entry:{entries[0]['id']}"
+
+
+def test_cross_currency_transfer_backup_round_trip_and_bank_transfer(client):
+    source = headers_for(client, 'cross_backup_source')
+    target = headers_for(client, 'cross_backup_target')
+    sgd = client.post('/api/v1/piggy-banks', headers=source,
+                      json={'name': 'Singapore', 'currency': 'SGD'}).json()['id']
+    ntd = client.post('/api/v1/piggy-banks', headers=source,
+                      json={'name': 'Taiwan', 'currency': 'NTD'}).json()['id']
+    transfer = client.post('/api/v1/transfers', headers=source, json={
+        'source_piggy_bank_id': sgd, 'target_piggy_bank_id': ntd,
+        'amount': 10, 'received_amount': 235, 'date': '2025-02-04T00:00:00',
+    })
+    assert transfer.status_code == 200, transfer.text
+    bank_transfer = client.post(f'/api/v1/piggy-banks/{sgd}/transactions', headers=source, json={
+        'type': 'transfer_out', 'amount': -3, 'description': 'Outside account',
+    })
+    assert bank_transfer.status_code == 200
+    exported = client.get('/api/v1/backup/export', headers=source)
+    assert exported.status_code == 200
+    imported = upload(client, target, exported.content)
+    assert imported.status_code == 200, imported.text
+    banks = {bank['name']: bank['id'] for bank in client.get('/api/v1/piggy-banks', headers=target).json()}
+    debit = client.get(f"/api/v1/piggy-banks/{banks['Singapore']}/transactions", headers=target).json()
+    credit = client.get(f"/api/v1/piggy-banks/{banks['Taiwan']}/transactions", headers=target).json()
+    assert sorted(tx['amount'] for tx in debit) == [-10, -3]
+    assert len(credit) == 1 and credit[0]['amount'] == 235
+    assert next(tx for tx in debit if tx['type'] == 'transfer')['transaction_id'] == credit[0]['transaction_id']
+    assert next(tx for tx in debit if tx['type'] == 'transfer_out')['transaction_id'].startswith('entry:')
+    assert credit[0]['date'].startswith('2025-02-04')
+    assert client.delete(f"/api/v1/piggy-banks/{banks['Taiwan']}", headers=target).status_code == 200
+    remaining = client.get(f"/api/v1/piggy-banks/{banks['Singapore']}/transactions", headers=target).json()
+    assert len(remaining) == 1 and remaining[0]['type'] == 'transfer_out'

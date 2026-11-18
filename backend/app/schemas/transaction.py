@@ -45,12 +45,15 @@ class TransferCreate(BaseModel):
     source_piggy_bank_id: int
     target_piggy_bank_id: int
     amount: float = Field(gt=0, allow_inf_nan=False)
+    received_amount: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
     description: Optional[str] = "Transfer"
+    date: Optional[datetime] = None
 
-    @field_validator("amount")
+    @field_validator("amount", "received_amount")
     @classmethod
     def valid_amount(cls, value):
-        to_minor_units(value)
+        if value is not None:
+            to_minor_units(value)
         return value
 
 class TransactionUpdate(BaseModel):
@@ -58,12 +61,13 @@ class TransactionUpdate(BaseModel):
     Schema for validating incoming data when updating a transaction.
     """
     amount: Optional[float] = Field(default=None, allow_inf_nan=False)
+    counterpart_amount: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
     type: Optional[EntryType] = None
     category: Optional[str] = None
     description: Optional[str] = None
     date: Optional[datetime] = None
 
-    @field_validator("amount")
+    @field_validator("amount", "counterpart_amount")
     @classmethod
     def valid_amount(cls, value):
         if value is not None:

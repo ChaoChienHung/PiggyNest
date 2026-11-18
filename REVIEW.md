@@ -2,6 +2,41 @@
 
 ## Awaiting review
 
+- [ ] Empty transaction descriptions and Qashier merchant labels
+  - **Delivered:** Cleaned all 111 null-like transaction descriptions across the local database through SQLAlchemy. Specific categories supply most labels; IDs 367, 498, and 539 use generic type labels because no merchant or source is recorded. Renamed 3 `Qashier-MUYOO` entries to `Bread` and 20 `Qashier-AGZ Food` entries to `Lunch` or `Dinner` using other same-day meal descriptions; when neither existed, used the owner-approved arbitrary choice.
+  - **Evidence:** Backup and per-ID before/after audit are in ignored `data/backups/piggynest-before-description-cleanup-*.db` and `data/description-cleanup-*.json`. Comparing 2,077 rows before and after found 134 Description changes and no changes to other transaction fields. Backend tests passed (46); the cleanup is idempotent in its test.
+  - **Review focus:** Spot-check the three generic descriptions and the inferred meal labels, especially dates where neither meal was already recorded.
+
+- [ ] PiggyNest browser icon and metadata
+  - **Delivered:** Replaced the Vite favicon with a scalable pig icon in `frontend/public/piggynest.svg`; updated the browser title, description, and theme color in `frontend/index.html`; removed the Vite asset.
+  - **Evidence:** Frontend build and lint passed; the production output contains the new icon and no `vite.svg`.
+  - **Review focus:** Check the browser tab icon at normal and high-density sizes on desktop and mobile.
+
+- [ ] Floating Additional Tools button
+  - **Delivered:** The Dashboard and PiggyBank view share a fixed pig button that reveals a Graph Analysis action on hover, keyboard focus, or tap. The action toggles the existing charts; Escape returns focus to the pig button.
+  - **Evidence:** Frontend build and lint passed. A mobile-sized browser check opened the action by tapping the pig button. The button is removed while an add or edit form is open so it cannot cover form buttons.
+  - **Review focus:** Check placement and opening on desktop and mobile, including touch and keyboard access.
+
+- [ ] Cross-currency PiggyBank transfers with dates
+  - **Delivered:** Same-currency transfers still use one amount; cross-currency transfers require actual sent and received amounts, with an optional shared date and an implied-rate display. Editing either leg can update its own amount and the counterpart amount independently while keeping direction and shared transaction ID. Excel import validates same-currency equality and cross-currency signs; docs and `AGENTS.md` reflect the new rule.
+  - **Evidence:** Backend suite passed (50), including pair creation, editing, account isolation, backup round-trip, bank transfers, and deletion. Frontend build and lint passed. Bob-only desktop/mobile browser checks created an SGD → NTD transfer and edited it on mobile to `-S$12` / `NT$276`, with no horizontal overflow.
+  - **Review focus:** Try the transfer form on both screen sizes, confirm the date and implied rate, then edit from either PiggyBank. The browser check also exposed and fixed profile loading for the README Bob account's `.test` email.
+
+- [ ] Compact Type and Category selects
+  - **Delivered:** The transaction form gives its Type and Category selects an intrinsic width with a two-rem arrow area, and keeps their labels above the controls on desktop and mobile.
+  - **Evidence:** Frontend build and lint passed; Bob-only desktop/mobile form checks found no horizontal overflow and measured compact control widths of 223 and 251 pixels.
+  - **Review focus:** Confirm the arrows sit near the selected text and long category labels remain readable.
+
+- [ ] Shared themed dropdowns
+  - **Delivered:** Added `ThemedSelect` with an in-app listbox, keyboard arrows, Enter, Escape, Home/End, type-ahead, touch-sized options, and a viewport-aware portal. Replaced every frontend `<select>` in Dashboard, Settings, PiggyBank forms and analytics, and Dashboard charts; option labels are plain text.
+  - **Evidence:** Frontend build and lint passed. Bob-only desktop/mobile browser checks exercised keyboard and touch selection, viewport fit, Dashboard currency, and saving/restoring Settings transactions per page; no horizontal overflow was found.
+  - **Review focus:** Check long category lists and all dropdown placements on desktop and mobile.
+
+- [ ] Settings modal from every current page
+  - **Delivered:** Dashboard and PiggyBank view open the same Profile, Display, Backup, and Danger Zone content in a modal; `/settings` opens it directly over Dashboard. Closing by Escape, backdrop, or close button returns focus to the opener and preserves page scroll. Display changes update the page underneath through the shared user context.
+  - **Evidence:** Frontend build and lint passed. Desktop/mobile Bob browser checks covered focus cycling, Escape, direct link, viewport fit, and scroll restoration; changing the date format inside the modal immediately changed the PiggyBank list, then the original format was restored.
+  - **Review focus:** Try Settings and each close method on desktop and mobile, including long modal scrolling.
+
 - [ ] Excel backup controls in Account Settings
   - **Delivered:** Replaced the exposed native file picker with matching Export Excel and Import Excel buttons in `frontend/src/pages/Settings.tsx` and `frontend/src/index.css`.
   - **Evidence:** `npm run build` and `npm run lint` passed; desktop and mobile screenshots showed no overflow, and the Import Excel button opened the file chooser in an isolated browser check.

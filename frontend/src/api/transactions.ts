@@ -3,6 +3,7 @@ import type { Transaction } from '../types';
 
 export interface TransactionChanges {
     amount?: number;
+    counterpart_amount?: number;
     type?: string;
     description?: string | null;
     category?: string | null;
@@ -33,13 +34,19 @@ export const transactionsApi = {
     /**
      * Instructs the backend to execute an inter-PiggyBank fund transfer.
      */
-    transfer: async (sourceId: number, targetId: number, amount: number, description: string) => {
+    transfer: async (sourceId: number, targetId: number, amount: number, description: string, receivedAmount?: number, date?: string) => {
         const { data } = await apiClient.post('/transfers', {
             source_piggy_bank_id: sourceId,
             target_piggy_bank_id: targetId,
             amount,
+            received_amount: receivedAmount,
             description,
+            date,
         });
+        return data;
+    },
+    getTransfer: async (transactionId: string): Promise<{ debit: Transaction; credit: Transaction }> => {
+        const { data } = await apiClient.get(`/transfers/${transactionId}`);
         return data;
     },
     /**

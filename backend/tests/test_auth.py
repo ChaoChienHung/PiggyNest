@@ -104,3 +104,21 @@ def test_date_format_setting_is_per_user_and_keeps_stored_dates(client):
     # The setting only changes how clients present dates; stored values stay ISO.
     stored = client.get(f"/api/v1/transactions/{tx['id']}", headers=first).json()
     assert stored["date"].startswith("2026-03-04")
+
+
+def test_existing_test_domain_account_can_load_profile(client, db):
+    from app.core.security import get_password_hash
+    from app.models.user import User
+
+    db.add(User(username="local_bob", email="local_bob@piggynest.test",
+                hashed_password=get_password_hash("password")))
+    db.commit()
+    login = client.post("/api/v1/auth/login", data={
+        "username": "local_bob@piggynest.test", "password": "password",
+    })
+    assert login.status_code == 200
+    profile = client.post("/api/v1/auth/test-token", headers={
+        "Authorization": f"Bearer {login.json()['access_token']}"
+    })
+    assert profile.status_code == 200, profile.text
+    assert profile.json()["email"] == "local_bob@piggynest.test"

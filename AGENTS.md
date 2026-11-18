@@ -11,7 +11,7 @@
 ## Non-regression rules
 
 - Scope every bank, transaction, category, and backup operation to the authenticated user.
-- A PiggyBank transfer creates two signed transactions atomically with one shared `transaction_id`; deleting either transaction or either PiggyBank removes both sides. Require matching currencies until conversion is implemented.
+- A PiggyBank transfer creates two signed transactions atomically with one shared `transaction_id`; deleting either transaction or either PiggyBank removes both sides. Cross-currency transfers require separately entered sent and received amounts; same-currency transfers keep equal and opposite amounts.
 - A bank transfer (`transfer_out` or `transfer_in`) is one signed transaction with its own `entry:<id>` logical transaction ID. Do not infer that every unpaired historical transfer is broken; classify it with `backend/repair_transfer_ids.py` after review.
 - Exclude PiggyBank transfers from income and spending totals. Keep bank transfer direction consistent with its signed amount.
 - Keep the desktop and mobile transaction flows usable. Shared visual tokens live in `frontend/src/index.css`.

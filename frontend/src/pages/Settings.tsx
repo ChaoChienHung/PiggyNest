@@ -1,12 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { authApi } from '../api/auth';
-import { ArrowLeft, User, AlertTriangle, Download, Upload, LayoutList } from 'lucide-react';
+import { User, AlertTriangle, Download, Upload, LayoutList } from 'lucide-react';
 import { backupApi } from '../api/backup';
 import { getApiError } from '../api/client';
 import type { User as UserProfile } from '../types';
 import { DATE_FORMATS, asDateFormat, formatDate, todayIsoDate } from '../utils/dates';
+import { ThemedSelect } from '../components/ThemedSelect';
 
 export const Settings = () => {
     const { user, logout, updateUser } = useAuth();
@@ -102,13 +102,9 @@ export const Settings = () => {
     };
 
     return (
-        <div className="container page-layout-container animate-fade-in max-w-2xl">
-            <Link to="/" className="back-to-dashboard-link">
-                <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
-            </Link>
-
+        <div className="settings-content animate-fade-in">
             <header className="mb-10">
-                <h1 className="text-3xl font-bold">Account Settings</h1>
+                <h1 id="settings-dialog-title" className="text-3xl font-bold">Account Settings</h1>
                 <p className="text-muted mt-1">Manage your profile and account preferences</p>
             </header>
 
@@ -166,32 +162,30 @@ export const Settings = () => {
                 <div className="settings-fields">
                     <div className="settings-field">
                         <label htmlFor="transactions-per-page" className="text-sm font-medium text-text-secondary">Transactions per page</label>
-                        <select
+                        <ThemedSelect
                             id="transactions-per-page"
-                            className="input-field settings-select"
-                            value={user?.transactions_per_page ?? 20}
-                            onChange={(e) => saveDisplay(() => authApi.updateTransactionsPerPage(Number(e.target.value)))}
+                            className="settings-select"
+                            value={String(user?.transactions_per_page ?? 20)}
+                            onChange={(value) => saveDisplay(() => authApi.updateTransactionsPerPage(Number(value)))}
                             disabled={isSavingDisplay}
-                        >
-                            <option value={10}>10</option>
-                            <option value={20}>20</option>
-                            <option value={50}>50</option>
-                            <option value={0}>All</option>
-                        </select>
+                            options={[
+                                { value: '10', label: '10' },
+                                { value: '20', label: '20' },
+                                { value: '50', label: '50' },
+                                { value: '0', label: 'All' },
+                            ]}
+                        />
                     </div>
                     <div className="settings-field">
                         <label htmlFor="date-format" className="text-sm font-medium text-text-secondary">Date format</label>
-                        <select
+                        <ThemedSelect
                             id="date-format"
-                            className="input-field settings-select"
+                            className="settings-select"
                             value={asDateFormat(user?.date_format)}
-                            onChange={(e) => saveDisplay(() => authApi.updateDateFormat(e.target.value))}
+                            onChange={(value) => saveDisplay(() => authApi.updateDateFormat(value))}
                             disabled={isSavingDisplay}
-                        >
-                            {DATE_FORMATS.map((format) => (
-                                <option key={format} value={format}>{format}</option>
-                            ))}
-                        </select>
+                            options={DATE_FORMATS.map(format => ({ value: format, label: format }))}
+                        />
                         <p className="text-xs text-muted">
                             Example: {formatDate(todayIsoDate(), asDateFormat(user?.date_format))}. Dates are typed in this format too.
                         </p>

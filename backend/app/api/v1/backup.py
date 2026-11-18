@@ -202,10 +202,12 @@ def _parse(workbook):
             groups[group].append(record)
     for group, pair in groups.items():
         if (len(pair) != 2 or pair[0][0] == pair[1][0]
-                or abs(sum(item[1] for item in pair)) > 1e-8
                 or not any(item[1] < 0 for item in pair)
                 or not any(item[1] > 0 for item in pair)):
-            _fail(f"Transfer group {group} must have matching debit and credit rows in different banks")
+            _fail(f"Transfer group {group} must have debit and credit rows in different banks")
+        same_currency = banks[pair[0][0]][1] == banks[pair[1][0]][1]
+        if same_currency and sum(to_minor_units(item[1]) for item in pair) != 0:
+            _fail(f"Transfer group {group} must have equal amounts in the same currency")
     categories = set()
     seen_names = set()
     if "Categories" in workbook:

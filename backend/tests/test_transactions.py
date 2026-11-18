@@ -166,6 +166,73 @@ def test_transfer_cannot_be_created_as_single_entry_or_across_currencies(client,
     assert client.get(f"/api/v1/piggy-banks/{piggy_bank_id}/transactions", headers=auth_headers).json() == []
 
 
+def test_cross_currency_transfer_has_two_owned_legs_and_independent_amounts(client, auth_headers, piggy_bank_id):
+    target = client.post('/api/v1/piggy-banks', headers=auth_headers,
+                         json={'name': 'Taiwan', 'currency': 'NTD'}).json()['id']
+    payload = {
+        'source_piggy_bank_id': piggy_bank_id, 'target_piggy_bank_id': target,
+        'amount': 10, 'received_amount': 235, 'date': '2025-04-03T00:00:00',
+        'description': 'Recorded bank exchange',
+    }
+    created = client.post('/api/v1/transfers', headers=auth_headers, json=payload)
+    assert created.status_code == 200, created.text
+    group = created.json()['transaction_id']
+    pair = client.get(f'/api/v1/transfers/{group}', headers=auth_headers)
+    assert pair.status_code == 200, pair.text
+    debit, credit = pair.json()['debit'], pair.json()['credit']
+    assert (debit['amount'], credit['amount']) == (-10, 235)
+    assert debit['transaction_id'] == credit['transaction_id'] == group
+    assert debit['date'] == credit['date'] and debit['date'].startswith('2025-04-03')
+    assert client.get(f'/api/v1/piggy-banks/{piggy_bank_id}/balance', headers=auth_headers).json()['balance'] == -10
+    assert client.get(f'/api/v1/piggy-banks/{target}/balance', headers=auth_headers).json()['balance'] == 235
+    stats = client.get('/api/v1/statistics/', headers=auth_headers).json()
+    assert all(row['income'] == 0 and row['expense'] == 0 for row in stats)
+
+    updated = client.put(f"/api/v1/transactions/{debit['id']}", headers=auth_headers, json={
+        'amount': -12, 'counterpart_amount': 276, 'date': '2025-04-04T00:00:00',
+    })
+    assert updated.status_code == 200, updated.text
+    pair = client.get(f'/api/v1/transfers/{group}', headers=auth_headers).json()
+    assert (pair['debit']['amount'], pair['credit']['amount']) == (-12, 276)
+    assert pair['debit']['date'] == pair['credit']['date'] and pair['debit']['date'].startswith('2025-04-04')
+    assert client.put(f"/api/v1/transactions/{credit['id']}", headers=auth_headers,
+                      json={'amount': 280}).status_code == 200
+    pair = client.get(f'/api/v1/transfers/{group}', headers=auth_headers).json()
+    assert (pair['debit']['amount'], pair['credit']['amount']) == (-12, 280)
+    assert client.put(f"/api/v1/transactions/{credit['id']}", headers=auth_headers,
+                      json={'amount': -280}).status_code == 400
+    assert client.delete(f"/api/v1/transactions/{credit['id']}", headers=auth_headers).status_code == 200
+    assert client.get(f'/api/v1/transfers/{group}', headers=auth_headers).status_code == 404
+
+
+def test_transfer_amount_validation_and_account_scope(client, auth_headers, piggy_bank_id):
+    same = client.post('/api/v1/piggy-banks', headers=auth_headers,
+                       json={'name': 'Same', 'currency': 'USD'}).json()['id']
+    other = client.post('/api/v1/piggy-banks', headers=auth_headers,
+                        json={'name': 'Different', 'currency': 'NTD'}).json()['id']
+    base = {'source_piggy_bank_id': piggy_bank_id, 'target_piggy_bank_id': same, 'amount': 5}
+    assert client.post('/api/v1/transfers', headers=auth_headers,
+                       json={**base, 'received_amount': 5}).status_code == 400
+    base['target_piggy_bank_id'] = other
+    for received in (None, 0, -1, 0.001):
+        assert client.post('/api/v1/transfers', headers=auth_headers,
+                           json={**base, 'received_amount': received}).status_code in (400, 422)
+    created = client.post('/api/v1/transfers', headers=auth_headers,
+                          json={**base, 'received_amount': 115}).json()
+    outsider = client.post('/api/v1/auth/register', json={
+        'username': 'transfer_outsider', 'email': 'transfer_outsider@example.com', 'password': 'password',
+    })
+    assert outsider.status_code == 200
+    login = client.post('/api/v1/auth/login', data={
+        'username': 'transfer_outsider@example.com', 'password': 'password',
+    }).json()
+    outsider_headers = {'Authorization': f"Bearer {login['access_token']}"}
+    assert client.get(f"/api/v1/transfers/{created['transaction_id']}", headers=outsider_headers).status_code == 404
+    assert client.put(f"/api/v1/transactions/{created['entry_ids'][0]}", headers=outsider_headers,
+                      json={'amount': -99}).status_code == 404
+    assert client.delete(f"/api/v1/transactions/{created['entry_ids'][0]}", headers=outsider_headers).status_code == 404
+
+
 def test_transfer_not_counted_as_spending(client, auth_headers, piggy_bank_id):
     target = client.post("/api/v1/piggy-banks", headers=auth_headers, json={"name": "Target"}).json()["id"]
     client.post("/api/v1/transfers", headers=auth_headers, json={

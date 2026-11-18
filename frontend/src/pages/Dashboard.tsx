@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { piggybanksApi } from '../api/piggybanks';
 import type { PiggyBank, Balance } from '../types';
-import { Plus, Wallet, LogOut, ArrowRight, Settings, TrendingUp } from 'lucide-react';
+import { Plus, Wallet, LogOut, ArrowRight, Settings } from 'lucide-react';
 import { StatisticsCharts } from '../components/StatisticsCharts';
+import { FloatingTools } from '../components/FloatingTools';
+import { ThemedSelect } from '../components/ThemedSelect';
+import { SettingsDialog } from '../components/SettingsDialog';
 import { ConfirmModal, type ModalVariant } from '../components/ConfirmModal';
 import { formatMoney } from '../utils/money';
 
@@ -25,6 +28,8 @@ export const Dashboard = () => {
     const [newName, setNewName] = useState('');
     const [newCurrency, setNewCurrency] = useState('USD');
     const [showAnalytics, setShowAnalytics] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const settingsButtonRef = React.useRef<HTMLButtonElement>(null);
 
     // Modal state
     const [modalOpen, setModalOpen] = useState(false);
@@ -118,9 +123,9 @@ export const Dashboard = () => {
                     <p className="welcome-subtext">Welcome back, {user?.username || user?.email}</p>
                 </div>
                 <div className="flex gap-3">
-                    <Link to="/settings" className="btn btn-secondary dashboard-nav-btn">
+                    <button ref={settingsButtonRef} type="button" onClick={() => setSettingsOpen(true)} className="btn btn-secondary dashboard-nav-btn">
                         <Settings size={18} /> Settings
-                    </Link>
+                    </button>
                     <button onClick={logout} className="btn btn-secondary dashboard-nav-btn">
                         <LogOut size={18} /> Logout
                     </button>
@@ -150,26 +155,6 @@ export const Dashboard = () => {
             <div className="flex justify-between items-center mb-6">
                 <h3 className="dashboard-section-title">Piggy Banks</h3>
                 <div className="flex items-center gap-3">
-                    {/* Inline Pig Trigger next to New PiggyBank */}
-                    <div className="inline-fab-container">
-                        {/* Option: Toggle Analytics (Gold Coin with Chart Icon) */}
-                        <div className="inline-fab-options">
-                            <div 
-                                onClick={() => setShowAnalytics(!showAnalytics)} 
-                                className="inline-fab-coin"
-                            >
-                                <TrendingUp size={20} />
-                                <span className="inline-fab-tooltip">
-                                    {showAnalytics ? "Hide Analytics" : "Show Analytics"}
-                                </span>
-                            </div>
-                        </div>
-                        {/* Main Trigger (Circle with Piggy inside) */}
-                        <div className="inline-fab-trigger" title="Piggy Options">
-                            🐷
-                        </div>
-                    </div>
-
                     <button
                         onClick={() => setShowCreate(!showCreate)}
                         className="btn btn-primary"
@@ -195,19 +180,13 @@ export const Dashboard = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-text-secondary mb-1">Currency</label>
-                            <select
-                                className="input-field w-24"
+                            <ThemedSelect
+                                ariaLabel="Currency"
+                                className="w-24"
                                 value={newCurrency}
-                                onChange={(e) => setNewCurrency(e.target.value)}
-                                style={{ paddingRight: '1.5rem' }}
-                            >
-                                <option value="USD">USD ($)</option>
-                                <option value="EUR">EUR (€)</option>
-                                <option value="GBP">GBP (£)</option>
-                                <option value="JPY">JPY (¥)</option>
-                                <option value="NTD">NTD (NT$)</option>
-                                <option value="SGD">SGD (S$)</option>
-                            </select>
+                                onChange={setNewCurrency}
+                                options={['USD', 'EUR', 'GBP', 'JPY', 'NTD', 'SGD'].map(currency => ({ value: currency, label: currency }))}
+                            />
                         </div>
                     </div>
                     <button type="submit" className="btn btn-primary">Create</button>
@@ -294,6 +273,10 @@ export const Dashboard = () => {
                     </div>
                 )
             )}
+
+            {!showCreate && <FloatingTools showAnalytics={showAnalytics} setShowAnalytics={setShowAnalytics} />}
+
+            {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} opener={settingsButtonRef.current} />}
 
             <ConfirmModal
                 isOpen={modalOpen}

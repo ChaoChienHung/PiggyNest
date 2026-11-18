@@ -34,12 +34,15 @@ def transfer_funds(
 
     if not source_pb or not target_pb:
         raise HTTPException(status_code=404, detail="One or both piggy banks not found or not owned by user")
-    if source_pb.currency != target_pb.currency:
-        raise HTTPException(status_code=400, detail="Transfers require matching currencies")
+    cross_currency = source_pb.currency != target_pb.currency
+    if cross_currency and payload.received_amount is None:
+        raise HTTPException(status_code=400, detail="Received amount is required for different currencies")
+    if not cross_currency and payload.received_amount is not None:
+        raise HTTPException(status_code=400, detail="Received amount is only for different currencies")
 
     # Perform atomic transfer
     try:
-        now = datetime.utcnow()
+        transfer_date = payload.date or datetime.utcnow()
         transfer_group_id = str(uuid4())
         # Debit source
         debit_tx = Transaction(
@@ -48,17 +51,17 @@ def transfer_funds(
             type="transfer",
             category="Transfer Out",
             description=f"Transfer to {target_pb.name}: {payload.description}",
-            date=now,
+            date=transfer_date,
             transfer_group_id=transfer_group_id,
         )
         # Credit target
         credit_tx = Transaction(
             piggy_bank_id=target_pb.id,
-            amount=payload.amount,
+            amount=payload.received_amount if cross_currency else payload.amount,
             type="transfer",
             category="Transfer In",
             description=f"Transfer from {source_pb.name}: {payload.description}",
-            date=now,
+            date=transfer_date,
             transfer_group_id=transfer_group_id,
         )
 
@@ -75,3 +78,23 @@ def transfer_funds(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Transfer failed: {str(e)}")
+
+
+@router.get("/{transfer_group_id}")
+def get_transfer(
+    transfer_group_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return both legs of one owned PiggyBank transfer for editing."""
+    pair = db.query(Transaction).join(PiggyBank).filter(
+        Transaction.transfer_group_id == transfer_group_id,
+        PiggyBank.user_id == current_user.id,
+    ).all()
+    if not pair:
+        raise HTTPException(status_code=404, detail="Transfer not found")
+    debit = next((leg for leg in pair if leg.amount_minor < 0), None)
+    credit = next((leg for leg in pair if leg.amount_minor > 0), None)
+    if len(pair) != 2 or debit is None or credit is None:
+        raise HTTPException(status_code=409, detail="PiggyBank transfer entries are inconsistent")
+    return {"debit": TransactionRead.model_validate(debit), "credit": TransactionRead.model_validate(credit)}

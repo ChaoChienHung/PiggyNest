@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -7,7 +7,12 @@ import { Register } from './pages/Register';
 import { AccountRecovery } from './pages/AccountRecovery';
 import { Dashboard } from './pages/Dashboard';
 import { PiggyBankView } from './pages/PiggyBankView';
-import { Settings } from './pages/Settings';
+import { SettingsDialog } from './components/SettingsDialog';
+
+const SettingsRoute = () => {
+  const navigate = useNavigate();
+  return <><Dashboard /><SettingsDialog onClose={() => navigate('/')} /></>;
+};
 
 function App() {
   return (
@@ -24,7 +29,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/piggybanks/:id" element={<PiggyBankView />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/settings" element={<SettingsRoute />} />
           </Route>
 
           {/* Fallback */}

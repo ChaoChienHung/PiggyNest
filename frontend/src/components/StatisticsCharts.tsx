@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { statisticsApi, type StatRecord } from '../api/statistics';
+import { ThemedSelect } from './ThemedSelect';
 
 interface StatisticsChartsProps {
     showAnalytics?: boolean;
@@ -74,25 +75,22 @@ export const StatisticsCharts: React.FC<StatisticsChartsProps> = ({
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold">Financial Analytics</h2>
                 <div className="flex gap-4 items-center">
-                    <select
-                        className="input-field py-1 px-3 text-sm h-auto"
+                    <ThemedSelect
+                        ariaLabel="Timeframe"
+                        className="analytics-select"
                         value={timeframe}
-                        onChange={(e) => setTimeframe(e.target.value as 'monthly' | 'yearly')}
-                    >
-                        <option value="monthly">Monthly</option>
-                        <option value="yearly">Yearly</option>
-                    </select>
+                        onChange={(value) => setTimeframe(value as 'monthly' | 'yearly')}
+                        options={[{ value: 'monthly', label: 'Monthly' }, { value: 'yearly', label: 'Yearly' }]}
+                    />
 
                     {availableCurrencies.length > 1 && (
-                        <select
-                            className="input-field py-1 px-3 text-sm h-auto"
+                        <ThemedSelect
+                            ariaLabel="Currency"
+                            className="analytics-select"
                             value={currency}
-                            onChange={(e) => setCurrency(e.target.value)}
-                        >
-                            {availableCurrencies.map(c => (
-                                <option key={c} value={c}>{c}</option>
-                            ))}
-                        </select>
+                            onChange={setCurrency}
+                            options={availableCurrencies.map(c => ({ value: c, label: c }))}
+                        />
                     )}
 
                     <button

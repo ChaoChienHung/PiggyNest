@@ -842,8 +842,7 @@ table tr:last-child td:last-child {
   right: 0.5rem;
 }
 
-/* On smaller screens where the container stretches to the viewport edge, 
-   bring the left arrow inside and shift the right arrow to the left of the piglet FAB */
+/* On smaller screens, keep the carousel controls inside the viewport. */
 @media (max-width: 1280px) {
   .carousel-arrow.left {
     left: 0.5rem;
@@ -853,123 +852,262 @@ table tr:last-child td:last-child {
   }
 }
 
-/* Inline Pig Options Menu 🐷 Horizontal left spit coin next to New PiggyBank button */
-.inline-fab-container {
+.floating-tools {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 100;
   display: flex;
-  align-items: center;
-  position: relative;
-  height: 44px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.65rem;
+  pointer-events: none;
 }
 
-/* Capture bridge to keep hover state active when mouse travels to the left to click on the gold coin */
-.inline-fab-container::before {
-  content: "";
-  position: absolute;
-  top: -15px;
-  bottom: -15px;
-  right: 0;
-  left: -80px; /* Covers the area to the left where the coin spits out */
-  z-index: 0;
-  pointer-events: none; /* Ignore pointer events by default */
-  background: transparent;
-}
-
-.inline-fab-container:hover::before {
-  pointer-events: auto; /* Capture pointer events while hovered so the bridge is active! */
-}
-
-.inline-fab-trigger {
-  width: 44px;
-  height: 44px;
+.floating-tools-trigger {
+  width: 56px;
+  height: 56px;
+  border: 2px solid var(--accent-light);
   border-radius: 50%;
   background: var(--accent-primary);
-  border: 2px solid var(--accent-light);
-  box-shadow: 0 4px 12px rgba(255, 141, 161, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  box-shadow: 0 6px 18px rgba(255, 141, 161, 0.35);
+  font-size: 1.7rem;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  font-size: 1.4rem;
-  z-index: 2;
-}
-
-.inline-fab-container:hover .inline-fab-trigger {
-  transform: scale(1.15) rotate(15deg);
-  background: var(--accent-hover);
-  box-shadow: 0 6px 16px rgba(255, 141, 161, 0.4);
-}
-
-.inline-fab-options {
-  display: flex;
-  align-items: center;
-  position: absolute;
-  right: 58px; /* Positioned to the left of the trigger with an elegant gap */
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(20px) scale(0.8);
-  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  z-index: 1;
-}
-
-/* Reveal single gold coin option horizontally to the left on hover */
-.inline-fab-container:hover .inline-fab-options {
-  opacity: 1;
   pointer-events: auto;
-  transform: translateX(0) scale(1);
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.inline-fab-coin {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--coin-gold);
-  border: 2px solid #ffb703;
-  box-shadow: 0 4px 10px rgba(255, 183, 3, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #4a3e4b;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  position: relative;
+.floating-tools-trigger:hover,
+.floating-tools-trigger:focus-visible {
+  background: var(--accent-hover);
+  transform: scale(1.08);
 }
 
-.inline-fab-coin:hover {
-  background: var(--coin-gold-hover);
-  transform: scale(1.15) translateY(-1px);
-  box-shadow: 0 6px 14px rgba(255, 183, 3, 0.5);
-}
-
-.inline-fab-coin:active {
-  transform: scale(0.95);
-}
-
-/* Tooltip for the coin option, positioned above the coin */
-.inline-fab-tooltip {
-  position: absolute;
-  bottom: 46px; /* Floating above */
-  left: 50%;
-  transform: translateX(-50%) translateY(5px);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1.5px solid var(--glass-border);
-  padding: 0.3rem 0.6rem;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  box-shadow: 0 4px 12px rgba(255, 141, 161, 0.1);
+.floating-tools-actions {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: all 0.25s ease;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+}
+
+.floating-tools:hover .floating-tools-actions,
+.floating-tools:focus-within .floating-tools-actions,
+.floating-tools.is-open .floating-tools-actions {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.floating-tools-action {
+  min-height: 44px;
+  padding: 0.6rem 1rem;
+  border: 2px solid var(--coin-gold-hover);
+  border-radius: 999px;
+  background: var(--coin-gold);
+  color: var(--text-primary);
+  box-shadow: 0 6px 18px rgba(255, 183, 3, 0.25);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.floating-tools-action:hover,
+.floating-tools-action:focus-visible {
+  background: var(--coin-gold-hover);
+}
+
+.transaction-compact-select {
+  width: fit-content;
+  min-width: 10rem;
+  max-width: 100%;
+  padding-right: 2rem;
+}
+
+.transaction-form label {
+  display: block;
+}
+
+.themed-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.7rem 1rem;
+  border: 2px solid rgba(255, 141, 161, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.themed-select:focus-visible {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.themed-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.themed-select-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.inline-fab-coin:hover .inline-fab-tooltip {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+.themed-select svg {
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.themed-select-menu {
+  position: fixed;
+  z-index: 10010;
+  overflow-y: auto;
+  padding: 0.35rem;
+  border: 2px solid var(--glass-border);
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  box-shadow: 0 12px 30px rgba(74, 62, 75, 0.16);
+}
+
+.themed-select-option {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.themed-select-option.is-active,
+.themed-select-option:hover {
+  background: var(--accent-light);
+}
+
+.themed-select-option[aria-selected="true"] {
+  color: var(--accent-hover);
+  font-weight: 700;
+}
+
+.themed-select-option.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.themed-select.transaction-compact-select {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.themed-select.analytics-select {
+  width: auto;
+  min-height: 40px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.9rem;
+}
+
+.themed-select.w-24 {
+  width: 6rem;
+  padding-left: 0.6rem;
+  padding-right: 0.4rem;
+  gap: 0.2rem;
+}
+
+.piggybank-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2.25rem;
+}
+
+.piggybank-page-header .back-to-dashboard-link {
+  margin-bottom: 0 !important;
+}
+
+.settings-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(74, 62, 75, 0.45);
+}
+
+.settings-dialog-panel {
+  width: min(100%, 760px);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border: 2px solid var(--glass-border);
+  border-radius: 24px;
+  background: var(--bg-primary);
+  box-shadow: 0 24px 60px rgba(74, 62, 75, 0.22);
+}
+
+.settings-dialog-close {
+  position: sticky;
+  top: 0.25rem;
+  z-index: 1;
+  float: right;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--glass-border);
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.settings-dialog-close:focus-visible {
+  outline: 3px solid var(--accent-primary);
+}
+
+.settings-content header {
+  padding-right: 3rem;
+}
+
+@media (max-width: 600px) {
+  .settings-dialog-backdrop {
+    padding: 0;
+  }
+
+  .settings-dialog-panel {
+    width: 100%;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    border-radius: 0;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .transaction-section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .transaction-section-header > div {
+    justify-content: flex-end;
+  }
 }
 
 /* Balance Card Styles in PiggyBankView */

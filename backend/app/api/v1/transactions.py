@@ -161,16 +161,26 @@ def update_transaction(
         credit = next((leg for leg in pair if leg.amount > 0), None)
         if (len(pair) != 2 or debit is None or credit is None
                 or debit.type != "transfer" or credit.type != "transfer"
-                or debit.piggy_bank_id == credit.piggy_bank_id
-                or abs(debit.amount + credit.amount) > 1e-8):
+                or debit.piggy_bank_id == credit.piggy_bank_id):
+            raise HTTPException(status_code=409, detail="PiggyBank transfer entries are inconsistent")
+        same_currency = debit.piggy_bank.currency == credit.piggy_bank.currency
+        if same_currency and debit.amount_minor + credit.amount_minor != 0:
             raise HTTPException(status_code=409, detail="PiggyBank transfer entries are inconsistent")
         if payload.type is not None or "category" in payload.model_fields_set:
             raise HTTPException(status_code=400, detail="PiggyBank transfer type and directional categories cannot be changed")
+        if same_currency and payload.counterpart_amount is not None:
+            raise HTTPException(status_code=400, detail="Counterpart amount is only for different currencies")
         if payload.amount is not None:
             if payload.amount == 0 or (payload.amount > 0) != (transaction.amount > 0):
                 raise HTTPException(status_code=400, detail="Amount must keep this transfer entry's direction")
-            debit.amount = -abs(payload.amount)
-            credit.amount = abs(payload.amount)
+            if same_currency:
+                debit.amount = -abs(payload.amount)
+                credit.amount = abs(payload.amount)
+            else:
+                transaction.amount = payload.amount
+        if payload.counterpart_amount is not None:
+            counterpart = credit if transaction.id == debit.id else debit
+            counterpart.amount = payload.counterpart_amount if counterpart.id == credit.id else -payload.counterpart_amount
         if "description" in payload.model_fields_set:
             note = payload.description or ""
             debit.description = f"Transfer to {credit.piggy_bank.name}: {note}"
@@ -183,6 +193,8 @@ def update_transaction(
         return transaction
     if transaction.type == "transfer":
         raise HTTPException(status_code=409, detail="Repair this historical transfer before editing")
+    if payload.counterpart_amount is not None:
+        raise HTTPException(status_code=400, detail="Only PiggyBank transfers have a counterpart amount")
     updated_type = payload.type or transaction.type
     updated_amount = payload.amount if payload.amount is not None else transaction.amount
     if ((updated_type == "transfer_out" and updated_amount >= 0)

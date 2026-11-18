@@ -13,8 +13,12 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: int
+    username: str
+    # Existing local accounts may use a reserved test domain; keep strict
+    # EmailStr validation on UserCreate, not when serializing stored data.
+    email: str
     is_active: bool
     transactions_per_page: int = 20
     date_format: str = "YYYY-MM-DD"
