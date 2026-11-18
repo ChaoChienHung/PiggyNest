@@ -9,7 +9,7 @@ import { convertLedger, summarizePeriods } from '../utils/ledgerAnalytics';
 import { fillReportPeriods, metricSummary } from '../utils/reportMath';
 import { formatMoney } from '../utils/money';
 import { ThemedSelect } from '../components/ThemedSelect';
-import { displayCurrencyOptions } from '../utils/currency';
+import { displayCurrencyOptions, rateSummary } from '../utils/currency';
 
 const intervals = [
     { key: 'day', label: 'Daily' }, { key: 'month', label: 'Monthly' }, { key: 'year', label: 'Yearly' },
@@ -53,6 +53,7 @@ export const Reports = () => {
         }
     };
     const amount = (value: number) => hidden ? '****' : formatMoney(value, displayCurrency);
+    const ratesTitle = hidden ? undefined : rateSummary(banks.filter(bank => selected.includes(bank.id)).map(bank => bank.currency), displayCurrency, rates);
     const periodLabel = (key: string, interval: 'day' | 'month' | 'year') => interval === 'day' ? formatDate(key, dateFormat) : key;
 
     return <main className="container page-layout-container animate-fade-in reports-page">
@@ -108,10 +109,10 @@ export const Reports = () => {
                             return <article key={metric.key} className="glass-panel reports-card">
                                 <h3 className="font-semibold">{metric.label}</h3>
                                 <dl>
-                                    <div><dt>Total</dt><dd>{amount(summary.total)}</dd></div>
-                                    <div><dt>Average</dt><dd>{amount(summary.average)} per {interval.key}</dd></div>
-                                    <div><dt>Minimum</dt><dd>{amount(summary.min)} <small>({periodLabel(summary.minPeriod, interval.key)})</small></dd></div>
-                                    <div><dt>Maximum</dt><dd>{amount(summary.max)} <small>({periodLabel(summary.maxPeriod, interval.key)})</small></dd></div>
+                                    <div><dt>Total</dt><dd title={ratesTitle}>{amount(summary.total)}</dd></div>
+                                    <div><dt>Average</dt><dd title={ratesTitle}>{amount(summary.average)} per {interval.key}</dd></div>
+                                    <div><dt>Minimum</dt><dd title={ratesTitle}>{amount(summary.min)} <small>({periodLabel(summary.minPeriod, interval.key)})</small></dd></div>
+                                    <div><dt>Maximum</dt><dd title={ratesTitle}>{amount(summary.max)} <small>({periodLabel(summary.maxPeriod, interval.key)})</small></dd></div>
                                     <div><dt>Transactions</dt><dd>{summary.count}</dd></div>
                                 </dl>
                             </article>;

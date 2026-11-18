@@ -133,6 +133,8 @@ def test_currency_rates_and_display_currency_are_per_user(client):
         return {"Authorization": f"Bearer {token}"}
 
     first, second = login("rate_a"), login("rate_b")
+    assert client.get("/api/v1/auth/me/rates", headers=first).json()[0]["rate_to_ntd"] == 24
+    assert client.get("/api/v1/auth/me/rates", headers=second).json()[0]["rate_to_ntd"] == 24
     profile = client.post("/api/v1/auth/test-token", headers=first).json()
     assert profile["display_currency"] == "NTD"
     assert client.put("/api/v1/auth/me", headers=first, json={"display_currency": "SGD"}).json()["display_currency"] == "SGD"
@@ -148,10 +150,31 @@ def test_currency_rates_and_display_currency_are_per_user(client):
     assert response.json()["rate_to_ntd"] == 23.5012
     assert response.json()["updated_at"]
     assert client.get("/api/v1/auth/me/rates", headers=first).json()[0]["currency"] == "SGD"
-    assert client.get("/api/v1/auth/me/rates", headers=second).json() == []
+    assert client.get("/api/v1/auth/me/rates", headers=second).json()[0]["rate_to_ntd"] == 24
     for bad in (0, -1, "23.12345", "NaN", "Infinity"):
         assert client.put(url, headers=first, json={"rate_to_ntd": bad}).status_code == 422
     assert client.put("/api/v1/auth/me/rates/NTD", headers=first, json={"rate_to_ntd": 1}).status_code == 422
     assert client.put(url, headers=second, json={"rate_to_ntd": 24}).status_code == 200
     assert client.get("/api/v1/auth/me/rates", headers=first).json()[0]["rate_to_ntd"] == 23.5012
     assert client.put("/api/v1/auth/me/rates/AUD", headers=first, json={"rate_to_ntd": 21}).status_code == 200
+
+
+def test_default_rate_backfill_only_adds_missing_rows(client, db):
+    from app.domain.default_rates import add_missing_default_rates
+    from app.models.currency_rate import CurrencyRate
+    from app.models.user import User
+
+    for name in ("legacy_rate_a", "legacy_rate_b"):
+        assert client.post("/api/v1/auth/register", json={
+            "username": name, "email": f"{name}@example.com", "password": "password",
+        }).status_code == 200
+    first = db.query(User).filter(User.username == "legacy_rate_a").one()
+    second = db.query(User).filter(User.username == "legacy_rate_b").one()
+    db.query(CurrencyRate).filter(CurrencyRate.user_id == first.id).delete()
+    db.query(CurrencyRate).filter(CurrencyRate.user_id == second.id).one().rate_to_ntd = 25
+    db.commit()
+
+    assert add_missing_default_rates(db) == 1
+    assert db.query(CurrencyRate).filter(CurrencyRate.user_id == first.id).one().rate_to_ntd == 24
+    assert db.query(CurrencyRate).filter(CurrencyRate.user_id == second.id).one().rate_to_ntd == 25
+    assert add_missing_default_rates(db) == 0

@@ -6,6 +6,7 @@ import { useLedgerEntries } from '../context/useLedgerEntries';
 import { asDateFormat, parseDate } from '../utils/dates';
 import { convertLedger, summarizePeriods } from '../utils/ledgerAnalytics';
 import { formatMoney } from '../utils/money';
+import { rateSummary } from '../utils/currency';
 import { ThemedSelect } from './ThemedSelect';
 import { ExpenseCategoryChart } from './ExpenseCategoryChart';
 
@@ -57,6 +58,7 @@ export const StatisticsCharts = ({ showAnalytics: visible, setShowAnalytics, onO
     const totalIncome = periods.reduce((sum, row) => sum + row.income, 0);
     const totalExpense = periods.reduce((sum, row) => sum + row.expense, 0);
     const flowData = [{ name: 'Income', value: totalIncome }, { name: 'Spending', value: totalExpense }].filter(item => item.value > 0);
+    const ratesTitle = rateSummary(banks.filter(bank => selected.includes(bank.id)).map(bank => bank.currency), displayCurrency, rates);
 
     if (!isVisible) return null;
     if (loading || ratesLoading) return <div className="glass-panel p-6 mb-8 text-muted">Loading analytics…</div>;
@@ -101,7 +103,7 @@ export const StatisticsCharts = ({ showAnalytics: visible, setShowAnalytics, onO
                     <button type="button" className={`btn ${metric === 'balance' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setMetric('balance')}>Balance</button>
                     <button type="button" className={`btn ${metric === 'flow' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setMetric('flow')}>Income and spending</button>
                 </div>
-                <div className="analytics-chart" role="img" aria-label={`${metric === 'balance' ? 'Combined balance' : 'Combined income and spending'} in ${displayCurrency}`}>
+                <div className="analytics-chart" role="img" aria-label={`${metric === 'balance' ? 'Combined balance' : 'Combined income and spending'} in ${displayCurrency}`} title={ratesTitle}>
                     <ResponsiveContainer width="100%" height="100%">
                         {metric === 'balance' ? <AreaChart data={periods} margin={{ top: 20, right: 20, left: 5, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,141,161,.15)" />
@@ -115,9 +117,9 @@ export const StatisticsCharts = ({ showAnalytics: visible, setShowAnalytics, onO
                     </ResponsiveContainer>
                 </div>
                 <div className="analytics-summary">
-                    <p>Ending balance: <strong>{formatMoney(periods[periods.length - 1].balance, displayCurrency)}</strong></p>
-                    <p>Income: <strong>{formatMoney(totalIncome, displayCurrency)}</strong></p>
-                    <p>Spending: <strong>{formatMoney(totalExpense, displayCurrency)}</strong></p>
+                    <p>Ending balance: <strong title={ratesTitle}>{formatMoney(periods[periods.length - 1].balance, displayCurrency)}</strong></p>
+                    <p>Income: <strong title={ratesTitle}>{formatMoney(totalIncome, displayCurrency)}</strong></p>
+                    <p>Spending: <strong title={ratesTitle}>{formatMoney(totalExpense, displayCurrency)}</strong></p>
                 </div>
                 <div className="analytics-pies">
                     {flowData.length > 0 && <div>

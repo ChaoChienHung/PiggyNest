@@ -3,18 +3,17 @@
 ## Snapshot
 
 - Updated: 2026-11-19. Branch: `main`.
-- Implementation commit `4e797ce` contains scalable category charts, PiggyBank transaction sorting/filtering and direct page navigation, fixed-rate conversion groundwork, a combined net-worth card, combined Dashboard analytics, and a Reports view. The first three are in `REVIEW.md`; the currency and report work remains in `TODO.md` until its default rate is chosen and applied. The earlier `1f73547` completed the first seven TODO items and the Ludwig description cleanup, including `Qashier-MUYOO` → `Bread` and `Qashier-AGZ Food` → `Lunch`/`Dinner` by the owner's same-day rule.
-- The local development database `data/piggynest.db` is ignored by Git. Ledger rows were never edited through SQLite files. A 61-row Bob pagination check cleaned all temporary transactions and restored Bob's 20-row page size. The later browser checks used isolated fixtures without database writes.
+- All agent-ready tasks from the current `TODO.md` have been implemented and moved to `REVIEW.md` for human review. The earlier implementation commits include `1f73547` and `4e797ce`.
+- The owner selected a fixed default of `1 SGD = 24.00 NTD`. New accounts receive it; the SQLAlchemy startup backfill adds it to existing accounts only when no SGD rate exists. Custom rates are preserved. The local Bob account shows the new default.
+- The owner deferred automatic rate fetching, the finance chatbot, and monthly budgets/reminders. Those remain in `TODO.md`; monthly budget periods will run from the first through the last day of each month.
+- Local `data/piggynest.db` and audit files are ignored by Git. No ledger row was changed by this final rate-default step.
 
 ## In-progress work
 
-- Awaiting the owner's SGD → NTD default rate for new users. The rate table, validation, Settings UI, conversion helper, net worth, Dashboard charts, and Reports are implemented. Add the chosen default to account registration and safely backfill existing accounts that have no SGD rate. Do not overwrite a user's saved rate.
-- The owner's decisions are also pending for the `Owner-led` tasks in `TODO.md`: automatic-rate provider/schedule/replacement policy, chatbot provider/data boundary, and budget periods/reminders.
-- After the default rate is set, verify the full backend suite and frontend build/lint, check the browser at desktop and mobile widths, then move the remaining completed `Agent-ready` items from `TODO.md` to `REVIEW.md` and commit/push. Keep owner-led items in TODO until their decisions and implementation are complete.
+None. Await human review of `REVIEW.md`; begin the owner-led tasks when the owner reprioritizes them.
 
-## Verification so far
+## Verification
 
-- Backend suite: 51 passed before the latest rate-currency validation adjustment; rerun required after final rate default changes.
-- Frontend build/lint passed after the restored money-flow pie.
-- `frontend/tests/ledgerAnalytics.test.mjs` and `reportMath.test.mjs` pass under Node 22 with `--experimental-strip-types` (currency conversion, transfer treatment, empty calendar periods, year boundary).
-- Isolated Playwright checks at 1280px and 390px verified page links and invalid page entry, live rate edits, net worth hiding after reload, Dashboard bank chips and metric switching, Reports figures, the prefiltered PiggyBank Reports link, and no horizontal overflow, including after the money-flow pie was restored.
+- Backend: `cd backend && venv/bin/python -m pytest tests -q` — 52 passed, including new account defaults, rate validation and per-user isolation, and idempotent backfill that preserves custom rates.
+- Frontend: `cd frontend && npm run build && npm run lint` — passed. Node 22 ledger and Reports calculation tests passed, including conversion through NTD, PiggyBank and bank transfers, empty calendar periods, and year boundaries.
+- Isolated Playwright checks at 1280px and 390px covered page navigation, invalid jump input, live rate changes, net worth hiding after reload, Dashboard chips and charts, Reports figures and PiggyBank preselection, and horizontal overflow. Browser fixtures did not write database rows. The earlier 61-row Bob pagination check cleaned all temporary rows and restored Bob's 20-row page size.

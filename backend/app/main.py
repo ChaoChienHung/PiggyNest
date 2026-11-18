@@ -5,6 +5,8 @@ from app.core.config import settings
 from app.db.base import Base, engine
 from app.db.money_migration import migrate_money
 from sqlalchemy import inspect, text
+from sqlalchemy.orm import Session
+from app.domain.default_rates import add_missing_default_rates
 
 # Create the DB tables (Note: in production use Alembic migrations instead)
 Base.metadata.create_all(bind=engine)
@@ -27,6 +29,8 @@ if "display_currency" not in {column["name"] for column in inspect(engine).get_c
 if "net_worth_hidden" not in {column["name"] for column in inspect(engine).get_columns("users")}:
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE users ADD COLUMN net_worth_hidden BOOLEAN NOT NULL DEFAULT 0"))
+with Session(engine) as session:
+    add_missing_default_rates(session)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

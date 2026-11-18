@@ -2,6 +2,26 @@
 
 ## Awaiting review
 
+- [ ] Fixed-rate currency display
+  - **Delivered:** Each user has a display currency and NTD reference rates in Settings. The owner-selected default is `1 SGD = 24.00 NTD` for new accounts; startup fills only missing SGD rates for existing accounts. Rates accept positive values with at most four decimals and show their last update date. Conversion through NTD changes display figures only; missing rates show a Settings prompt.
+  - **Evidence:** Backend suite passed (52), including per-user isolation, input validation, account defaults, and an idempotent backfill that preserves custom rates. Bob's local profile showed its new 24.00 rate. Frontend build/lint and conversion tests passed; isolated desktop/mobile browser checks changed 24 to 25 and observed immediate updates in net worth, analytics, and Reports without database writes.
+  - **Review focus:** Check Settings rate editing and hover explanations on converted figures; try an unconfigured currency to confirm the rate-needed message.
+
+- [ ] Combined Total Net Worth card
+  - **Delivered:** The Dashboard sums converted PiggyBank balances into one selected-currency amount, lists up to five currencies with original amounts and shares, and remembers the per-user hide/show setting.
+  - **Evidence:** Frontend build/lint passed. Isolated desktop/mobile browser checks compared the total to a two-currency fixture, changed the rate, and confirmed the hidden amount persisted after reload with no horizontal overflow.
+  - **Review focus:** Check the card with your real balances, especially the top-currency order and percentage shares.
+
+- [ ] Combined Dashboard analytics
+  - **Delivered:** Balance, income/spending, money-flow, and category charts combine selected PiggyBanks in the display currency. Bank chips, Select all/Clear all, and a date range apply across chart metrics; PiggyBank transfers affect balance but not income or spending.
+  - **Evidence:** Frontend build/lint passed. Isolated 1280px/390px browser checks exercised chip selection, empty state, metric switching, live rate updates, and no horizontal overflow. Ledger calculation tests cover PiggyBank and bank transfers and conversion through NTD.
+  - **Review focus:** Compare the ending balance with Total Net Worth when all banks are selected and no date range is active; try chip and date filters on a real ledger.
+
+- [ ] Numeric Reports view
+  - **Delivered:** Dashboard and PiggyBank links open daily, monthly, and yearly income, spending, and net-change summaries with totals, averages, minima/maxima and their periods, and transaction counts. The PiggyBank link preselects that bank. Bank/category/date/currency filters and hidden-amount preference apply; zero-activity periods count in averages.
+  - **Evidence:** Frontend build/lint passed. Calendar tests cover empty days, month and year boundaries; ledger tests cover transfers. Isolated desktop/mobile browser checks confirmed figures, preselection, live rate updates, and no horizontal overflow.
+  - **Review focus:** Compare a small date range against hand calculations and check how zero periods and transfers appear.
+
 - [ ] Direct PiggyBank transaction page navigation
   - **Delivered:** Up to five numbered page buttons follow the current page, shifting back at the end, with an ellipsis and last-page shortcut. Previous/Next and a labeled page-number field support direct navigation; invalid or out-of-range entries show an error without moving the page.
   - **Evidence:** Frontend build and lint passed. An isolated browser check with 61 Bob-shaped transactions and ten rows per page exercised numbered links, Enter, empty/non-integer/out-of-range errors, and 1280px/390px widths. The check made no database changes; an earlier API-based check cleaned all 61 temporary Bob transactions and restored the original page size.

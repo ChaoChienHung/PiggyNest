@@ -10,6 +10,12 @@ export const displayCurrencyOptions = (held: string[], current?: string) =>
     [...new Set(['NTD', 'SGD', 'USD', 'EUR', 'GBP', 'JPY', ...held, ...(current ? [current] : [])])]
         .map(currency => ({ value: currency, label: currency }));
 
+export const rateSummary = (currencies: string[], displayCurrency: string, rates: CurrencyRate[]) =>
+    [...new Set(currencies)].filter(currency => currency !== displayCurrency).map(currency => {
+        const converted = convertAmount(1, currency, displayCurrency, rates);
+        return converted ? `${currency}: ${converted.explanation}; set ${converted.updatedAt}` : '';
+    }).filter(Boolean).join('\n');
+
 /** Converts through NTD without changing any stored ledger amount. */
 export const convertAmount = (
     amount: number, from: string, to: string, rates: CurrencyRate[],

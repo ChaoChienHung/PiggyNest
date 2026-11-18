@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.core.recovery_email import mail_is_configured, send_recovery_email
 from app.models.recovery import RecoveryChallenge
 from app.models.currency_rate import CurrencyRate
+from app.domain.default_rates import DEFAULT_SGD_TO_NTD
 from app.schemas.recovery import PasswordResetConfirm, RecoveryEmail
 from app.api.deps import get_current_user
 
@@ -134,6 +135,10 @@ def register_user(
         hashed_password=security.get_password_hash(user_in.password),
     )
     db.add(user)
+    db.flush()
+    db.add(CurrencyRate(
+        user_id=user.id, currency="SGD", rate_to_ntd=DEFAULT_SGD_TO_NTD,
+    ))
     db.commit()
     db.refresh(user)
     return user
