@@ -22,7 +22,7 @@ Balances sum signed amounts within a bank. Global income and spending statistics
 
 ## Persistence and backup
 
-The default database URL is relative to the API process's working directory. Starting the API from `backend/` uses `backend/data/piggynest.db`. Automated tests override the URL and use an isolated SQLite database.
+The default database URL is relative to the API process's working directory. Starting the API from `backend/` uses the Git-ignored local `backend/data/piggynest.db`, created on first startup. A fresh clone needs a newly registered test account. Automated tests override the URL and use an isolated SQLite database.
 
 Excel export has bank, transaction, and category sheets. Import validates all rows, remaps IDs, then commits the account import atomically. Its `entry_id` records a row's original ID; `transaction_id` links the two sides of a transfer. An imported account receives fresh database IDs.
 

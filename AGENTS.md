@@ -22,7 +22,7 @@
 
 ## Local manual test account
 
-- Use Bob in `backend/data/piggynest.db`: username `Bob`, login `bob@piggynest.test`, password `BobTest2026!`.
+- Use Bob in the local `backend/data/piggynest.db`: username `Bob`, login `bob@piggynest.test`, password `BobTest2026!`. If the database is new, register Bob through the app first.
 - This is a disposable local account. Keep manual test data under Bob; never use this password for a deployed app.
 
 ## Where to look

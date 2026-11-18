@@ -94,3 +94,5 @@ For local manual feature testing, use **Bob** in the development database
 
 Bob is a disposable test account. Keep manual test data under Bob; automated
 tests use a separate database. These credentials are for local development only.
+The database is local and ignored by Git. A fresh clone starts with an empty
+database; register Bob through the app before using this account.
