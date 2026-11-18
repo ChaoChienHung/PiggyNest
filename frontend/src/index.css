@@ -992,7 +992,7 @@ table tr:last-child td:last-child {
   z-index: 100;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: 0.75rem;
 }
 .floating-tools-trigger {
@@ -1002,12 +1002,15 @@ table tr:last-child td:last-child {
   border-radius: 50%;
   background: var(--accent-primary);
   box-shadow: 0 8px 24px rgba(255, 141, 161, 0.35);
-  font-size: 2.15rem;
+  display: grid;
+  place-items: center;
   cursor: pointer;
 }
+.floating-tools-trigger svg { width: 61px; height: 61px; }
 .floating-tools-trigger:hover,
 .floating-tools-trigger:focus-visible { background: var(--accent-hover); transform: scale(1.05); }
-.floating-tools-actions { display: flex; flex-direction: column; gap: 0.5rem; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(8px); transition: opacity .2s, transform .2s, visibility .2s; }
+.floating-tools-actions { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(8px); transition: opacity .2s, transform .2s, visibility .2s; }
+.floating-tools:hover .floating-tools-actions,
 .floating-tools.is-open .floating-tools-actions { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
 .floating-tools-action { display: grid; place-items: center; width: 52px; height: 52px; border: 2px solid var(--coin-gold-hover); border-radius: 50%; background: var(--coin-gold); color: var(--text-primary); box-shadow: 0 6px 18px rgba(255, 183, 3, 0.25); }
 .floating-tools-action:hover,

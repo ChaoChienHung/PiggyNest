@@ -28,8 +28,9 @@ const transferNote = (description?: string) => {
  * Dedicated view for a single PiggyBank account.
  * Handles fetching specific nested transactions and managing the dynamic "Add Transaction" form logic.
  */
-export const PiggyBankView = ({ analyticsOnly = false }: { analyticsOnly?: boolean }) => {
-    const { id } = useParams<{ id: string }>();
+export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly?: boolean; bankId?: number }) => {
+    const { id: routeId } = useParams<{ id: string }>();
+    const id = bankId ? String(bankId) : routeId;
     const [bank, setBank] = useState<PiggyBank | null>(null);
     const [balance, setBalance] = useState<Balance | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);

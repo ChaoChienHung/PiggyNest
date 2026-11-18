@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BarChart3, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
+import { PiggySvg } from './PiggyCartoon';
 
 interface FloatingToolsProps { bankId?: number }
 
@@ -19,6 +20,9 @@ export const FloatingTools = ({ bankId }: FloatingToolsProps) => {
     }, [open]);
     const suffix = bankId ? `?bank=${bankId}` : '';
     return createPortal(<div ref={rootRef} className={`floating-tools${open ? ' is-open' : ''}`}
+        onPointerEnter={event => { if (event.pointerType === 'mouse') setOpen(true); }}
+        onPointerLeave={event => { if (event.pointerType === 'mouse') setOpen(false); }}
+        onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}
         onKeyDown={event => { if (event.key === 'Escape') { setOpen(false); triggerRef.current?.focus(); } }}>
         <div className="floating-tools-actions" id="floating-tools-actions">
             <Link to={`/analysis${suffix}`} state={{ from: bankId ? `/piggybanks/${bankId}` : '/' }}
@@ -32,6 +36,6 @@ export const FloatingTools = ({ bankId }: FloatingToolsProps) => {
         </div>
         <button ref={triggerRef} type="button" className="floating-tools-trigger"
             aria-label="Additional tools" aria-expanded={open} aria-controls="floating-tools-actions"
-            onClick={() => setOpen(!open)}>🐷</button>
+            onClick={() => setOpen(!open)}><PiggySvg /></button>
     </div>, document.body);
 };
