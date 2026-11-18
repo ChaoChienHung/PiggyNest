@@ -4,6 +4,15 @@ A full-stack, comprehensive, categorized, and multi-currency personal finance bo
 
 PiggyNest allows users to map their real-world Net Worth across various different independent "PiggyBanks".
 
+## Features
+
+- **Accounts:** Register and sign in with email. The login page can email a username reminder or a code to reset a forgotten password when SMTP is configured. See [account recovery](docs/account-recovery.md).
+- **PiggyBanks and transactions:** Track separate balances in different currencies. Add, categorize, and edit transactions by ID in the browser or CLI, including their amount, note, and date.
+- **Transfers:** Move money between owned PiggyBanks as two linked transactions, or record a bank transfer to or from an outside account as one transaction. See [transfer behavior](docs/architecture.md#transaction-identity-and-transfers).
+- **Reports:** View balances, cash flow, and spending by category in the browser.
+- **Backups:** Export and import Excel backups. Import adds new PiggyBanks and does not merge independent edits to an existing one. See [backup identity](docs/data-sync.md#current-behavior).
+- **Multiple locations:** Point browser and CLI clients at one shared backend to use the same ledger from different locations. A reachable backend must be deployed separately. See [shared backend configuration](docs/data-sync.md#shared-backend-configuration).
+
 ## Terminology
 
 Use these terms in issues, documentation, code reviews, and migration discussions:
@@ -35,15 +44,6 @@ This README is the shared entry point for users and agents: terminology, setup, 
 | `data/` | Local database, backups, and import reports. This entire folder is ignored by Git. |
 
 Start with [feature guides](docs/features.md) to see which folders implement a workflow. For deeper context, read [architecture](docs/architecture.md), [design decisions](docs/design-decisions.md), [technology stack](docs/tech-stack.md), [account recovery](docs/account-recovery.md), [data synchronization](docs/data-sync.md), or [current work](docs/backlog.md). Add a feature guide when a workflow spans folders, and link it back to this map instead of copying the folder descriptions.
-
-### ✨ Core Features
-- **Breathtaking Pink & Gold Theme 🐷:** Redesigned with a beautiful drifting radial background, bouncy transitions, custom form fields, and rounded cards.
-- **Split-Screen Interactive Login/Register 💰:** A responsive split-screen layout featuring a gently floating, pure SVG-designed cute piggy bank catching falling golden coins in 3D-like CSS animations.
-- **Secure Authentication:** JWT-based user registration and login system.
-- **Multi-Currency:** Support for major localized currencies (USD, EUR, GBP, JPY, NTD, SGD).
-- **PiggyBank Transfers:** Move funds between owned PiggyBanks while keeping both transactions linked.
-- **Categorization:** Tag your expenses and incomes with robust custom string attributes (Rent, Food, Salary).
-- **Cohesive Pastel Charts 📊:** Financial analytics using Recharts featuring soft tooltips, bouncy bars, and custom pie chart category segments styled with the cute pastel color tokens.
 
 ---
 
