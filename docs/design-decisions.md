@@ -26,6 +26,10 @@ The May 2026 visual refresh chose a pink and gold palette (`#ff8da1`, `#ffd166`)
 
 The pages use `.page-layout-container` and `.back-to-dashboard-link` for more spacious alignment. The pig-and-coin floating action menu uses a transparent `::before` pointer bridge so the hover menu stays reachable. The single-bank view includes a running-balance line chart, monthly cash-flow bar chart, and expense-category pie chart. Recharts renders interactive SVG elements; it handles chart layout and events, while CSS supplies the application theme. SVG sharpness is a useful reason for these charts, but smoothness depends on browser and chart size rather than being guaranteed by the format.
 
+## Planned category vocabulary
+
+Category consolidation is tracked in [TODO.md](../TODO.md); these names are decisions, not yet a data migration. Use `Withdrawals` for the category because it names a group of transactions, while `Withdraw` is a verb. The transaction type remains `withdrawal`. Use `Other` as the singular fallback category label. Functional subscriptions such as Claude and Gemini Pro belong in `Software & Digital Services`; `Entertainment` describes leisure purchases, and subscription billing belongs in the transaction description rather than determining the category by itself.
+
 ## Earlier proposals and current status
 
 The old notes proposed FastAPI, login, piggy banks, currencies, aggregate costs, and replacing CSV storage; the running app implements these through the React/FastAPI/SQLite path. They also proposed storing only monthly summaries. Monthly summaries alone would discard the transaction detail needed for edits, audit, and backup, so any future materialized summary should be derived from the ledger. Streamlit was suggested as a test UI but is not part of the current application. See [backlog](backlog.md) for actionable remaining work.

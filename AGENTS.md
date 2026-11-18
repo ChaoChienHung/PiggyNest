@@ -4,6 +4,7 @@
 
 - PiggyNest is a personal finance app with a FastAPI/SQLite API and a React/TypeScript frontend.
 - Read the [README features](README.md#features), [terminology](README.md#terminology), and [repository guide](README.md#repository-guide) before changing code or data. Use the feature links there to find the relevant documentation and folders.
+- Check [HANDOFF.md](HANDOFF.md) for the last stopping point, [TODO.md](TODO.md) for unfinished work, and [REVIEW.md](REVIEW.md) for completed work awaiting human review. Keep these roles distinct.
 - SQLAlchemy models define the persisted schema. The local development database is `data/piggynest.db`; tests use an isolated database. Do not change ledger rows by editing SQLite files directly.
 - Keep the app usable with Python, pip, Node.js, and npm. The API and frontend have separate build and test commands.
 
