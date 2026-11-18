@@ -115,6 +115,8 @@ export const PiggyBankView = () => {
             if (type !== 'transfer' && isCreatingCat && newCatName.trim() !== '') {
                 const newCat = await categoriesApi.create(newCatName.trim());
                 finalCategoryName = newCat.name;
+            } else if (selectedCatId === 'CURRENT') {
+                finalCategoryName = editingTransaction?.category || '';
             } else if (selectedCatId) {
                 const cat = categories.find(c => c.id.toString() === selectedCatId);
                 if (cat) finalCategoryName = cat.name;
@@ -229,6 +231,151 @@ export const PiggyBankView = () => {
 
     const cSym = getCurrencySymbol(bank.currency);
 
+    const transactionForm = (
+        <form
+            id={editingTxId !== null ? `transaction-editor-${editingTxId}` : 'transaction-add-form'}
+            onSubmit={handleAddTx}
+            className="glass-panel p-6 mb-8 animate-fade-in flex flex-col gap-4 transaction-form"
+        >
+            <h3 className="text-lg font-semibold mb-2">{editingTxId ? 'Edit Transaction ✏️' : 'Add New Transaction 📝'}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Type</label>
+                    <select
+                        className="input-field"
+                        value={type}
+                        onChange={(e) => setType(e.target.value)}
+                        disabled={editingTransaction?.type === 'transfer'}
+                    >
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                        <option value="withdrawal">Withdrawal</option>
+                        <option value="deposit">Deposit</option>
+                        <option value="transfer_out">Bank Transfer Out</option>
+                        <option value="transfer_in">Bank Transfer In</option>
+                        {(editingTxId === null || type === 'transfer') && <option value="transfer">PiggyBank Transfer</option>}
+                    </select>
+                </div>
+
+                {(type !== 'transfer' || editingTxId !== null) && (
+                    <div>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Date</label>
+                        <input
+                            type="date"
+                            required
+                            className="input-field"
+                            value={txDate}
+                            onChange={(e) => setTxDate(e.target.value)}
+                        />
+                    </div>
+                )}
+
+                {type === 'transfer' && editingTxId === null && (
+                    <div>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Transfer To</label>
+                        <select
+                            required
+                            className="input-field"
+                            value={targetBankId}
+                            onChange={(e) => setTargetBankId(e.target.value)}
+                        >
+                            <option value="">Select Piggy Bank...</option>
+                            {transferTargets.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Amount</label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        required
+                        min="0.01"
+                        className="input-field"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="0.00"
+                    />
+                </div>
+
+                {type !== 'transfer' && (
+                    <div>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Category</label>
+                        {isCreatingCat ? (
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    className="input-field flex-1"
+                                    value={newCatName}
+                                    onChange={(e) => setNewCatName(e.target.value)}
+                                    placeholder="New Category..."
+                                    autoFocus
+                                />
+                                <button type="button" onClick={() => setIsCreatingCat(false)} className="btn btn-secondary px-3 text-xs">
+                                    Cancel
+                                </button>
+                            </div>
+                        ) : (
+                            <select
+                                className="input-field"
+                                value={selectedCatId}
+                                onChange={(e) => {
+                                    if (e.target.value === 'NEW') setIsCreatingCat(true);
+                                    else setSelectedCatId(e.target.value);
+                                }}
+                            >
+                                <option value="">No Category</option>
+                                {editingTransaction?.category && !categories.some(c => c.name === editingTransaction.category) && (
+                                    <option value="CURRENT">{editingTransaction.category} (current)</option>
+                                )}
+                                {categories.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                                <option value="NEW" className="font-bold text-accent-primary">+ Create New Category</option>
+                            </select>
+                        )}
+                    </div>
+                )}
+
+                <div className={type === 'transfer' ? "md:col-span-2" : ""}>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">{type === 'transfer' ? 'Transfer Note' : 'Description'}</label>
+                    <input
+                        type="text"
+                        className="input-field"
+                        value={desc}
+                        onChange={(e) => setDesc(e.target.value)}
+                        placeholder="Optional notes"
+                    />
+                </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-2">
+                <button
+                    type="button"
+                    onClick={() => {
+                        setShowAdd(false);
+                        setAmount('');
+                        setDesc('');
+                        setSelectedCatId('');
+                        setNewCatName('');
+                        setIsCreatingCat(false);
+                        setType('expense');
+                        setTxDate(new Date().toISOString().split('T')[0]);
+                        setEditingTxId(null);
+                    }}
+                    className="btn btn-secondary text-sm"
+                >
+                    Cancel
+                </button>
+                <button type="submit" className="btn btn-primary text-sm">
+                    {editingTxId ? 'Save Changes ✏️' : 'Save Transaction 📝'}
+                </button>
+            </div>
+        </form>
+    );
+
     return (
         <div className="container page-layout-container animate-fade-in">
             <Link to="/" className="back-to-dashboard-link">
@@ -240,9 +387,9 @@ export const PiggyBankView = () => {
                     <h1 className="balance-card-title">{bank.name} 🐷</h1>
                     <p className="balance-card-subtitle">PiggyBank Details & Savings Nest 💰</p>
                 </div>
-                
+
                 <div className="balance-card-divider" />
-                
+
                 <div className="balance-card-body">
                     <p className="balance-card-label">Current Balance</p>
                     <h2 className="balance-card-amount">
@@ -258,8 +405,8 @@ export const PiggyBankView = () => {
                     <div className="inline-fab-container">
                         {/* Option: Toggle Analytics (Gold Coin with Chart Icon) */}
                         <div className="inline-fab-options">
-                            <div 
-                                onClick={() => setShowAnalytics(!showAnalytics)} 
+                            <div
+                                onClick={() => setShowAnalytics(!showAnalytics)}
                                 className="inline-fab-coin"
                                 title={showAnalytics ? "Hide Charts" : "Show Charts"}
                             >
@@ -297,143 +444,7 @@ export const PiggyBankView = () => {
                 </div>
             </div>
 
-            {showAdd && (
-                <form onSubmit={handleAddTx} className="glass-panel p-6 mb-8 animate-fade-in flex flex-col gap-4">
-                    <h3 className="text-lg font-semibold mb-2">{editingTxId ? 'Edit Transaction ✏️' : 'Add New Transaction 📝'}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                        <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">Type</label>
-                            <select
-                                className="input-field"
-                                value={type}
-                                onChange={(e) => setType(e.target.value)}
-                                disabled={editingTransaction?.type === 'transfer'}
-                            >
-                                <option value="expense">Expense</option>
-                                <option value="income">Income</option>
-                                <option value="withdrawal">Withdrawal</option>
-                                <option value="deposit">Deposit</option>
-                                <option value="transfer_out">Bank Transfer Out</option>
-                                <option value="transfer_in">Bank Transfer In</option>
-                                {(editingTxId === null || type === 'transfer') && <option value="transfer">PiggyBank Transfer</option>}
-                            </select>
-                        </div>
-
-                        {(type !== 'transfer' || editingTxId !== null) && (
-                            <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">Date</label>
-                                <input
-                                    type="date"
-                                    required
-                                    className="input-field"
-                                    value={txDate}
-                                    onChange={(e) => setTxDate(e.target.value)}
-                                />
-                            </div>
-                        )}
-
-                        {type === 'transfer' && editingTxId === null && (
-                            <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">Transfer To</label>
-                                <select
-                                    required
-                                    className="input-field"
-                                    value={targetBankId}
-                                    onChange={(e) => setTargetBankId(e.target.value)}
-                                >
-                                    <option value="">Select Piggy Bank...</option>
-                                    {transferTargets.map(t => (
-                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-
-                        <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">Amount</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                required
-                                min="0.01"
-                                className="input-field"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                placeholder="0.00"
-                            />
-                        </div>
-
-                        {type !== 'transfer' && (
-                            <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">Category</label>
-                                {isCreatingCat ? (
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            className="input-field flex-1"
-                                            value={newCatName}
-                                            onChange={(e) => setNewCatName(e.target.value)}
-                                            placeholder="New Category..."
-                                            autoFocus
-                                        />
-                                        <button type="button" onClick={() => setIsCreatingCat(false)} className="btn btn-secondary px-3 text-xs">
-                                            Cancel
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <select
-                                        className="input-field"
-                                        value={selectedCatId}
-                                        onChange={(e) => {
-                                            if (e.target.value === 'NEW') setIsCreatingCat(true);
-                                            else setSelectedCatId(e.target.value);
-                                        }}
-                                    >
-                                        <option value="">No Category</option>
-                                        {categories.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                        ))}
-                                        <option value="NEW" className="font-bold text-accent-primary">+ Create New Category</option>
-                                    </select>
-                                )}
-                            </div>
-                        )}
-
-                        <div className={type === 'transfer' ? "md:col-span-2" : ""}>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">{type === 'transfer' ? 'Transfer Note' : 'Description'}</label>
-                            <input
-                                type="text"
-                                className="input-field"
-                                value={desc}
-                                onChange={(e) => setDesc(e.target.value)}
-                                placeholder="Optional notes"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex justify-end gap-3 mt-2">
-                        <button 
-                            type="button" 
-                            onClick={() => {
-                                setShowAdd(false);
-                                setAmount('');
-                                setDesc('');
-                                setSelectedCatId('');
-                                setNewCatName('');
-                                setIsCreatingCat(false);
-                                setType('expense');
-                                setTxDate(new Date().toISOString().split('T')[0]);
-                                setEditingTxId(null);
-                            }} 
-                            className="btn btn-secondary text-sm"
-                        >
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn btn-primary text-sm">
-                            {editingTxId ? 'Save Changes ✏️' : 'Save Transaction 📝'}
-                        </button>
-                    </div>
-                </form>
-            )}
+            {showAdd && editingTxId === null && transactionForm}
 
             {showAnalytics && (
                 <div className="glass-panel p-6 mb-8 animate-fade-in">
@@ -579,11 +590,11 @@ export const PiggyBankView = () => {
                 </div>
             )}
 
-            <div className="glass-panel overflow-hidden">
+            <div className="glass-panel transaction-table-panel">
                 {transactions.length === 0 ? (
                     <div className="p-8 text-center text-muted">No transactions found.</div>
                 ) : (
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse transaction-table">
                         <thead>
                             <tr className="border-b border-glass-border">
                                 <th className="p-4 text-text-secondary font-medium">Date</th>
@@ -621,84 +632,106 @@ export const PiggyBankView = () => {
                                 }
 
                                 return (
-                                    <tr key={tx.id} className="border-b border-glass-border hover:bg-white hover:bg-opacity-5 transition-colors">
-                                        <td className="p-4 whitespace-nowrap">
-                                            {new Date(tx.date).toLocaleDateString()}
-                                            <div className="text-xs text-muted">ID #{tx.id}</div>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
-                                                {icon}
-                                                {typeLabel}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            {tx.category ? (
-                                                <span className="inline-block px-2 py-1 bg-white bg-opacity-5 border border-glass-border rounded text-xs">
-                                                    {tx.category}
-                                                </span>
-                                            ) : '-'}
-                                        </td>
-                                        <td className="p-4 text-text-secondary">{tx.description || '-'}</td>
-                                        <td className={`p-4 text-right font-medium ${textClass}`}>
-                                            {tx.amount > 0 ? '+' : ''}{cSym}{tx.amount.toFixed(2)}
-                                        </td>
-                                        <td className="p-4 text-center" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', border: 'none' }}>
-                                            {(tx.type !== 'transfer' || tx.transaction_id !== `entry:${tx.id}`) && <button
-                                                onClick={() => {
-                                                    setEditingTxId(tx.id);
-                                                    setAmount(Math.abs(tx.amount).toString());
-                                                    setType(tx.type);
-                                                    setDesc(tx.type === 'transfer' ? transferNote(tx.description) : tx.description || '');
-                                                    setTxDate(new Date(tx.date).toISOString().split('T')[0]);
+                                    <React.Fragment key={tx.id}>
+                                        <tr className={`transaction-entry-row border-b border-glass-border hover:bg-white hover:bg-opacity-5 transition-colors${showAdd && editingTxId === tx.id ? ' transaction-entry-row-active' : ''}`}>
+                                            <td className="p-4 whitespace-nowrap">
+                                                {new Date(tx.date).toLocaleDateString()}
+                                                <div className="text-xs text-muted">ID #{tx.id}</div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+                                                    {icon}
+                                                    {typeLabel}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                {tx.category ? (
+                                                    <span className="inline-block px-2 py-1 bg-white bg-opacity-5 border border-glass-border rounded text-xs">
+                                                        {tx.category}
+                                                    </span>
+                                                ) : '-'}
+                                            </td>
+                                            <td className="p-4 text-text-secondary">{tx.description || '-'}</td>
+                                            <td className={`p-4 text-right font-medium ${textClass}`}>
+                                                {tx.amount > 0 ? '+' : ''}{cSym}{tx.amount.toFixed(2)}
+                                            </td>
+                                            <td className="p-4 text-center" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', border: 'none' }}>
+                                                {(tx.type !== 'transfer' || tx.transaction_id !== `entry:${tx.id}`) && <button
+                                                    onClick={() => {
+                                                        if (showAdd && editingTxId === tx.id) {
+                                                            setShowAdd(false);
+                                                            setEditingTxId(null);
+                                                            return;
+                                                        }
+                                                        setEditingTxId(tx.id);
+                                                        setAmount(Math.abs(tx.amount).toString());
+                                                        setType(tx.type);
+                                                        setDesc(tx.type === 'transfer' ? transferNote(tx.description) : tx.description || '');
+                                                        setTxDate(new Date(tx.date).toISOString().split('T')[0]);
+                                                        setIsCreatingCat(false);
+                                                        setNewCatName('');
                                                     
-                                                    // Resolve category selection
-                                                    if (tx.category) {
-                                                        const cat = categories.find(c => c.name === tx.category);
-                                                        if (cat) {
-                                                            setSelectedCatId(cat.id.toString());
+                                                        // Resolve category selection
+                                                        if (tx.category) {
+                                                            const cat = categories.find(c => c.name === tx.category);
+                                                            if (cat) {
+                                                                setSelectedCatId(cat.id.toString());
+                                                            } else {
+                                                                setSelectedCatId('CURRENT');
+                                                            }
                                                         } else {
                                                             setSelectedCatId('');
                                                         }
-                                                    } else {
-                                                        setSelectedCatId('');
-                                                    }
                                                     
-                                                    setShowAdd(true);
-                                                }}
-                                                className="text-text-secondary hover:text-accent-primary p-1 transition-colors animate-fade-in"
-                                                title="Edit Transaction"
-                                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                            >
-                                                <Pencil size={14} />
-                                            </button>}
-                                            <button
-                                                onClick={() => {
-                                                    showModal({
-                                                        title: 'Delete Transaction',
-                                                        message: tx.type === 'transfer' ? 'Delete both sides of this PiggyBank transfer? This action cannot be undone.' : 'Are you sure you want to delete this transaction? This action cannot be undone.',
-                                                        variant: 'danger',
-                                                        confirmText: 'Delete',
-                                                        onConfirm: async () => {
-                                                            closeModal();
-                                                            try {
-                                                                await transactionsApi.delete(tx.id);
-                                                                loadData();
-                                                            } catch (err) {
-                                                                console.error(err);
-                                                                showModal({ title: 'Error', message: 'Failed to delete transaction.', variant: 'danger', alertOnly: true, onConfirm: closeModal });
-                                                            }
-                                                        },
-                                                    });
-                                                }}
-                                                className="text-text-secondary hover:text-danger p-1 transition-colors"
-                                                title="Delete Transaction"
-                                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                            >
-                                                ✕
-                                            </button>
-                                        </td>
-                                    </tr>
+                                                        setShowAdd(true);
+                                                    }}
+                                                    className="text-text-secondary hover:text-accent-primary p-1 transition-colors animate-fade-in"
+                                                    title="Edit Transaction"
+                                                    aria-expanded={showAdd && editingTxId === tx.id}
+                                                    aria-controls={`transaction-editor-${tx.id}`}
+                                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                >
+                                                    <Pencil size={14} />
+                                                </button>}
+                                                <button
+                                                    onClick={() => {
+                                                        showModal({
+                                                            title: 'Delete Transaction',
+                                                            message: tx.type === 'transfer' ? 'Delete both sides of this PiggyBank transfer? This action cannot be undone.' : 'Are you sure you want to delete this transaction? This action cannot be undone.',
+                                                            variant: 'danger',
+                                                            confirmText: 'Delete',
+                                                            onConfirm: async () => {
+                                                                closeModal();
+                                                                try {
+                                                                    await transactionsApi.delete(tx.id);
+                                                                    if (editingTxId === tx.id) {
+                                                                        setShowAdd(false);
+                                                                        setEditingTxId(null);
+                                                                    }
+                                                                    loadData();
+                                                                } catch (err) {
+                                                                    console.error(err);
+                                                                    showModal({ title: 'Error', message: 'Failed to delete transaction.', variant: 'danger', alertOnly: true, onConfirm: closeModal });
+                                                                }
+                                                            },
+                                                        });
+                                                    }}
+                                                    className="text-text-secondary hover:text-danger p-1 transition-colors"
+                                                    title="Delete Transaction"
+                                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                >
+                                                    ✕
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {showAdd && editingTxId === tx.id && (
+                                            <tr className="transaction-edit-row">
+                                                <td colSpan={6} className="transaction-edit-cell">
+                                                    {transactionForm}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
                                 );
                             })}
                         </tbody>

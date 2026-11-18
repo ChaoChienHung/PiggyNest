@@ -405,6 +405,94 @@ table tr:last-child td:last-child {
   border-bottom-right-radius: 20px;
 }
 
+.transaction-table-panel {
+  overflow-x: auto;
+}
+
+.transaction-entry-row-active {
+  background: rgba(255, 229, 234, 0.5);
+}
+
+.transaction-edit-cell {
+  padding: 1rem;
+  background: rgba(255, 229, 234, 0.35);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.transaction-edit-cell .transaction-form {
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+@media (max-width: 767px) {
+  .transaction-table,
+  .transaction-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .transaction-table thead {
+    display: none;
+  }
+
+  .transaction-table .transaction-entry-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 0.75rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .transaction-table .transaction-entry-row td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .transaction-table .transaction-entry-row td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .transaction-table .transaction-entry-row td:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .transaction-table .transaction-entry-row td:nth-child(3) {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .transaction-table .transaction-entry-row td:nth-child(4) {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    overflow-wrap: anywhere;
+  }
+
+  .transaction-table .transaction-entry-row td:nth-child(5) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .transaction-table .transaction-entry-row td:nth-child(6) {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    justify-self: end;
+    align-self: center;
+  }
+
+  .transaction-table .transaction-edit-row,
+  .transaction-table .transaction-edit-cell {
+    display: block;
+    width: 100%;
+  }
+
+  .transaction-table .transaction-edit-cell {
+    padding: 0.75rem;
+  }
+}
+
 /* Animations */
 @keyframes fadeIn {
   from {
