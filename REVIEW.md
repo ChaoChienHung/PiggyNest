@@ -3,9 +3,9 @@
 ## Awaiting review
 
 - [ ] Custom calendar and dedicated analytics navigation
-  - **Delivered:** All date fields keep typed entry and now open an app-styled month calendar from an icon inside the input. The fixed, larger pig FAB contains icon links to Graph Analysis and Reports. Graph Analysis has its own route for the combined Dashboard and individual PiggyBank charts; Reports stays on its own route. Both pages include a back link to the originating Dashboard or PiggyBank.
+  - **Delivered:** All date fields keep typed entry and now open an app-styled calendar from an icon inside the input. The calendar renders above surrounding panels, chooses its position from available viewport space, and has direct month and year selection. The fixed, larger pig FAB contains icon links to Graph Analysis and Reports. Graph Analysis has its own route for the combined Dashboard and individual PiggyBank charts; Reports stays on its own route. Both pages include a back link to the originating Dashboard or PiggyBank.
   - **Evidence:** Frontend build and lint passed. Calendar styling and navigation are ready for human visual review; the isolated Playwright check could not run because Playwright is unavailable in the current Python environments.
-  - **Review focus:** Check month navigation, choosing a day, typed dates, FAB placement, and each back link on desktop. Mobile layout polish remains deferred in `TODO.md`.
+  - **Review focus:** Check the calendar above and below fields, quick month/year selection, choosing a day, typed dates, FAB placement, and each back link on desktop. Mobile layout polish remains deferred in `TODO.md`.
 
 - [ ] Close PiggyBank category filters
   - **Delivered:** The Categories menu closes when clicking outside or pressing Escape.

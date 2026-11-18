@@ -187,10 +187,8 @@ a:hover {
 }
 
 .date-calendar-popover {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  right: 0;
-  z-index: 130;
+  position: fixed;
+  z-index: 10020;
   width: 19rem;
   max-width: min(19rem, 90vw);
   padding: 0.85rem;
@@ -200,18 +198,24 @@ a:hover {
   box-shadow: 0 16px 36px rgba(74, 62, 75, 0.14);
 }
 
-.date-calendar-header,
 .date-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); align-items: center; text-align: center; }
 .date-calendar-header { display: flex; justify-content: space-between; margin-bottom: 0.55rem; }
 .date-calendar-header button,
 .date-calendar-grid button,
+.date-calendar-choices button,
 .date-calendar-today { border: 0; background: transparent; color: var(--text-primary); cursor: pointer; font: inherit; }
-.date-calendar-header button { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 10px; }
+.date-calendar-header > button { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 10px; }
+.date-calendar-title { display: flex; gap: 0.2rem; align-items: center; font-weight: 700; }
+.date-calendar-title button { padding: 0.2rem 0.35rem; border-radius: 8px; font-weight: 700; }
+.date-calendar-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem; }
+.date-calendar-choices button { min-height: 2.7rem; border-radius: 10px; }
+.date-calendar-choices button.is-selected { background: var(--accent-light); color: var(--accent-hover); font-weight: 700; }
 .date-calendar-grid { gap: 0.15rem; }
 .date-calendar-weekday { color: var(--text-muted); font-size: 0.75rem; font-weight: 700; }
 .date-calendar-grid button { width: 100%; aspect-ratio: 1; border-radius: 10px; font-size: 0.85rem; }
 .date-calendar-header button:hover,
 .date-calendar-grid button:hover,
+.date-calendar-choices button:hover,
 .date-calendar-today:hover { background: var(--accent-light); }
 .date-calendar-grid button.is-selected { background: var(--accent-primary); color: #fff; font-weight: 700; }
 .date-calendar-grid button.is-today:not(.is-selected) { border: 1px solid var(--accent-primary); }
