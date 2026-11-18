@@ -3,8 +3,7 @@
 ## Snapshot
 
 - Updated: 2026-11-19. Branch: `main`.
-- Last pushed commit: `1f73547` completed the first seven TODO items and the Ludwig description cleanup, including `Qashier-MUYOO` → `Bread` and `Qashier-AGZ Food` → `Lunch`/`Dinner` by the owner's same-day rule. See `REVIEW.md` for evidence and review points.
-- Current implementation adds scalable category charts, PiggyBank transaction sorting/filtering and direct page navigation, fixed-rate conversion, a combined net-worth card, combined Dashboard analytics, and a Reports view. The first three are in `REVIEW.md`; the currency and report work remains in `TODO.md` until its default rate is chosen and applied.
+- Last pushed commit: `4e797ce` contains scalable category charts, PiggyBank transaction sorting/filtering and direct page navigation, fixed-rate conversion groundwork, a combined net-worth card, combined Dashboard analytics, and a Reports view. The first three are in `REVIEW.md`; the currency and report work remains in `TODO.md` until its default rate is chosen and applied. The earlier `1f73547` completed the first seven TODO items and the Ludwig description cleanup, including `Qashier-MUYOO` → `Bread` and `Qashier-AGZ Food` → `Lunch`/`Dinner` by the owner's same-day rule.
 - The local development database `data/piggynest.db` is ignored by Git. Ledger rows were never edited through SQLite files. A 61-row Bob pagination check cleaned all temporary transactions and restored Bob's 20-row page size. The later browser checks used isolated fixtures without database writes.
 
 ## In-progress work
