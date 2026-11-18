@@ -2,6 +2,7 @@ from io import BytesIO
 
 from openpyxl import load_workbook
 from app.models.transaction import Transaction
+from app.domain.transfer_repair import repair_legacy_transfers
 
 
 def headers_for(client, username):
@@ -23,7 +24,7 @@ def test_export_import_round_trip_and_transfer_pair(client):
     source = headers_for(client, "backup_source")
     target = headers_for(client, "backup_target")
     first = client.post("/api/v1/piggy-banks", headers=source, json={"name": "Savings", "currency": "SGD"}).json()["id"]
-    second = client.post("/api/v1/piggy-banks", headers=source, json={"name": "Travel", "currency": "USD"}).json()["id"]
+    second = client.post("/api/v1/piggy-banks", headers=source, json={"name": "Travel", "currency": "SGD"}).json()["id"]
     assert client.post("/api/v1/categories", headers=source, json={"name": "Salary"}).status_code == 201
     client.post(f"/api/v1/piggy-banks/{first}/transactions", headers=source, json={
         "amount": 150, "type": "income", "description": "=not a formula", "category": "Salary"
@@ -50,7 +51,7 @@ def test_export_import_round_trip_and_transfer_pair(client):
     assert imported.json() == {"piggy_banks_imported": 2, "transactions_imported": 3, "categories_imported": 1}
     assert [item["name"] for item in client.get("/api/v1/categories", headers=target).json()] == ["Salary"]
     banks = {bank["name"]: bank for bank in client.get("/api/v1/piggy-banks", headers=target).json()}
-    assert {name: bank["currency"] for name, bank in banks.items()} == {"Savings": "SGD", "Travel": "USD"}
+    assert {name: bank["currency"] for name, bank in banks.items()} == {"Savings": "SGD", "Travel": "SGD"}
     assert client.get(f"/api/v1/piggy-banks/{banks['Savings']['id']}/balance", headers=target).json()["balance"] == 110
     assert client.get(f"/api/v1/piggy-banks/{banks['Travel']['id']}/balance", headers=target).json()["balance"] == 40
     imported_legs = [
@@ -105,3 +106,29 @@ def test_export_pairs_unambiguous_older_transfers(client, db):
     workbook = load_workbook(BytesIO(client.get("/api/v1/backup/export", headers=source).content))
     rows = list(workbook["Transactions"].values)[1:]
     assert rows[0][7] and rows[0][7] == rows[1][7]
+    matched, unresolved = repair_legacy_transfers(db, apply=True)
+    assert len(matched) == 1 and unresolved == []
+    db.commit()
+    # Old rows have no persisted shared ID; deletion still removes both sides
+    # when the historical records can be matched uniquely.
+    old_entries = [tx for tx in db.query(Transaction).filter(Transaction.piggy_bank_id.in_([a, b])).all()]
+    assert client.delete(f"/api/v1/transactions/{old_entries[0].id}", headers=source).status_code == 200
+    assert db.query(Transaction).filter(Transaction.piggy_bank_id.in_([a, b])).count() == 0
+
+
+def test_external_transfer_backup_round_trip(client):
+    source = headers_for(client, "external_source")
+    target = headers_for(client, "external_target")
+    bank_id = client.post("/api/v1/piggy-banks", headers=source, json={"name": "Savings"}).json()["id"]
+    created = client.post(f"/api/v1/piggy-banks/{bank_id}/transactions", headers=source, json={
+        "type": "transfer_out", "amount": -12, "description": "External payment",
+    }).json()
+    exported = client.get("/api/v1/backup/export", headers=source)
+    workbook = load_workbook(BytesIO(exported.content))
+    row = list(workbook["Transactions"].values)[1]
+    assert row[7] == f"entry:{created['id']}"
+    assert upload(client, target, exported.content).status_code == 200
+    imported_bank = client.get("/api/v1/piggy-banks", headers=target).json()[0]["id"]
+    entries = client.get(f"/api/v1/piggy-banks/{imported_bank}/transactions", headers=target).json()
+    assert len(entries) == 1 and entries[0]["type"] == "transfer_out"
+    assert entries[0]["transaction_id"] == f"entry:{entries[0]['id']}"

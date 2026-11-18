@@ -62,7 +62,7 @@ export const PiggyBankView = () => {
      * Re-fetches all critical data relating to this specific PiggyBank.
      * Grabs underlying transactions, current balance totals, and external categories/PiggyBanks for dropdowns.
      */
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         if (!id) return;
         setIsLoading(true);
         try {
@@ -84,11 +84,11 @@ export const PiggyBankView = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [id]);
 
     useEffect(() => {
         loadData();
-    }, [id]);
+    }, [loadData]);
 
     /**
      * Primary form submission handler for injecting new transactions.
@@ -100,13 +100,13 @@ export const PiggyBankView = () => {
         if (!id) return;
 
         let finalAmount = parseFloat(amount);
-        if (['expense', 'withdrawal'].includes(type)) finalAmount = -Math.abs(finalAmount);
-        if (['income', 'deposit'].includes(type)) finalAmount = Math.abs(finalAmount);
+        if (['expense', 'withdrawal', 'transfer_out'].includes(type)) finalAmount = -Math.abs(finalAmount);
+        if (['income', 'deposit', 'transfer_in'].includes(type)) finalAmount = Math.abs(finalAmount);
 
         try {
             // First resolve category
             let finalCategoryName = '';
-            if (isCreatingCat && newCatName.trim() !== '') {
+            if (type !== 'transfer' && isCreatingCat && newCatName.trim() !== '') {
                 const newCat = await categoriesApi.create(newCatName.trim());
                 finalCategoryName = newCat.name;
             } else if (selectedCatId) {
@@ -119,7 +119,7 @@ export const PiggyBankView = () => {
                 if (txDate) {
                     finalDate = new Date(txDate).toISOString();
                 }
-                await transactionsApi.update(editingTxId, finalAmount, type, desc, finalCategoryName, finalDate as any);
+                await transactionsApi.update(editingTxId, finalAmount, type, desc, finalCategoryName, finalDate);
             } else if (type === 'transfer') {
                 if (!targetBankId) {
                     showModal({ title: 'Missing Target', message: 'Please select a target Piggy Bank for transfer.', variant: 'warning', alertOnly: true, onConfirm: closeModal });
@@ -132,7 +132,7 @@ export const PiggyBankView = () => {
                 if (txDate) {
                     finalDate = new Date(txDate).toISOString();
                 }
-                await transactionsApi.create(parseInt(id), finalAmount, type, desc, finalCategoryName, finalDate as any);
+                await transactionsApi.create(parseInt(id), finalAmount, type, desc, finalCategoryName, finalDate);
             }
 
             setShowAdd(false);
@@ -154,7 +154,7 @@ export const PiggyBankView = () => {
     if (isLoading) return <div className="p-8 text-center text-muted animate-fade-in">Loading...</div>;
     if (!bank) return <div className="p-8 text-center text-danger animate-fade-in">PiggyBank not found.</div>;
 
-    const transferTargets = allBanks.filter(b => b.id !== bank.id);
+    const transferTargets = allBanks.filter(b => b.id !== bank.id && b.currency === bank.currency);
 
     const getCurrencySymbol = (currency: string) => {
         switch (currency) {
@@ -296,7 +296,9 @@ export const PiggyBankView = () => {
                                 <option value="income">Income</option>
                                 <option value="withdrawal">Withdrawal</option>
                                 <option value="deposit">Deposit</option>
-                                <option value="transfer">Transfer</option>
+                                <option value="transfer_out">Transfer Out (external)</option>
+                                <option value="transfer_in">Transfer In (external)</option>
+                                {editingTxId === null && <option value="transfer">Transfer between PiggyBanks</option>}
                             </select>
                         </div>
 
@@ -577,8 +579,8 @@ export const PiggyBankView = () => {
                         </thead>
                         <tbody>
                             {transactions.map((tx) => {
-                                const isIncome = tx.amount > 0 && tx.type !== 'transfer';
-                                const isTransfer = tx.type === 'transfer';
+                                const isIncome = tx.amount > 0 && !['transfer', 'transfer_in', 'transfer_out'].includes(tx.type);
+                                const isTransfer = ['transfer', 'transfer_in', 'transfer_out'].includes(tx.type);
 
                                 let icon = <ArrowDownRight size={14} className="mr-1" />;
                                 let typeLabel = 'Expense';
@@ -592,7 +594,7 @@ export const PiggyBankView = () => {
                                     textClass = 'text-success';
                                 } else if (isTransfer) {
                                     icon = <ArrowRight size={14} className="mr-1" />;
-                                    typeLabel = 'Transfer';
+                                    typeLabel = tx.type === 'transfer_out' ? 'Transfer Out' : tx.type === 'transfer_in' ? 'Transfer In' : 'Transfer';
                                     badgeClass = 'bg-accent-light text-accent-primary';
                                     if (tx.amount > 0) {
                                         textClass = 'text-success';
@@ -624,7 +626,7 @@ export const PiggyBankView = () => {
                                             {tx.amount > 0 ? '+' : ''}{cSym}{tx.amount.toFixed(2)}
                                         </td>
                                         <td className="p-4 text-center" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', border: 'none' }}>
-                                            {tx.transaction_id === `entry:${tx.id}` && <button
+                                            {tx.type !== 'transfer' && <button
                                                 onClick={() => {
                                                     setEditingTxId(tx.id);
                                                     setAmount(Math.abs(tx.amount).toString());
@@ -656,7 +658,7 @@ export const PiggyBankView = () => {
                                                 onClick={() => {
                                                     showModal({
                                                         title: 'Delete Transaction',
-                                                        message: tx.transaction_id !== `entry:${tx.id}` ? 'Delete both sides of this transfer? This action cannot be undone.' : 'Are you sure you want to delete this transaction? This action cannot be undone.',
+                                                        message: tx.type === 'transfer' ? 'Delete both sides of this transfer? This action cannot be undone.' : 'Are you sure you want to delete this transaction? This action cannot be undone.',
                                                         variant: 'danger',
                                                         confirmText: 'Delete',
                                                         onConfirm: async () => {

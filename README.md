@@ -1,5 +1,7 @@
 # PiggyNest 🐷
 
+Engineering documentation: [architecture](docs/architecture.md), [technology stack](docs/tech-stack.md), [design decisions](docs/design-decisions.md), and [backlog](docs/backlog.md).
+
 A full-stack, comprehensive, categorized, and multi-currency personal finance bookkeeping application powered by FastAPI and React!
 
 PiggyNest allows users to map their real-world Net Worth across various different independent "PiggyBanks".
@@ -71,11 +73,13 @@ its banks and transactions to the signed-in account in one database transaction.
 An existing bank name rejects the entire import, so importing the same file twice
 does not duplicate entries. The import limit is 10 MB and 100,000 rows per sheet.
 
-Both rows of a new transfer carry the same logical `transaction_id`; their
+Both rows of a new internal transfer carry the same logical `transaction_id`; their
 `entry_id` values identify the individual debit and credit records. The exporter also
 pairs older transfers when their date, amount, bank names and descriptions identify
 a unique match. Ambiguous older transfers remain separate rows, with their
-original balances preserved. Deleting a linked transfer deletes both sides.
+original balances preserved. Deleting a linked internal transfer deletes both sides.
+An external transfer is one row with its own ID. Classify unresolved older transfers
+with the [repair program](docs/transfer-repair.md) before importing their backup.
 
 Install backend dependencies from `backend/requirements.txt` before starting the
 API; the workbook feature uses `openpyxl`.
@@ -83,7 +87,7 @@ API; the workbook feature uses `openpyxl`.
 ## Development test account
 
 For local manual feature testing, use **Bob** in the development database
-`backend/data/bookkeeping.db` (with the API started from `backend/`):
+`backend/data/piggynest.db` (with the API started from `backend/`):
 
 - Email / login: `bob@piggynest.test`
 - Password: `BobTest2026!`

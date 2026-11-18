@@ -18,8 +18,8 @@ import os
 BASE_URL = "http://127.0.0.1:8000/api/v1"
 
 # Absolute path to the local SQLite database. 
-# It assumes a specific folder structure: ./backend/data/bookkeeping.db
-DB_PATH = os.path.join(os.path.dirname(__file__), "backend", "data", "bookkeeping.db")
+# It assumes a specific folder structure: ./backend/data/piggynest.db
+DB_PATH = os.path.join(os.path.dirname(__file__), "backend", "data", "piggynest.db")
 
 # Global session variable. Once logged in, this stores the JWT string 
 # to authorize subsequent API requests.

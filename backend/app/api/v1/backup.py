@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.domain.piggy_banks import NAME_PATTERN
+from app.domain.transfer_links import legacy_transfer_pairs
 from app.models.piggy_bank import PiggyBank
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -37,29 +38,10 @@ def _text_cell(sheet, row, column, value):
 
 def _legacy_transfer_groups(transactions, banks):
     """Pair only unambiguous transfers made before transfer_group_id existed."""
-    names = {bank.id: bank.name for bank in banks}
-    old = [tx for tx in transactions if tx.type == "transfer" and not tx.transfer_group_id]
-    candidates = {}
-    for debit in old:
-        if debit.amount >= 0 or debit.category != "Transfer Out":
-            continue
-        matches = [credit for credit in old if (
-            credit.amount == -debit.amount
-            and credit.date == debit.date
-            and credit.piggy_bank_id != debit.piggy_bank_id
-            and credit.category == "Transfer In"
-            and (debit.description or "").startswith(f"Transfer to {names[credit.piggy_bank_id]}: ")
-            and (credit.description or "").startswith(f"Transfer from {names[debit.piggy_bank_id]}: ")
-            and debit.description.split(": ", 1)[1] == credit.description.split(": ", 1)[1]
-        )]
-        if len(matches) == 1:
-            candidates[debit.id] = matches[0].id
-    credits = defaultdict(list)
-    for debit_id, credit_id in candidates.items():
-        credits[credit_id].append(debit_id)
+    pairs = legacy_transfer_pairs(transactions, banks)
     result = {}
-    for debit_id, credit_id in candidates.items():
-        if len(credits[credit_id]) == 1:
+    for debit_id, credit_id in pairs.items():
+        if debit_id not in result:
             group = str(uuid4())
             result[debit_id] = group
             result[credit_id] = group
@@ -184,6 +166,11 @@ def _parse(workbook):
         if isinstance(amount, bool) or not isinstance(amount, (float, int)) or not isfinite(amount):
             _fail(f"Invalid amount in row {row}")
         tx_type = _string(values[3], f"Transactions row {row} type", 50, True)
+        if tx_type not in {"expense", "income", "withdrawal", "deposit", "transfer", "transfer_out", "transfer_in"}:
+            _fail(f"Invalid transaction type in row {row}")
+        if ((tx_type == "transfer_out" and amount >= 0)
+                or (tx_type == "transfer_in" and amount <= 0)):
+            _fail(f"External transfer direction does not match amount in row {row}")
         category = _string(values[4], f"Transactions row {row} category", 100)
         description = _string(values[5], f"Transactions row {row} description", 255)
         date_value = values[6]
@@ -196,6 +183,8 @@ def _parse(workbook):
         if logical_id.startswith("entry:"):
             if logical_id != f"entry:{tx_id}":
                 _fail(f"Invalid individual transaction ID in row {row}")
+            if tx_type == "transfer":
+                _fail(f"Transfer in row {row} needs a shared transaction ID")
             group = None
         else:
             if tx_type != "transfer":

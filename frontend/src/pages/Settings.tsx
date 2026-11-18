@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { authApi } from '../api/auth';
 import { ArrowLeft, User, AlertTriangle, Download, Upload } from 'lucide-react';
 import { backupApi } from '../api/backup';
+import { getApiError } from '../api/client';
 
 export const Settings = () => {
     const { user, logout, updateUser } = useAuth();
@@ -40,8 +41,8 @@ export const Settings = () => {
         try {
             const result = await backupApi.import(file);
             setBackupMessage(`Imported ${result.piggy_banks_imported} piggy banks, ${result.transactions_imported} transactions, and ${result.categories_imported} categories. Return to Dashboard to see them.`);
-        } catch (err: any) {
-            setBackupError(err.response?.data?.detail || 'Could not import this backup.');
+        } catch (err: unknown) {
+            setBackupError(getApiError(err, 'Could not import this backup.'));
         } finally {
             setIsImporting(false);
         }
@@ -57,9 +58,9 @@ export const Settings = () => {
             const updatedUser = await authApi.updateProfile(username);
             updateUser(updatedUser);
             setMessage('Profile updated successfully! 🐷✨');
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error(err);
-            setError(err.response?.data?.detail || 'Failed to update profile');
+            setError(getApiError(err, 'Failed to update profile'));
         } finally {
             setIsUpdating(false);
         }

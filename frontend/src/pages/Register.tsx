@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../api/auth';
+import { getApiError } from '../api/client';
 import { UserPlus } from 'lucide-react';
 import { PiggyAnimation } from '../components/PiggyCartoon';
 
@@ -28,8 +29,8 @@ export const Register = () => {
         try {
             await authApi.register(username, email, password);
             navigate('/login');
-        } catch (err: any) {
-            setError(err.response?.data?.detail || 'Failed to create account. Email may already be taken.');
+        } catch (err: unknown) {
+            setError(getApiError(err, 'Failed to create account. Email may already be taken.'));
         } finally {
             setIsLoading(false);
         }

@@ -31,8 +31,8 @@ export const StatisticsCharts: React.FC<StatisticsChartsProps> = ({
                 // Extract unique currencies from the response
                 const currencies = Array.from(new Set(data.map(d => d.currency)));
                 setAvailableCurrencies(currencies);
-                if (currencies.length > 0 && !currencies.includes(currency)) {
-                    setCurrency(currencies[0]);
+                if (currencies.length > 0) {
+                    setCurrency(current => currencies.includes(current) ? current : currencies[0]);
                 }
             } catch (error) {
                 console.error("Failed to load statistics", error);
@@ -42,7 +42,7 @@ export const StatisticsCharts: React.FC<StatisticsChartsProps> = ({
         };
 
         loadStats();
-    }, [timeframe]); // Intentionally omitting currency from dep array to not reload network
+    }, [timeframe]);
 
     const filteredStats = stats.filter(s => s.currency === currency);
 

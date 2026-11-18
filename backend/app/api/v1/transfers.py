@@ -34,6 +34,8 @@ def transfer_funds(
 
     if not source_pb or not target_pb:
         raise HTTPException(status_code=404, detail="One or both piggy banks not found or not owned by user")
+    if source_pb.currency != target_pb.currency:
+        raise HTTPException(status_code=400, detail="Transfers require matching currencies")
 
     # Perform atomic transfer
     try:
@@ -66,6 +68,8 @@ def transfer_funds(
         
         return {
             "success": True, 
+            "transaction_id": transfer_group_id,
+            "entry_ids": [debit_tx.id, credit_tx.id],
             "message": f"Successfully transferred {payload.amount} from {source_pb.name} to {target_pb.name}"
         }
     except Exception as e:

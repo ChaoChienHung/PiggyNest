@@ -48,3 +48,17 @@ def test_test_token(client):
     response = client.post("/api/v1/auth/test-token", headers=headers)
     assert response.status_code == 200
     assert response.json()["email"] == "token@example.com"
+
+
+def test_algorithm_name_is_not_a_valid_signing_key(client):
+    from datetime import datetime, timedelta
+    from jose import jwt
+
+    user = client.post("/api/v1/auth/register", json={
+        "username": "forgery_user", "email": "forgery@example.com", "password": "password",
+    }).json()
+    forged = jwt.encode({
+        "sub": str(user["id"]), "exp": datetime.utcnow() + timedelta(minutes=5),
+    }, "HS256", algorithm="HS256")
+    response = client.post("/api/v1/auth/test-token", headers={"Authorization": f"Bearer {forged}"})
+    assert response.status_code == 401

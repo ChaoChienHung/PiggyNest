@@ -2,7 +2,7 @@ import sqlite3
 import os
 
 def migrate():
-    db_path = './data/bookkeeping.db'
+    db_path = './data/piggynest.db'
     if not os.path.exists(db_path):
         print("DB not found at", db_path)
         return

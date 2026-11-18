@@ -9,6 +9,7 @@ from app.models.piggy_bank import PiggyBank
 from app.schemas.transaction import TransactionCreate, TransactionRead, TransactionUpdate
 from app.api.deps import get_current_user
 from app.models.user import User
+from app.domain.transfer_links import legacy_transfer_pairs
 
 router = APIRouter()
 
@@ -32,6 +33,11 @@ def add_transaction(
     to a specific PiggyBank owned by the user.
     """
     get_user_piggy_bank(db, pb_id, current_user.id)
+    if payload.type == "transfer":
+        raise HTTPException(status_code=400, detail="Use /transfers to create both transfer entries")
+    if ((payload.type == "transfer_out" and payload.amount >= 0)
+            or (payload.type == "transfer_in" and payload.amount <= 0)):
+        raise HTTPException(status_code=400, detail="External transfer direction must match the signed amount")
     
     transaction = Transaction(
         piggy_bank_id=pb_id,
@@ -86,6 +92,16 @@ def delete_transaction(
         ).all()
         for leg in pair:
             db.delete(leg)
+    elif transaction.type == "transfer":
+        banks = db.query(PiggyBank).filter(PiggyBank.user_id == current_user.id).all()
+        transactions = db.query(Transaction).filter(
+            Transaction.piggy_bank_id.in_([bank.id for bank in banks])
+        ).all()
+        counterpart_id = legacy_transfer_pairs(transactions, banks).get(transaction.id)
+        if counterpart_id is None:
+            raise HTTPException(status_code=409, detail="Legacy transfer has no unique pair; repair its transaction ID before deleting")
+        db.delete(db.get(Transaction, counterpart_id))
+        db.delete(transaction)
     else:
         db.delete(transaction)
     db.commit()
@@ -130,6 +146,13 @@ def update_transaction(
         raise HTTPException(status_code=404, detail="Transaction not found")
     if transaction.transfer_group_id:
         raise HTTPException(status_code=400, detail="Delete and recreate a linked transfer to change it")
+    if transaction.type == "transfer" or payload.type == "transfer":
+        raise HTTPException(status_code=400, detail="Use /transfers to create transfers; delete and recreate to change them")
+    updated_type = payload.type or transaction.type
+    updated_amount = payload.amount if payload.amount is not None else transaction.amount
+    if ((updated_type == "transfer_out" and updated_amount >= 0)
+            or (updated_type == "transfer_in" and updated_amount <= 0)):
+        raise HTTPException(status_code=400, detail="External transfer direction must match the signed amount")
         
     if payload.amount is not None:
         # If type is expense but amount is positive, or vice versa, let's keep consistency.

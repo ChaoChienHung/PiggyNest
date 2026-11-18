@@ -12,7 +12,7 @@ export const transactionsApi = {
     /**
      * Dispatches a unified payload to create a localized PiggyBank transaction.
      */
-    create: async (piggyBankId: number, amount: number, type: string, description: string, category: string, date: string) => {
+    create: async (piggyBankId: number, amount: number, type: string, description: string, category: string, date?: string) => {
         const { data } = await apiClient.post(`/piggy-banks/${piggyBankId}/transactions`, {
             amount,
             type,
@@ -37,7 +37,7 @@ export const transactionsApi = {
     /**
      * Updates an existing transaction.
      */
-    update: async (transactionId: number, amount: number, type: string, description: string, category: string, date: string) => {
+    update: async (transactionId: number, amount: number, type: string, description: string, category: string, date?: string) => {
         const { data } = await apiClient.put(`/transactions/${transactionId}`, {
             amount,
             type,
@@ -48,7 +48,7 @@ export const transactionsApi = {
         return data;
     },
     /**
-     * Hard-deletes a single transaction by its primary key.
+     * Deletes an entry by its primary key; the API also removes its transfer pair.
      */
     delete: async (transactionId: number): Promise<void> => {
         await apiClient.delete(`/transactions/${transactionId}`);

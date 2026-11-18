@@ -60,12 +60,11 @@ def get_statistics(
             }
 
         # Map types to income/expense for charting purposes
-        if tx.type in ['income', 'deposit']:
+        if tx.type in ['income', 'deposit', 'transfer_in']:
             stats_map[map_key]["income"] += tx.amount
             if tx.category:
                 stats_map[map_key]["category_incomes"][tx.category] = stats_map[map_key]["category_incomes"].get(tx.category, 0) + tx.amount
-        elif tx.type in ['expense', 'withdrawal', 'transfer']:
-            # Transfers are generally treated as expenses from the source piggy bank.
+        elif tx.type in ['expense', 'withdrawal', 'transfer_out']:
             # Convert negative numbers to positive for charting expenses.
             amt = abs(tx.amount)
             stats_map[map_key]["expense"] += amt

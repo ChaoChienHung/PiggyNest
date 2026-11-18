@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { piggybanksApi } from '../api/piggybanks';
 import type { PiggyBank, Balance } from '../types';
 import { Plus, Wallet, LogOut, ArrowRight, Settings, TrendingUp } from 'lucide-react';
@@ -281,7 +281,7 @@ export const Dashboard = () => {
                                                     closeModal();
                                                     piggybanksApi.remove(pb.id)
                                                         .then(() => loadData())
-                                                        .catch((err: any) => {
+                                                        .catch((err: unknown) => {
                                                             console.error(err);
                                                             showModal({ title: 'Error', message: 'Failed to delete piggy bank.', variant: 'danger', alertOnly: true, onConfirm: closeModal });
                                                         });

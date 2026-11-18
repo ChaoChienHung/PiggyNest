@@ -3,9 +3,11 @@ Application Configuration
 Handles environment variables and settings
 """
 import os
+import secrets
 import yaml
 from typing import List
 from pydantic_settings import BaseSettings
+from pydantic import Field
 from pathlib import Path
 
 
@@ -46,12 +48,13 @@ class Settings(BaseSettings):
     # --------
     # Database
     # --------
-    DATABASE_URL: str = "sqlite:///./data/bookkeeping.db"
+    DATABASE_URL: str = "sqlite:///./data/piggynest.db"
     
     # --------
     # Security
     # --------
     ALGORITHM: str = "HS256"
+    SECRET_KEY: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # ------------------

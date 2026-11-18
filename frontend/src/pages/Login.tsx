@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { authApi } from '../api/auth';
+import { getApiError } from '../api/client';
 import { LogIn } from 'lucide-react';
 import { PiggyAnimation } from '../components/PiggyCartoon';
 
@@ -25,8 +26,8 @@ export const Login = () => {
             const user = await authApi.testToken();
             login(data.access_token, user);
             navigate('/');
-        } catch (err: any) {
-            setError(err.response?.data?.detail || 'Failed to login. Please check your credentials.');
+        } catch (err: unknown) {
+            setError(getApiError(err, 'Failed to login. Please check your credentials.'));
             localStorage.removeItem('piggy_token');
         } finally {
             setIsLoading(false);

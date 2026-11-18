@@ -1,5 +1,12 @@
 import axios from 'axios';
 
+export const getApiError = (error: unknown, fallback: string): string => {
+    if (axios.isAxiosError(error) && typeof error.response?.data?.detail === 'string') {
+        return error.response.data.detail;
+    }
+    return fallback;
+};
+
 const BACKEND_URL = 'http://127.0.0.1:8000/api/v1';
 
 export const apiClient = axios.create({
