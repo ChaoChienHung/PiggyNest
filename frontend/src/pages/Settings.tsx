@@ -2,9 +2,11 @@ import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { authApi } from '../api/auth';
-import { ArrowLeft, User, AlertTriangle, Download, Upload } from 'lucide-react';
+import { ArrowLeft, User, AlertTriangle, Download, Upload, LayoutList } from 'lucide-react';
 import { backupApi } from '../api/backup';
 import { getApiError } from '../api/client';
+import type { User as UserProfile } from '../types';
+import { DATE_FORMATS, asDateFormat, formatDate, todayIsoDate } from '../utils/dates';
 
 export const Settings = () => {
     const { user, logout, updateUser } = useAuth();
@@ -18,6 +20,24 @@ export const Settings = () => {
     const [isImporting, setIsImporting] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const importInputRef = useRef<HTMLInputElement>(null);
+    const [displayMessage, setDisplayMessage] = useState('');
+    const [displayError, setDisplayError] = useState('');
+    const [isSavingDisplay, setIsSavingDisplay] = useState(false);
+
+    const saveDisplay = async (save: () => Promise<UserProfile>) => {
+        setDisplayMessage('');
+        setDisplayError('');
+        setIsSavingDisplay(true);
+        try {
+            const updatedUser = await save();
+            updateUser(updatedUser);
+            setDisplayMessage('Display preference saved.');
+        } catch (err: unknown) {
+            setDisplayError(getApiError(err, 'Could not save this preference.'));
+        } finally {
+            setIsSavingDisplay(false);
+        }
+    };
 
     const handleExport = async () => {
         setBackupError('');
@@ -58,7 +78,7 @@ export const Settings = () => {
         try {
             const updatedUser = await authApi.updateProfile(username);
             updateUser(updatedUser);
-            setMessage('Profile updated successfully! 🐷✨');
+            setMessage('Profile updated successfully!');
         } catch (err: unknown) {
             console.error(err);
             setError(getApiError(err, 'Failed to update profile'));
@@ -88,13 +108,13 @@ export const Settings = () => {
             </Link>
 
             <header className="mb-10">
-                <h1 className="text-3xl font-bold">Account Settings ⚙️</h1>
-                <p className="text-muted mt-1">Manage your profile and account preferences 🐷</p>
+                <h1 className="text-3xl font-bold">Account Settings</h1>
+                <p className="text-muted mt-1">Manage your profile and account preferences</p>
             </header>
 
             <div className="glass-panel p-8 mb-8">
                 <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                    <User size={20} className="text-accent-primary" /> Profile Settings 👤
+                    <User size={20} className="text-accent-primary" /> Profile Settings
                 </h2>
 
                 {message && <div className="p-3 mb-4 text-sm text-success bg-success bg-opacity-10 border border-success border-opacity-20 rounded">{message}</div>}
@@ -132,6 +152,51 @@ export const Settings = () => {
                         </button>
                     </div>
                 </form>
+            </div>
+
+            <div className="glass-panel p-8 mb-8">
+                <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                    <LayoutList size={20} className="text-accent-primary" /> Display
+                </h2>
+                <p className="text-text-secondary text-sm mb-6">
+                    These preferences are saved to your account and apply in the browser and the CLI.
+                </p>
+                {displayMessage && <p className="mb-4 text-success" role="status">{displayMessage}</p>}
+                {displayError && <p className="mb-4 text-danger" role="alert">{displayError}</p>}
+                <div className="settings-fields">
+                    <div className="settings-field">
+                        <label htmlFor="transactions-per-page" className="text-sm font-medium text-text-secondary">Transactions per page</label>
+                        <select
+                            id="transactions-per-page"
+                            className="input-field settings-select"
+                            value={user?.transactions_per_page ?? 20}
+                            onChange={(e) => saveDisplay(() => authApi.updateTransactionsPerPage(Number(e.target.value)))}
+                            disabled={isSavingDisplay}
+                        >
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
+                            <option value={50}>50</option>
+                            <option value={0}>All</option>
+                        </select>
+                    </div>
+                    <div className="settings-field">
+                        <label htmlFor="date-format" className="text-sm font-medium text-text-secondary">Date format</label>
+                        <select
+                            id="date-format"
+                            className="input-field settings-select"
+                            value={asDateFormat(user?.date_format)}
+                            onChange={(e) => saveDisplay(() => authApi.updateDateFormat(e.target.value))}
+                            disabled={isSavingDisplay}
+                        >
+                            {DATE_FORMATS.map((format) => (
+                                <option key={format} value={format}>{format}</option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-muted">
+                            Example: {formatDate(todayIsoDate(), asDateFormat(user?.date_format))}. Dates are typed in this format too.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div className="glass-panel p-8 mb-8">

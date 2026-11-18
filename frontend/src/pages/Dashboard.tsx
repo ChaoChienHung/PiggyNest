@@ -6,6 +6,7 @@ import type { PiggyBank, Balance } from '../types';
 import { Plus, Wallet, LogOut, ArrowRight, Settings, TrendingUp } from 'lucide-react';
 import { StatisticsCharts } from '../components/StatisticsCharts';
 import { ConfirmModal, type ModalVariant } from '../components/ConfirmModal';
+import { formatMoney } from '../utils/money';
 
 interface PiggyBankWithBalance extends PiggyBank {
     details?: Balance;
@@ -96,18 +97,6 @@ export const Dashboard = () => {
         }
     };
 
-    const getCurrencySymbol = (currency: string) => {
-        switch (currency) {
-            case 'USD': return '$';
-            case 'EUR': return '€';
-            case 'GBP': return '£';
-            case 'JPY': return '¥';
-            case 'NTD': return 'NT$';
-            case 'SGD': return 'S$';
-            default: return currency + ' ';
-        }
-    };
-
     /**
      * Compute total user balance separated by currency to prevent inaccurate cross-currency math.
      */
@@ -125,7 +114,7 @@ export const Dashboard = () => {
         <div className="container page-layout-container animate-fade-in">
             <header className="flex justify-between items-center mb-10">
                 <div>
-                    <h1 className="dashboard-title">Dashboard 🐷</h1>
+                    <h1 className="dashboard-title">Dashboard</h1>
                     <p className="welcome-subtext">Welcome back, {user?.username || user?.email}</p>
                 </div>
                 <div className="flex gap-3">
@@ -144,7 +133,7 @@ export const Dashboard = () => {
                     {Object.entries(balancesByCurrency).length > 0 ? (
                         Object.entries(balancesByCurrency).map(([currency, total]) => (
                             <h2 key={currency} className="networth-amount">
-                                {getCurrencySymbol(currency)}{total.toFixed(2)}
+                                {formatMoney(total, currency)}
                             </h2>
                         ))
                     ) : (
@@ -159,7 +148,7 @@ export const Dashboard = () => {
             <StatisticsCharts showAnalytics={showAnalytics} setShowAnalytics={setShowAnalytics} />
 
             <div className="flex justify-between items-center mb-6">
-                <h3 className="dashboard-section-title">Piggy Banks 💰</h3>
+                <h3 className="dashboard-section-title">Piggy Banks</h3>
                 <div className="flex items-center gap-3">
                     {/* Inline Pig Trigger next to New PiggyBank */}
                     <div className="inline-fab-container">
@@ -168,11 +157,10 @@ export const Dashboard = () => {
                             <div 
                                 onClick={() => setShowAnalytics(!showAnalytics)} 
                                 className="inline-fab-coin"
-                                title={showAnalytics ? "Hide Charts" : "Show Charts"}
                             >
                                 <TrendingUp size={20} />
                                 <span className="inline-fab-tooltip">
-                                    {showAnalytics ? "📊 Hide Analytics" : "📈 Show Analytics"}
+                                    {showAnalytics ? "Hide Analytics" : "Show Analytics"}
                                 </span>
                             </div>
                         </div>
@@ -262,7 +250,7 @@ export const Dashboard = () => {
                                 </div>
 
                                 <p className="text-text-secondary mb-1" style={{ fontSize: '1.0rem', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Current Balance</p>
-                                <p className="font-bold text-text-primary" style={{ fontSize: '1.65rem' }}>{getCurrencySymbol(pb.currency)}{pb.details?.balance.toFixed(2) || '0.00'}</p>
+                                <p className="font-bold text-text-primary" style={{ fontSize: '1.65rem' }}>{formatMoney(pb.details?.balance ?? 0, pb.currency)}</p>
 
                                 <div className="flex justify-between items-center mt-auto pt-4" style={{ marginTop: 'auto' }}>
                                     <p className="text-muted" style={{ fontSize: '1.0rem' }}>

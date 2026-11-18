@@ -4,9 +4,12 @@ import { piggybanksApi } from '../api/piggybanks';
 import { transactionsApi } from '../api/transactions';
 import { categoriesApi } from '../api/categories';
 import type { Transaction, PiggyBank, Balance, Category } from '../types';
-import { ArrowLeft, ArrowUpRight, ArrowDownRight, ArrowRight, Plus, Pencil, TrendingUp } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { ArrowLeft, ArrowUpRight, ArrowDownRight, ArrowRight, Plus, Pencil, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ConfirmModal, type ModalVariant } from '../components/ConfirmModal';
+import { formatMoney } from '../utils/money';
+import { useAuth } from '../context/useAuth';
+import { asDateFormat, formatDate, isoDatePart, parseDate, todayIsoDate } from '../utils/dates';
 
 const CATEGORY_COLORS = ['#ff8da1', '#ffd166', '#ffb703', '#ff5e7e', '#ffc2d1', '#f59e0b', '#ec4899', '#8b5cf6'];
 const transferNote = (description?: string) => {
@@ -36,11 +39,17 @@ export const PiggyBankView = () => {
     // Form states
     const [showAdd, setShowAdd] = useState(false);
     const [editingTxId, setEditingTxId] = useState<number | null>(null);
+    const { user } = useAuth();
+    const dateFormat = asDateFormat(user?.date_format);
+    // 0 means show every transaction on one page.
+    const pageSize = user?.transactions_per_page ?? 20;
+    const [page, setPage] = useState(1);
     const editingTransaction = transactions.find(tx => tx.id === editingTxId);
     const [amount, setAmount] = useState('');
     const [type, setType] = useState('expense');
     const [desc, setDesc] = useState('');
-    const [txDate, setTxDate] = useState(new Date().toISOString().split('T')[0]);
+    // Holds the date as typed, in the user's chosen format.
+    const [txDate, setTxDate] = useState(() => formatDate(todayIsoDate(), dateFormat));
 
     // Category states
     const [selectedCatId, setSelectedCatId] = useState('');
@@ -67,10 +76,12 @@ export const PiggyBankView = () => {
     /**
      * Re-fetches all critical data relating to this specific PiggyBank.
      * Grabs underlying transactions, current balance totals, and external categories/PiggyBanks for dropdowns.
+     * A silent refresh keeps the current page rendered, so saving or deleting
+     * a transaction does not replace the list with a loader and reset scroll.
      */
-    const loadData = useCallback(async () => {
+    const loadData = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
         if (!id) return;
-        setIsLoading(true);
+        if (!silent) setIsLoading(true);
         try {
             const pbs = await piggybanksApi.list();
             setAllBanks(pbs);
@@ -109,6 +120,14 @@ export const PiggyBankView = () => {
         if (['expense', 'withdrawal', 'transfer_out'].includes(type)) finalAmount = -Math.abs(finalAmount);
         if (['income', 'deposit', 'transfer_in'].includes(type)) finalAmount = Math.abs(finalAmount);
 
+        // A new PiggyBank transfer has no date field; every other form needs a valid date.
+        const needsDate = type !== 'transfer' || editingTxId !== null;
+        const isoDate = needsDate ? parseDate(txDate, dateFormat) : null;
+        if (needsDate && !isoDate) {
+            showModal({ title: 'Check the date', message: `Enter a real date in the format ${dateFormat}.`, variant: 'warning', alertOnly: true, onConfirm: closeModal });
+            return;
+        }
+
         try {
             // First resolve category
             let finalCategoryName = '';
@@ -124,8 +143,8 @@ export const PiggyBankView = () => {
 
             if (editingTxId !== null) {
                 let finalDate = undefined;
-                if (txDate) {
-                    finalDate = new Date(txDate).toISOString();
+                if (isoDate) {
+                    finalDate = `${isoDate}T00:00:00`;
                 }
                 if (editingTransaction?.type === 'transfer') {
                     const signedAmount = editingTransaction.amount < 0 ? -Math.abs(finalAmount) : Math.abs(finalAmount);
@@ -147,8 +166,8 @@ export const PiggyBankView = () => {
                 await transactionsApi.transfer(parseInt(id), parseInt(targetBankId), amt, desc);
             } else {
                 let finalDate = undefined;
-                if (txDate) {
-                    finalDate = new Date(txDate).toISOString();
+                if (isoDate) {
+                    finalDate = `${isoDate}T00:00:00`;
                 }
                 await transactionsApi.create(parseInt(id), finalAmount, type, desc, finalCategoryName, finalDate);
             }
@@ -160,9 +179,9 @@ export const PiggyBankView = () => {
             setNewCatName('');
             setIsCreatingCat(false);
             setType('expense');
-            setTxDate(new Date().toISOString().split('T')[0]);
+            setTxDate(formatDate(todayIsoDate(), dateFormat));
             setEditingTxId(null);
-            loadData();
+            await loadData({ silent: true });
         } catch (err) {
             console.error("Failed to save transaction", err);
             showModal({ title: 'Oops!', message: 'Failed to save transaction. Please try again.', variant: 'danger', alertOnly: true, onConfirm: closeModal });
@@ -172,34 +191,64 @@ export const PiggyBankView = () => {
     if (isLoading) return <div className="p-8 text-center text-muted animate-fade-in">Loading...</div>;
     if (!bank) return <div className="p-8 text-center text-danger animate-fade-in">PiggyBank not found.</div>;
 
+    const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(transactions.length / pageSize)) : 1;
+    // Deleting the last row of the final page leaves the user on the new last page.
+    const currentPage = Math.min(page, totalPages);
+    const visibleTransactions = pageSize > 0
+        ? transactions.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+        : transactions;
+    const firstShown = transactions.length === 0 ? 0 : (currentPage - 1) * (pageSize || transactions.length) + 1;
+    const lastShown = firstShown + visibleTransactions.length - 1;
+
     const transferTargets = allBanks.filter(b => b.id !== bank.id && b.currency === bank.currency);
 
-    const getCurrencySymbol = (currency: string) => {
-        switch (currency) {
-            case 'USD': return '$';
-            case 'EUR': return '€';
-            case 'GBP': return '£';
-            case 'JPY': return '¥';
-            case 'NTD': return 'NT$';
-            case 'SGD': return 'S$';
-            default: return currency + ' ';
-        }
-    };
-    // Sort transactions chronologically ascending to compute running balance
-    const chronologicalTxs = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
+    // One point per calendar day: the end-of-day balance plus that day's money in and out.
+    // `t` is UTC midnight of the date, so the time axis spaces days evenly in any time zone.
+    const dailyTotals = new Map<string, { income: number; expense: number; net: number }>();
+    for (const tx of transactions) {
+        const day = isoDatePart(tx.date);
+        const totals = dailyTotals.get(day) ?? { income: 0, expense: 0, net: 0 };
+        if (tx.amount > 0) totals.income += tx.amount;
+        else totals.expense += Math.abs(tx.amount);
+        totals.net += tx.amount;
+        dailyTotals.set(day, totals);
+    }
     let runningBalance = 0;
-    const lineChartData = chronologicalTxs.map(tx => {
-        runningBalance += tx.amount;
-        const dateStr = new Date(tx.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-        return {
-            rawDate: new Date(tx.date),
-            dateStr,
-            balance: parseFloat(runningBalance.toFixed(2)),
-            income: tx.amount > 0 ? tx.amount : 0,
-            expense: tx.amount < 0 ? Math.abs(tx.amount) : 0
-        };
-    });
+    const lineChartData = [...dailyTotals.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([day, totals]) => {
+            runningBalance += totals.net;
+            const [y, m, d] = day.split('-').map(Number);
+            return {
+                t: Date.UTC(y, m - 1, d),
+                day,
+                balance: Math.round(runningBalance * 100) / 100,
+                income: Math.round(totals.income * 100) / 100,
+                expense: Math.round(totals.expense * 100) / 100,
+            };
+        });
+
+    // Tick at the start of each month in range, thinned to at most ~8 labels.
+    const monthTicks: number[] = [];
+    if (lineChartData.length > 0) {
+        const first = new Date(lineChartData[0].t);
+        const last = lineChartData[lineChartData.length - 1].t;
+        for (let y = first.getUTCFullYear(), m = first.getUTCMonth() + 1; ; m++) {
+            if (m > 11) { y++; m = 0; }
+            const tick = Date.UTC(y, m, 1);
+            if (tick > last) break;
+            monthTicks.push(tick);
+        }
+    }
+    const tickStep = Math.max(1, Math.ceil(monthTicks.length / 8));
+    const xTicks = monthTicks.length >= 2 ? monthTicks.filter((_, i) => i % tickStep === 0) : undefined;
+    const formatMonthTick = (t: number) => {
+        const date = new Date(t);
+        return xTicks
+            ? `${date.getUTCFullYear()}/${String(date.getUTCMonth() + 1).padStart(2, '0')}`
+            : formatDate(new Date(t).toISOString(), dateFormat);
+    };
+    const lineColor = lineMetric === 'expense' ? '#ff8da1' : '#f4b740';
 
     // Group monthly for Bar Chart
     const monthlyTotals: Record<string, { month: string, income: number, expense: number }> = {};
@@ -229,15 +278,13 @@ export const PiggyBankView = () => {
         .filter(d => d.value > 0)
         .sort((a, b) => b.value - a.value);
 
-    const cSym = getCurrencySymbol(bank.currency);
-
     const transactionForm = (
         <form
             id={editingTxId !== null ? `transaction-editor-${editingTxId}` : 'transaction-add-form'}
             onSubmit={handleAddTx}
             className="glass-panel p-6 mb-8 animate-fade-in flex flex-col gap-4 transaction-form"
         >
-            <h3 className="text-lg font-semibold mb-2">{editingTxId ? 'Edit Transaction ✏️' : 'Add New Transaction 📝'}</h3>
+            <h3 className="text-lg font-semibold mb-2">{editingTxId ? 'Edit Transaction' : 'Add New Transaction'}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div>
                     <label className="block text-sm font-medium text-text-secondary mb-1">Type</label>
@@ -259,13 +306,16 @@ export const PiggyBankView = () => {
 
                 {(type !== 'transfer' || editingTxId !== null) && (
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Date</label>
+                        <label htmlFor="transaction-date" className="block text-sm font-medium text-text-secondary mb-1">Date ({dateFormat})</label>
                         <input
-                            type="date"
+                            id="transaction-date"
+                            type="text"
                             required
                             className="input-field"
                             value={txDate}
                             onChange={(e) => setTxDate(e.target.value)}
+                            placeholder={dateFormat}
+                            autoComplete="off"
                         />
                     </div>
                 )}
@@ -362,7 +412,7 @@ export const PiggyBankView = () => {
                         setNewCatName('');
                         setIsCreatingCat(false);
                         setType('expense');
-                        setTxDate(new Date().toISOString().split('T')[0]);
+                        setTxDate(formatDate(todayIsoDate(), dateFormat));
                         setEditingTxId(null);
                     }}
                     className="btn btn-secondary text-sm"
@@ -370,7 +420,7 @@ export const PiggyBankView = () => {
                     Cancel
                 </button>
                 <button type="submit" className="btn btn-primary text-sm">
-                    {editingTxId ? 'Save Changes ✏️' : 'Save Transaction 📝'}
+                    {editingTxId ? 'Save Changes' : 'Save Transaction'}
                 </button>
             </div>
         </form>
@@ -384,8 +434,8 @@ export const PiggyBankView = () => {
 
             <div className="glass-panel balance-card mb-8">
                 <div className="balance-card-header">
-                    <h1 className="balance-card-title">{bank.name} 🐷</h1>
-                    <p className="balance-card-subtitle">PiggyBank Details & Savings Nest 💰</p>
+                    <h1 className="balance-card-title">{bank.name}</h1>
+                    <p className="balance-card-subtitle">PiggyBank Details & Savings Nest</p>
                 </div>
 
                 <div className="balance-card-divider" />
@@ -393,13 +443,13 @@ export const PiggyBankView = () => {
                 <div className="balance-card-body">
                     <p className="balance-card-label">Current Balance</p>
                     <h2 className="balance-card-amount">
-                        {cSym}{balance?.balance.toFixed(2) || '0.00'}
+                        {formatMoney(balance?.balance ?? 0, bank.currency)}
                     </h2>
                 </div>
             </div>
 
             <div className="flex justify-between items-center mb-6">
-                <h2 className="transactions-section-title">Transactions 📜</h2>
+                <h2 className="transactions-section-title">Transactions</h2>
                 <div className="flex items-center gap-3">
                     {/* Inline Pig Trigger next to Add Transaction */}
                     <div className="inline-fab-container">
@@ -408,11 +458,10 @@ export const PiggyBankView = () => {
                             <div
                                 onClick={() => setShowAnalytics(!showAnalytics)}
                                 className="inline-fab-coin"
-                                title={showAnalytics ? "Hide Charts" : "Show Charts"}
                             >
                                 <TrendingUp size={20} />
                                 <span className="inline-fab-tooltip">
-                                    {showAnalytics ? "📊 Hide Analytics" : "📈 Show Analytics"}
+                                    {showAnalytics ? "Hide Analytics" : "Show Analytics"}
                                 </span>
                             </div>
                         </div>
@@ -431,7 +480,7 @@ export const PiggyBankView = () => {
                                 setNewCatName('');
                                 setIsCreatingCat(false);
                                 setType('expense');
-                                setTxDate(new Date().toISOString().split('T')[0]);
+                                setTxDate(formatDate(todayIsoDate(), dateFormat));
                                 setEditingTxId(null);
                             } else {
                                 setShowAdd(!showAdd);
@@ -449,7 +498,7 @@ export const PiggyBankView = () => {
             {showAnalytics && (
                 <div className="glass-panel p-6 mb-8 animate-fade-in">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold">PiggyBank Analytics 📈</h3>
+                        <h3 className="text-xl font-bold">PiggyBank Analytics</h3>
                         <div className="flex gap-4 items-center">
                             <select
                                 className="input-field py-1 px-3 text-sm h-auto"
@@ -457,9 +506,9 @@ export const PiggyBankView = () => {
                                 value={lineMetric}
                                 onChange={(e) => setLineMetric(e.target.value as 'balance' | 'income' | 'expense')}
                             >
-                                <option value="balance">Running Balance 💰</option>
-                                <option value="income">Income / Deposits 💵</option>
-                                <option value="expense">Expenses / Withdrawals 💸</option>
+                                <option value="balance">Running Balance</option>
+                                <option value="income">Income / Deposits</option>
+                                <option value="expense">Expenses / Withdrawals</option>
                             </select>
 
                             <button
@@ -475,14 +524,32 @@ export const PiggyBankView = () => {
                     <div style={{ height: '300px', width: '100%' }} className="mb-8">
                         {lineChartData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart
+                                <AreaChart
                                     data={lineChartData}
                                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                                 >
-                                    <CartesianGrid strokeDasharray="4 4" stroke="rgba(255, 141, 161, 0.15)" />
-                                    <XAxis dataKey="dateStr" stroke="#8c768f" style={{ fontSize: '0.85rem', fontWeight: 600 }} />
-                                    <YAxis stroke="#8c768f" style={{ fontSize: '0.85rem', fontWeight: 600 }} />
+                                    <defs>
+                                        <linearGradient id="analytics-area-fill" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor={lineColor} stopOpacity={0.28} />
+                                            <stop offset="100%" stopColor={lineColor} stopOpacity={0.02} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="4 4" stroke="rgba(255, 141, 161, 0.15)" vertical={false} />
+                                    <XAxis
+                                        dataKey="t"
+                                        type="number"
+                                        scale="time"
+                                        domain={['dataMin', 'dataMax']}
+                                        ticks={xTicks}
+                                        tickFormatter={formatMonthTick}
+                                        minTickGap={24}
+                                        stroke="#8c768f"
+                                        style={{ fontSize: '0.85rem', fontWeight: 600 }}
+                                    />
+                                    <YAxis stroke="#8c768f" style={{ fontSize: '0.85rem', fontWeight: 600 }} width={56} />
                                     <Tooltip
+                                        labelFormatter={(t) => formatDate(new Date(Number(t)).toISOString(), dateFormat)}
+                                        formatter={(value) => formatMoney(Number(value), bank.currency)}
                                         contentStyle={{ 
                                             backgroundColor: 'rgba(255, 255, 255, 0.95)', 
                                             border: '2px solid rgba(255, 141, 161, 0.2)', 
@@ -492,20 +559,21 @@ export const PiggyBankView = () => {
                                         }}
                                     />
                                     <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                                    <Line
-                                        type="monotone"
+                                    <Area
+                                        type={lineMetric === 'balance' ? 'stepAfter' : 'monotone'}
                                         dataKey={lineMetric}
                                         name={
                                             lineMetric === 'balance' ? 'Running Balance' :
                                             lineMetric === 'income' ? 'Income / Deposits' :
                                             'Expenses / Withdrawals'
                                         }
-                                        stroke={lineMetric === 'balance' ? '#ffd166' : lineMetric === 'income' ? '#ffd166' : '#ff8da1'}
-                                        strokeWidth={3}
-                                        dot={{ r: 4, strokeWidth: 1 }}
-                                        activeDot={{ r: 8 }}
+                                        stroke={lineColor}
+                                        strokeWidth={2.5}
+                                        fill="url(#analytics-area-fill)"
+                                        dot={false}
+                                        activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff', fill: lineColor }}
                                     />
-                                </LineChart>
+                                </AreaChart>
                             </ResponsiveContainer>
                         ) : (
                             <div className="flex items-center justify-center h-full text-muted">
@@ -606,7 +674,7 @@ export const PiggyBankView = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {transactions.map((tx) => {
+                            {visibleTransactions.map((tx) => {
                                 const isIncome = tx.amount > 0 && !['transfer', 'transfer_in', 'transfer_out'].includes(tx.type);
                                 const isTransfer = ['transfer', 'transfer_in', 'transfer_out'].includes(tx.type);
 
@@ -635,7 +703,7 @@ export const PiggyBankView = () => {
                                     <React.Fragment key={tx.id}>
                                         <tr className={`transaction-entry-row border-b border-glass-border hover:bg-white hover:bg-opacity-5 transition-colors${showAdd && editingTxId === tx.id ? ' transaction-entry-row-active' : ''}`}>
                                             <td className="p-4 whitespace-nowrap">
-                                                {new Date(tx.date).toLocaleDateString()}
+                                                {formatDate(tx.date, dateFormat)}
                                                 <div className="text-xs text-muted">ID #{tx.id}</div>
                                             </td>
                                             <td className="p-4">
@@ -653,9 +721,10 @@ export const PiggyBankView = () => {
                                             </td>
                                             <td className="p-4 text-text-secondary">{tx.description || '-'}</td>
                                             <td className={`p-4 text-right font-medium ${textClass}`}>
-                                                {tx.amount > 0 ? '+' : ''}{cSym}{tx.amount.toFixed(2)}
+                                                {formatMoney(tx.amount, bank.currency, true)}
                                             </td>
-                                            <td className="p-4 text-center" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', border: 'none' }}>
+                                            <td className="p-4 text-center transaction-actions-cell">
+                                                <div className="transaction-actions">
                                                 {(tx.type !== 'transfer' || tx.transaction_id !== `entry:${tx.id}`) && <button
                                                     onClick={() => {
                                                         if (showAdd && editingTxId === tx.id) {
@@ -667,7 +736,7 @@ export const PiggyBankView = () => {
                                                         setAmount(Math.abs(tx.amount).toString());
                                                         setType(tx.type);
                                                         setDesc(tx.type === 'transfer' ? transferNote(tx.description) : tx.description || '');
-                                                        setTxDate(new Date(tx.date).toISOString().split('T')[0]);
+                                                        setTxDate(formatDate(tx.date, dateFormat));
                                                         setIsCreatingCat(false);
                                                         setNewCatName('');
                                                     
@@ -708,7 +777,7 @@ export const PiggyBankView = () => {
                                                                         setShowAdd(false);
                                                                         setEditingTxId(null);
                                                                     }
-                                                                    loadData();
+                                                                    await loadData({ silent: true });
                                                                 } catch (err) {
                                                                     console.error(err);
                                                                     showModal({ title: 'Error', message: 'Failed to delete transaction.', variant: 'danger', alertOnly: true, onConfirm: closeModal });
@@ -722,6 +791,7 @@ export const PiggyBankView = () => {
                                                 >
                                                     ✕
                                                 </button>
+                                                </div>
                                             </td>
                                         </tr>
                                         {showAdd && editingTxId === tx.id && (
@@ -736,6 +806,34 @@ export const PiggyBankView = () => {
                             })}
                         </tbody>
                     </table>
+                )}
+                {totalPages > 1 && (
+                    <nav className="transaction-pagination" aria-label="Transaction pages">
+                        <span className="text-sm text-muted">
+                            {firstShown}–{lastShown} of {transactions.length}
+                        </span>
+                        <div className="transaction-pagination-controls">
+                            <button
+                                type="button"
+                                className="btn btn-secondary transaction-page-button"
+                                onClick={() => setPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                aria-label="Previous page"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            <span className="text-sm" aria-current="page">Page {currentPage} of {totalPages}</span>
+                            <button
+                                type="button"
+                                className="btn btn-secondary transaction-page-button"
+                                onClick={() => setPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                aria-label="Next page"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </nav>
                 )}
             </div>
 

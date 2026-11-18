@@ -15,6 +15,12 @@ if "transfer_group_id" not in {column["name"] for column in inspect(engine).get_
 if "token_version" not in {column["name"] for column in inspect(engine).get_columns("users")}:
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0"))
+if "transactions_per_page" not in {column["name"] for column in inspect(engine).get_columns("users")}:
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE users ADD COLUMN transactions_per_page INTEGER NOT NULL DEFAULT 20"))
+if "date_format" not in {column["name"] for column in inspect(engine).get_columns("users")}:
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE users ADD COLUMN date_format VARCHAR(10) NOT NULL DEFAULT 'YYYY-MM-DD'"))
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

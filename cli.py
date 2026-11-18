@@ -28,6 +28,53 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "data", "piggynest.db")
 # to authorize subsequent API requests.
 token = None
 
+# The signed-in user's date format, read from their account after login.
+# The API always sends and accepts ISO dates; the CLI converts only for prompts and display.
+DATE_FORMATS = ("YYYY-MM-DD", "DD/MM/YYYY", "MM/DD/YYYY")
+date_format = "YYYY-MM-DD"
+
+
+def format_date(api_date, fmt=None):
+    """Show an API date such as 2026-11-11T00:00:00 in the user's format."""
+    year, month, day = api_date[:10].split("-")
+    fmt = fmt or date_format
+    if fmt == "DD/MM/YYYY":
+        return f"{day}/{month}/{year}"
+    if fmt == "MM/DD/YYYY":
+        return f"{month}/{day}/{year}"
+    return f"{year}-{month}-{day}"
+
+
+def parse_date(text, fmt=None):
+    """Read a date typed in the user's format and return it as an API datetime.
+
+    DD/MM and MM/DD are ambiguous for days 1-12, so input that does not match
+    the chosen format is rejected rather than guessed.
+    """
+    fmt = fmt or date_format
+    value = text.strip()
+    try:
+        if fmt == "YYYY-MM-DD":
+            year, month, day = value.split("-")
+        elif fmt == "DD/MM/YYYY":
+            day, month, year = value.split("/")
+        else:
+            month, day, year = value.split("/")
+        if len(year) != 4 or not (1 <= len(month) <= 2 and 1 <= len(day) <= 2):
+            raise ValueError
+        parsed = date(int(year), int(month), int(day))
+    except ValueError:
+        raise ValueError(f"Enter a real date as {fmt}") from None
+    return parsed.isoformat() + "T00:00:00"
+
+
+def load_preferences():
+    """Read the signed-in user's display preferences from the API."""
+    global date_format
+    profile = api_post("/auth/test-token")
+    if isinstance(profile, dict) and profile.get("date_format") in DATE_FORMATS:
+        date_format = profile["date_format"]
+
 
 # --------------------------------
 # Section: UI & Formatting Helpers
@@ -111,7 +158,8 @@ def login():
     
     if "access_token" in resp:
         token = resp["access_token"]
-        print("✅ Login successful! Token acquired.")
+        load_preferences()
+        print(f"✅ Login successful! Dates use {date_format}.")
         return True
     else:
         # Gracefully handle login errors (e.g., 401 Unauthorized)
@@ -194,6 +242,7 @@ def add_transaction():
         print("Available Types: [expense, income, deposit, withdrawal]")
         tx_type = input("Type (Default 'expense'): ") or 'expense'
         desc = input("Description/Note: ")
+        date_in = input(f"Date {date_format} (Enter for today): ").strip()
         
         # Internal Logic: Ensure expenses are recorded as negative numbers for balance math
         if tx_type.lower() in ['expense', 'withdrawal']:
@@ -204,14 +253,16 @@ def add_transaction():
             "type": tx_type,
             "description": desc
         }
+        if date_in:
+            payload["date"] = parse_date(date_in)
         
         res = api_post(f"/piggy-banks/{pb_id}/transactions", json_data=payload)
         if "id" in res:
             print("✅ Transaction recorded successfully!")
         else:
             print("❌ Failed to record transaction:", res)
-    except ValueError:
-        print("Input Error: Ensure ID is an integer and Amount is a number.")
+    except ValueError as exc:
+        print(f"Input Error: Ensure ID is an integer, Amount is a number, and Date is {date_format}. ({exc})")
 
 def edit_transaction():
     """
@@ -238,7 +289,7 @@ def edit_transaction():
         type_in = "" if is_piggybank_transfer else input(f"New Type ({target_tx['type']}): ").strip()
         desc_in = input(f"New note ({description or 'None'}; '-' clears): ")
         cat_in = "" if is_piggybank_transfer else input(f"New Category ({target_tx['category'] or 'None'}; '-' clears): ")
-        date_in = input(f"New date YYYY-MM-DD ({target_tx['date'][:10]}): ").strip()
+        date_in = input(f"New date {date_format} ({format_date(target_tx['date'])}): ").strip()
 
         payload = {}
         if amt_in:
@@ -250,7 +301,7 @@ def edit_transaction():
         if desc_in:
             payload['description'] = ("" if is_piggybank_transfer else None) if desc_in == "-" else desc_in
         if cat_in: payload['category'] = None if cat_in == "-" else cat_in
-        if date_in: payload['date'] = date.fromisoformat(date_in).isoformat() + "T00:00:00"
+        if date_in: payload['date'] = parse_date(date_in)
 
         if not payload:
             print("No changes detected. Operation cancelled.")
@@ -263,7 +314,7 @@ def edit_transaction():
             print("❌ Update failed:", res)
 
     except ValueError:
-        print("Input Error: Enter a valid numeric ID, signed amount, and ISO date.")
+        print(f"Input Error: Enter a valid numeric ID, signed amount, and a date as {date_format}.")
 
 
 # ----------------------------------------

@@ -2,6 +2,10 @@ export interface User {
   id: number;
   username: string;
   email: string;
+  /** Transactions shown per page in a PiggyBank; 0 shows all. */
+  transactions_per_page: number;
+  /** YYYY-MM-DD, DD/MM/YYYY, or MM/DD/YYYY; the API itself always uses ISO dates. */
+  date_format: string;
 }
 
 export interface PiggyBank {

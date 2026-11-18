@@ -54,6 +54,22 @@ export const authApi = {
     },
 
     /**
+     * Saves how many transactions a PiggyBank page shows (10, 20, 50, or 0 for all).
+     */
+    updateTransactionsPerPage: async (transactionsPerPage: number): Promise<User> => {
+        const { data } = await apiClient.put('/auth/me', { transactions_per_page: transactionsPerPage });
+        return data;
+    },
+
+    /**
+     * Saves how dates are shown and typed in every client.
+     */
+    updateDateFormat: async (dateFormat: string): Promise<User> => {
+        const { data } = await apiClient.put('/auth/me', { date_format: dateFormat });
+        return data;
+    },
+
+    /**
      * Permanently deletes the authenticated user and ALL of their associated data.
      */
     deleteAccount: async (): Promise<void> => {

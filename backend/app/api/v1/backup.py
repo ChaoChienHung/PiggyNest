@@ -21,6 +21,7 @@ from app.models.transaction import Transaction
 from app.models.user import User
 from app.models.category import Category
 from app.core.money import to_minor_units
+from app.domain.category_names import canonical_category
 
 router = APIRouter()
 BANK_HEADERS = ("bank_id", "name", "currency")
@@ -176,7 +177,7 @@ def _parse(workbook):
         if ((tx_type == "transfer_out" and amount >= 0)
                 or (tx_type == "transfer_in" and amount <= 0)):
             _fail(f"External transfer direction does not match amount in row {row}")
-        category = _string(values[4], f"Transactions row {row} category", 100)
+        category = canonical_category(_string(values[4], f"Transactions row {row} category", 100))
         description = _string(values[5], f"Transactions row {row} description", 255)
         date_value = values[6]
         try:
@@ -206,12 +207,15 @@ def _parse(workbook):
                 or not any(item[1] > 0 for item in pair)):
             _fail(f"Transfer group {group} must have matching debit and credit rows in different banks")
     categories = set()
+    seen_names = set()
     if "Categories" in workbook:
         for row, values in _rows(workbook, "Categories", CATEGORY_HEADERS):
             name = _string(values[0], f"Categories row {row} name", 100, True)
-            if name in categories:
+            if name in seen_names:
                 _fail(f"Duplicate category in row {row}")
-            categories.add(name)
+            seen_names.add(name)
+            # Old spellings such as Other/Others collapse into one category.
+            categories.add(canonical_category(name))
     return banks, transactions, categories
 
 

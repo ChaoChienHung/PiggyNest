@@ -186,6 +186,10 @@ def update_user(
     if user_in.password:
         current_user.hashed_password = security.get_password_hash(user_in.password)
         current_user.token_version += 1
+    if user_in.transactions_per_page is not None:
+        current_user.transactions_per_page = user_in.transactions_per_page
+    if user_in.date_format is not None:
+        current_user.date_format = user_in.date_format
     db.commit()
     db.refresh(current_user)
     return current_user

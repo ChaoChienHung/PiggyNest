@@ -75,7 +75,7 @@ export const Register = () => {
                                 marginBottom: '1.25rem'
                             }}
                         >
-                            ⚠️ {error}
+                            {error}
                         </div>
                     )}
 
@@ -135,7 +135,7 @@ export const Register = () => {
                             className="btn btn-primary w-full"
                             style={{ marginTop: '1.75rem', padding: '0.7rem 1.25rem', borderRadius: '14px' }}
                         >
-                            {isLoading ? 'Creating...' : 'Create Account 🐷'}
+                            {isLoading ? 'Creating...' : 'Create Account'}
                         </button>
                     </form>
 

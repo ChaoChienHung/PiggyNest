@@ -86,7 +86,7 @@ export const PiggyAnimation: React.FC<PiggyAnimationProps> = ({
             {/* Brand description text */}
             <div className="text-center mt-6" style={{ zIndex: 10 }}>
                 <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)', fontSize: '2rem', letterSpacing: '-0.025em', marginBottom: '0.5rem' }}>
-                    {title} <span>🐷</span>
+                    {title}
                 </h1>
                 <p className="text-secondary font-medium" style={{ maxWidth: '280px', margin: '0 auto', fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-secondary)' }}>
                     {subtitle}

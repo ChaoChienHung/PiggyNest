@@ -20,4 +20,8 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
     token_version = Column(Integer, nullable=False, default=0, server_default="0")
+    # Display preference: transactions shown per page in a PiggyBank; 0 means all.
+    transactions_per_page = Column(Integer, nullable=False, default=20, server_default="20")
+    # Display and input format for dates in every client; the API always uses ISO 8601.
+    date_format = Column(String(10), nullable=False, default="YYYY-MM-DD", server_default="YYYY-MM-DD")
     created_at = Column(DateTime(timezone=True), server_default=func.now())

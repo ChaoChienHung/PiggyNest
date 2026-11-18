@@ -73,7 +73,7 @@ export const Login = () => {
                                 marginBottom: '1.25rem'
                             }}
                         >
-                            ⚠️ {error}
+                            {error}
                         </div>
                     )}
 
@@ -109,7 +109,7 @@ export const Login = () => {
                             className="btn btn-primary w-full"
                             style={{ marginTop: '1.75rem', padding: '0.75rem 1.25rem', borderRadius: '14px' }}
                         >
-                            {isLoading ? 'Signing in...' : 'Sign In 🐷'}
+                            {isLoading ? 'Signing in...' : 'Sign In'}
                         </button>
                     </form>
 

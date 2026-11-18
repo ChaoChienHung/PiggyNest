@@ -7,6 +7,7 @@ from app.models.category import Category
 from app.schemas.category import CategoryCreate, CategoryRead, CategoryUpdate
 from app.api.deps import get_current_user
 from app.models.user import User
+from app.domain.category_names import canonical_category
 
 router = APIRouter()
 
@@ -25,11 +26,12 @@ def add_category(
     current_user: User = Depends(get_current_user)
 ):
     """Add a new category"""
-    existing = db.query(Category).filter(Category.name == payload.name, Category.user_id == current_user.id).first()
+    name = canonical_category(payload.name)
+    existing = db.query(Category).filter(Category.name == name, Category.user_id == current_user.id).first()
     if existing:
         raise HTTPException(status_code=400, detail="Category already exists")
     
-    category = Category(name=payload.name, user_id=current_user.id)
+    category = Category(name=name, user_id=current_user.id)
     db.add(category)
     db.commit()
     db.refresh(category)
@@ -49,7 +51,13 @@ def update_category(
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
         
-    category.name = payload.new_name
+    new_name = canonical_category(payload.new_name)
+    duplicate = db.query(Category).filter(
+        Category.name == new_name, Category.user_id == current_user.id, Category.id != category.id,
+    ).first()
+    if duplicate:
+        raise HTTPException(status_code=400, detail="Category already exists")
+    category.name = new_name
     db.commit()
     db.refresh(category)
     return category

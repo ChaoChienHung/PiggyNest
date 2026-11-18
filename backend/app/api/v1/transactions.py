@@ -10,6 +10,7 @@ from app.schemas.transaction import TransactionCreate, TransactionRead, Transact
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.domain.transfer_links import legacy_transfer_pairs
+from app.domain.category_names import canonical_category
 
 router = APIRouter()
 
@@ -52,7 +53,7 @@ def add_transaction(
         piggy_bank_id=pb_id,
         amount=payload.amount,
         type=payload.type,
-        category=payload.category,
+        category=canonical_category(payload.category),
         description=payload.description,
     )
     if payload.date:
@@ -196,7 +197,7 @@ def update_transaction(
     if payload.type is not None:
         transaction.type = payload.type
     if "category" in payload.model_fields_set:
-        transaction.category = payload.category
+        transaction.category = canonical_category(payload.category)
     if "description" in payload.model_fields_set:
         transaction.description = payload.description
     if payload.date is not None:
