@@ -141,6 +141,7 @@ a:hover {
 }
 
 .date-text-field {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -155,52 +156,66 @@ a:hover {
 
 .date-text-control {
   position: relative;
-  display: flex;
-  align-items: stretch;
-  gap: 0.5rem;
   min-width: 0;
 }
 
 .date-text-control .input-field {
-  flex: 1;
-  min-width: 0;
   width: 100%;
+  padding-right: 3.7rem;
 }
 
 .date-calendar-button {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 3rem;
-  min-height: 48px;
-  border: 2px solid rgba(255, 141, 161, 0.25);
-  border-radius: 16px;
-  background: var(--bg-secondary);
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
   color: var(--accent-hover);
   cursor: pointer;
 }
 
 .date-calendar-button:hover,
 .date-calendar-button:focus-visible {
-  border-color: var(--accent-primary);
   background: var(--accent-light);
+  outline: none;
 }
 
-.date-calendar-button:focus-visible {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: 2px;
-}
-
-.date-native-picker {
+.date-calendar-popover {
   position: absolute;
-  right: 1.5rem;
-  bottom: 0;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 130;
+  width: 19rem;
+  max-width: min(19rem, 90vw);
+  padding: 0.85rem;
+  border: 2px solid var(--accent-light);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 16px 36px rgba(74, 62, 75, 0.14);
 }
+
+.date-calendar-header,
+.date-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); align-items: center; text-align: center; }
+.date-calendar-header { display: flex; justify-content: space-between; margin-bottom: 0.55rem; }
+.date-calendar-header button,
+.date-calendar-grid button,
+.date-calendar-today { border: 0; background: transparent; color: var(--text-primary); cursor: pointer; font: inherit; }
+.date-calendar-header button { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 10px; }
+.date-calendar-grid { gap: 0.15rem; }
+.date-calendar-weekday { color: var(--text-muted); font-size: 0.75rem; font-weight: 700; }
+.date-calendar-grid button { width: 100%; aspect-ratio: 1; border-radius: 10px; font-size: 0.85rem; }
+.date-calendar-header button:hover,
+.date-calendar-grid button:hover,
+.date-calendar-today:hover { background: var(--accent-light); }
+.date-calendar-grid button.is-selected { background: var(--accent-primary); color: #fff; font-weight: 700; }
+.date-calendar-grid button.is-today:not(.is-selected) { border: 1px solid var(--accent-primary); }
+.date-calendar-today { width: 100%; margin-top: 0.5rem; padding: 0.4rem; border-radius: 10px; color: var(--accent-hover); font-weight: 700; }
 
 .btn {
   display: inline-flex;
@@ -968,71 +983,32 @@ table tr:last-child td:last-child {
 
 .floating-tools {
   position: fixed;
-  right: max(1rem, env(safe-area-inset-right));
-  bottom: max(1rem, env(safe-area-inset-bottom));
+  right: max(1.5rem, env(safe-area-inset-right));
+  bottom: max(1.5rem, env(safe-area-inset-bottom));
   z-index: 100;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.65rem;
-  pointer-events: none;
+  gap: 0.75rem;
 }
-
 .floating-tools-trigger {
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 72px;
   border: 2px solid var(--accent-light);
   border-radius: 50%;
   background: var(--accent-primary);
-  box-shadow: 0 6px 18px rgba(255, 141, 161, 0.35);
-  font-size: 1.7rem;
+  box-shadow: 0 8px 24px rgba(255, 141, 161, 0.35);
+  font-size: 2.15rem;
   cursor: pointer;
-  pointer-events: auto;
-  transition: transform 0.2s ease, background 0.2s ease;
 }
-
 .floating-tools-trigger:hover,
-.floating-tools-trigger:focus-visible {
-  background: var(--accent-hover);
-  transform: scale(1.08);
-}
-
-.floating-tools-actions {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(8px);
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
-}
-
-.floating-tools:hover .floating-tools-actions,
-.floating-tools:focus-within .floating-tools-actions,
-.floating-tools.is-open .floating-tools-actions {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.floating-tools-action {
-  min-height: 44px;
-  padding: 0.6rem 1rem;
-  border: 2px solid var(--coin-gold-hover);
-  border-radius: 999px;
-  background: var(--coin-gold);
-  color: var(--text-primary);
-  box-shadow: 0 6px 18px rgba(255, 183, 3, 0.25);
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  pointer-events: auto;
-}
-
+.floating-tools-trigger:focus-visible { background: var(--accent-hover); transform: scale(1.05); }
+.floating-tools-actions { display: flex; flex-direction: column; gap: 0.5rem; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(8px); transition: opacity .2s, transform .2s, visibility .2s; }
+.floating-tools.is-open .floating-tools-actions { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
+.floating-tools-action { display: grid; place-items: center; width: 52px; height: 52px; border: 2px solid var(--coin-gold-hover); border-radius: 50%; background: var(--coin-gold); color: var(--text-primary); box-shadow: 0 6px 18px rgba(255, 183, 3, 0.25); }
 .floating-tools-action:hover,
-.floating-tools-action:focus-visible {
-  background: var(--coin-gold-hover);
-}
+.floating-tools-action:focus-visible { background: var(--coin-gold-hover); }
+.analysis-page > .dashboard-title { margin: 1.25rem 0 2rem; }
 
 .transaction-compact-select {
   width: fit-content;

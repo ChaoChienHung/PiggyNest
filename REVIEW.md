@@ -2,10 +2,15 @@
 
 ## Awaiting review
 
-- [ ] Close category filters and choose dates from a calendar
-  - **Delivered:** PiggyBank Categories closes when clicking outside or pressing Escape. All seven browser date entry fields now keep manual typing and add a themed calendar icon button; choosing a date formats the text using the account's date format.
-  - **Evidence:** Frontend build/lint passed. An isolated desktop browser check verified outside click and Escape, calendar button calls, a selected date appearing as `25/12/2026`, and the controls on PiggyBank, Dashboard analytics, and Reports. A separate Chromium check opened the real native date picker without errors. No database rows were changed.
-  - **Review focus:** Try the native calendar picker and manual date entry together, including a non-default date format. Mobile layout polish remains deferred in `TODO.md`.
+- [ ] Custom calendar and dedicated analytics navigation
+  - **Delivered:** All date fields keep typed entry and now open an app-styled month calendar from an icon inside the input. The fixed, larger pig FAB contains icon links to Graph Analysis and Reports. Graph Analysis has its own route for the combined Dashboard and individual PiggyBank charts; Reports stays on its own route. Both pages include a back link to the originating Dashboard or PiggyBank.
+  - **Evidence:** Frontend build and lint passed. Calendar styling and navigation are ready for human visual review; the isolated Playwright check could not run because Playwright is unavailable in the current Python environments.
+  - **Review focus:** Check month navigation, choosing a day, typed dates, FAB placement, and each back link on desktop. Mobile layout polish remains deferred in `TODO.md`.
+
+- [ ] Close PiggyBank category filters
+  - **Delivered:** The Categories menu closes when clicking outside or pressing Escape.
+  - **Evidence:** An earlier isolated desktop browser check verified both dismissal methods.
+  - **Review focus:** Try a long category list and confirm the menu closes without changing selections.
 
 - [ ] Desktop filter menus and transaction Type width
   - **Delivered:** The PiggyBank Categories menu now opens below its field without stretching the filter row. Dashboard and Reports use compact searchable PiggyBank/category menus with fixed-height scrolling lists; bulk actions sit inside the menus as themed buttons. The transaction Type control fills its grid column to reduce the visual gap before Date.

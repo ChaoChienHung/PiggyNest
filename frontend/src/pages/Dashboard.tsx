@@ -4,7 +4,6 @@ import { useAuth } from '../context/useAuth';
 import { piggybanksApi } from '../api/piggybanks';
 import type { PiggyBank, Balance } from '../types';
 import { Plus, LogOut, ArrowRight, Settings, Eye, EyeOff } from 'lucide-react';
-import { StatisticsCharts } from '../components/StatisticsCharts';
 import { FloatingTools } from '../components/FloatingTools';
 import { ThemedSelect } from '../components/ThemedSelect';
 import { SettingsDialog } from '../components/SettingsDialog';
@@ -31,7 +30,6 @@ export const Dashboard = () => {
     const [showCreate, setShowCreate] = useState(false);
     const [newName, setNewName] = useState('');
     const [newCurrency, setNewCurrency] = useState('USD');
-    const [showAnalytics, setShowAnalytics] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const settingsButtonRef = React.useRef<HTMLButtonElement>(null);
 
@@ -185,8 +183,6 @@ export const Dashboard = () => {
                 </div>
             </div>
 
-            <StatisticsCharts showAnalytics={showAnalytics} setShowAnalytics={setShowAnalytics} onOpenSettings={() => setSettingsOpen(true)} />
-            <div className="dashboard-reports-link"><Link to="/reports" className="btn btn-secondary">Reports</Link></div>
 
             <div className="flex justify-between items-center mb-6">
                 <h3 className="dashboard-section-title">Piggy Banks</h3>
@@ -315,7 +311,7 @@ export const Dashboard = () => {
                 )
             )}
 
-            {!showCreate && <FloatingTools showAnalytics={showAnalytics} setShowAnalytics={setShowAnalytics} />}
+            {!showCreate && <FloatingTools />}
 
             {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} opener={settingsButtonRef.current} />}
 

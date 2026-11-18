@@ -12,13 +12,9 @@ import { ExpenseCategoryChart } from './ExpenseCategoryChart';
 import { FilterPicker } from './FilterPicker';
 import { DateTextField } from './DateTextField';
 
-interface StatisticsChartsProps {
-    showAnalytics?: boolean;
-    setShowAnalytics?: (show: boolean) => void;
-    onOpenSettings?: () => void;
-}
+interface StatisticsChartsProps { onOpenSettings?: () => void }
 
-export const StatisticsCharts = ({ showAnalytics: visible, setShowAnalytics, onOpenSettings }: StatisticsChartsProps) => {
+export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
     const { user } = useAuth();
     const { rates, isLoading: ratesLoading } = useRates();
     const { banks, entries, loading, error } = useLedgerEntries();
@@ -29,9 +25,6 @@ export const StatisticsCharts = ({ showAnalytics: visible, setShowAnalytics, onO
     const [toText, setToText] = useState('');
     const [from, setFrom] = useState<string | null>(null);
     const [to, setTo] = useState<string | null>(null);
-    const [internalVisible, setInternalVisible] = useState(false);
-    const isVisible = visible ?? internalVisible;
-    const hide = () => (setShowAnalytics ?? setInternalVisible)(false);
     const displayCurrency = user?.display_currency ?? 'NTD';
     const dateFormat = asDateFormat(user?.date_format);
     const selected = selectedIds ?? banks.map(bank => bank.id);
@@ -62,7 +55,6 @@ export const StatisticsCharts = ({ showAnalytics: visible, setShowAnalytics, onO
     const flowData = [{ name: 'Income', value: totalIncome }, { name: 'Spending', value: totalExpense }].filter(item => item.value > 0);
     const ratesTitle = rateSummary(banks.filter(bank => selected.includes(bank.id)).map(bank => bank.currency), displayCurrency, rates);
 
-    if (!isVisible) return null;
     if (loading || ratesLoading) return <div className="glass-panel p-6 mb-8 text-muted">Loading analytics…</div>;
     return <section className="glass-panel p-6 mb-8 animate-fade-in" aria-label="Financial analytics">
         <div className="analytics-heading">
@@ -71,7 +63,6 @@ export const StatisticsCharts = ({ showAnalytics: visible, setShowAnalytics, onO
                 <ThemedSelect ariaLabel="Timeframe" className="analytics-select" value={timeframe}
                     onChange={value => setTimeframe(value as 'month' | 'year')}
                     options={[{ value: 'month', label: 'Monthly' }, { value: 'year', label: 'Yearly' }]} />
-                <button type="button" className="btn btn-secondary" onClick={hide}>Hide</button>
             </div>
         </div>
         {error && <p role="alert" className="text-danger">{error}</p>}

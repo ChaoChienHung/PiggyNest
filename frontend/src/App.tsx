@@ -10,6 +10,7 @@ import { Dashboard } from './pages/Dashboard';
 import { PiggyBankView } from './pages/PiggyBankView';
 import { SettingsDialog } from './components/SettingsDialog';
 import { Reports } from './pages/Reports';
+import { Analysis } from './pages/Analysis';
 
 const SettingsRoute = () => {
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ function App() {
             <Route path="/piggybanks/:id" element={<PiggyBankView />} />
             <Route path="/settings" element={<SettingsRoute />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/analysis" element={<Analysis />} />
           </Route>
 
           {/* Fallback */}

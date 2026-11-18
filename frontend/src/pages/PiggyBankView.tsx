@@ -28,7 +28,7 @@ const transferNote = (description?: string) => {
  * Dedicated view for a single PiggyBank account.
  * Handles fetching specific nested transactions and managing the dynamic "Add Transaction" form logic.
  */
-export const PiggyBankView = () => {
+export const PiggyBankView = ({ analyticsOnly = false }: { analyticsOnly?: boolean }) => {
     const { id } = useParams<{ id: string }>();
     const [bank, setBank] = useState<PiggyBank | null>(null);
     const [balance, setBalance] = useState<Balance | null>(null);
@@ -39,7 +39,6 @@ export const PiggyBankView = () => {
     const [categories, setCategories] = useState<Category[]>([]);
 
     const [isLoading, setIsLoading] = useState(true);
-    const [showAnalytics, setShowAnalytics] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const settingsButtonRef = React.useRef<HTMLButtonElement>(null);
     const [lineMetric, setLineMetric] = useState<'balance' | 'income' | 'expense'>('balance');
@@ -551,6 +550,147 @@ export const PiggyBankView = () => {
         </form>
     );
 
+    const analyticsPanel = (
+                <div className="glass-panel p-6 mb-8 animate-fade-in">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold">PiggyBank Analytics</h3>
+                        <div className="flex gap-4 items-center">
+                            <ThemedSelect
+                                ariaLabel="Analytics metric"
+                                className="analytics-select"
+                                value={lineMetric}
+                                onChange={(value) => setLineMetric(value as 'balance' | 'income' | 'expense')}
+                                options={[
+                                    { value: 'balance', label: 'Running Balance' },
+                                    { value: 'income', label: 'Income / Deposits' },
+                                    { value: 'expense', label: 'Expenses / Withdrawals' },
+                                ]}
+                            />
+
+                        </div>
+                    </div>
+
+                    <div style={{ height: '300px', width: '100%' }} className="mb-8">
+                        {lineChartData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart
+                                    data={lineChartData}
+                                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                >
+                                    <defs>
+                                        <linearGradient id="analytics-area-fill" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor={lineColor} stopOpacity={0.28} />
+                                            <stop offset="100%" stopColor={lineColor} stopOpacity={0.02} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="4 4" stroke="rgba(255, 141, 161, 0.15)" vertical={false} />
+                                    <XAxis
+                                        dataKey="t"
+                                        type="number"
+                                        scale="time"
+                                        domain={['dataMin', 'dataMax']}
+                                        ticks={xTicks}
+                                        tickFormatter={formatMonthTick}
+                                        minTickGap={24}
+                                        stroke="#8c768f"
+                                        style={{ fontSize: '0.85rem', fontWeight: 600 }}
+                                    />
+                                    <YAxis stroke="#8c768f" style={{ fontSize: '0.85rem', fontWeight: 600 }} width={56} />
+                                    <Tooltip
+                                        labelFormatter={(t) => formatDate(new Date(Number(t)).toISOString(), dateFormat)}
+                                        formatter={(value) => formatMoney(Number(value), bank.currency)}
+                                        contentStyle={{ 
+                                            backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                                            border: '2px solid rgba(255, 141, 161, 0.2)', 
+                                            borderRadius: '16px',
+                                            boxShadow: '0 8px 24px rgba(255, 141, 161, 0.1)',
+                                            color: '#4a3e4b'
+                                        }}
+                                    />
+                                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                                    <Area
+                                        type={lineMetric === 'balance' ? 'stepAfter' : 'monotone'}
+                                        dataKey={lineMetric}
+                                        name={
+                                            lineMetric === 'balance' ? 'Running Balance' :
+                                            lineMetric === 'income' ? 'Income / Deposits' :
+                                            'Expenses / Withdrawals'
+                                        }
+                                        stroke={lineColor}
+                                        strokeWidth={2.5}
+                                        fill="url(#analytics-area-fill)"
+                                        dot={false}
+                                        activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff', fill: lineColor }}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-muted">
+                                No transaction data available for graphing.
+                            </div>
+                        )}
+                    </div>
+
+                    {lineChartData.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-glass-border pt-8 mt-4">
+                            {/* Bar Chart: Monthly Summary */}
+                            <div>
+                                <h4 className="text-center font-semibold mb-4 text-text-secondary">Monthly Summary</h4>
+                                <div style={{ height: '250px', width: '100%' }}>
+                                    {barData.length > 0 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart
+                                                data={barData}
+                                                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                            >
+                                                <CartesianGrid strokeDasharray="4 4" stroke="rgba(255, 141, 161, 0.15)" />
+                                                <XAxis dataKey="month" stroke="#8c768f" style={{ fontSize: '0.8rem', fontWeight: 600 }} />
+                                                <YAxis stroke="#8c768f" style={{ fontSize: '0.8rem', fontWeight: 600 }} />
+                                                <Tooltip
+                                                    cursor={{ fill: 'rgba(255, 141, 161, 0.05)' }}
+                                                    contentStyle={{ 
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                                                        border: '2px solid rgba(255, 141, 161, 0.2)', 
+                                                        borderRadius: '16px',
+                                                        color: '#4a3e4b'
+                                                    }}
+                                                />
+                                                <Legend />
+                                                <Bar dataKey="income" name="Income/Deposits" fill="#ffd166" radius={[6, 6, 0, 0]} maxBarSize={35} />
+                                                <Bar dataKey="expense" name="Expenses/Withdrawals" fill="#ff8da1" radius={[6, 6, 0, 0]} maxBarSize={35} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="flex h-full items-center justify-center text-muted text-sm pb-8">No monthly flow data yet.</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Pie Chart: Expense Breakdown by Category */}
+                            <div>
+                                <ExpenseCategoryChart data={pieData} currency={bank.currency} />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+
+    );
+    if (analyticsOnly) return <main className="container page-layout-container animate-fade-in analysis-page">
+        <Link to={`/piggybanks/${bank.id}`} className="back-to-dashboard-link">← Back to {bank.name}</Link>
+        <h1 className="dashboard-title">Graph Analysis</h1>
+        <div className="glass-panel p-6 mb-8">
+            <div className="analytics-date-filter">
+                <DateTextField id="analysis-date-from" label={`From (${dateFormat})`} value={dateFromText}
+                    onChange={value => changeDateRange(value, dateToText)} dateFormat={dateFormat} invalid={!!dateRangeError} />
+                <DateTextField id="analysis-date-to" label={`To (${dateFormat})`} value={dateToText}
+                    onChange={value => changeDateRange(dateFromText, value)} dateFormat={dateFormat} invalid={!!dateRangeError} />
+                {dateRangeError && <span className="text-sm text-danger" role="alert">{dateRangeError}</span>}
+            </div>
+        </div>
+        {analyticsPanel}
+    </main>;
+
     return (
         <div className="container page-layout-container animate-fade-in">
             <div className="piggybank-page-header">
@@ -558,7 +698,6 @@ export const PiggyBankView = () => {
                     <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
                 </Link>
                 <div className="piggybank-header-actions">
-                    <Link to={`/reports?bank=${bank.id}`} className="btn btn-secondary">Reports</Link>
                     <button ref={settingsButtonRef} type="button" className="btn btn-secondary" onClick={() => setSettingsOpen(true)}>Settings</button>
                 </div>
             </div>
@@ -672,138 +811,6 @@ export const PiggyBankView = () => {
                     }}>Clear filters</button>
                 </div>
             </div>
-
-            {showAnalytics && (
-                <div className="glass-panel p-6 mb-8 animate-fade-in">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold">PiggyBank Analytics</h3>
-                        <div className="flex gap-4 items-center">
-                            <ThemedSelect
-                                ariaLabel="Analytics metric"
-                                className="analytics-select"
-                                value={lineMetric}
-                                onChange={(value) => setLineMetric(value as 'balance' | 'income' | 'expense')}
-                                options={[
-                                    { value: 'balance', label: 'Running Balance' },
-                                    { value: 'income', label: 'Income / Deposits' },
-                                    { value: 'expense', label: 'Expenses / Withdrawals' },
-                                ]}
-                            />
-
-                            <button
-                                onClick={() => setShowAnalytics(false)}
-                                className="text-muted hover:text-text-primary text-sm font-semibold transition-colors"
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none', padding: 0 }}
-                            >
-                                Hide
-                            </button>
-                        </div>
-                    </div>
-
-                    <div style={{ height: '300px', width: '100%' }} className="mb-8">
-                        {lineChartData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart
-                                    data={lineChartData}
-                                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                >
-                                    <defs>
-                                        <linearGradient id="analytics-area-fill" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor={lineColor} stopOpacity={0.28} />
-                                            <stop offset="100%" stopColor={lineColor} stopOpacity={0.02} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="4 4" stroke="rgba(255, 141, 161, 0.15)" vertical={false} />
-                                    <XAxis
-                                        dataKey="t"
-                                        type="number"
-                                        scale="time"
-                                        domain={['dataMin', 'dataMax']}
-                                        ticks={xTicks}
-                                        tickFormatter={formatMonthTick}
-                                        minTickGap={24}
-                                        stroke="#8c768f"
-                                        style={{ fontSize: '0.85rem', fontWeight: 600 }}
-                                    />
-                                    <YAxis stroke="#8c768f" style={{ fontSize: '0.85rem', fontWeight: 600 }} width={56} />
-                                    <Tooltip
-                                        labelFormatter={(t) => formatDate(new Date(Number(t)).toISOString(), dateFormat)}
-                                        formatter={(value) => formatMoney(Number(value), bank.currency)}
-                                        contentStyle={{ 
-                                            backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                                            border: '2px solid rgba(255, 141, 161, 0.2)', 
-                                            borderRadius: '16px',
-                                            boxShadow: '0 8px 24px rgba(255, 141, 161, 0.1)',
-                                            color: '#4a3e4b'
-                                        }}
-                                    />
-                                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                                    <Area
-                                        type={lineMetric === 'balance' ? 'stepAfter' : 'monotone'}
-                                        dataKey={lineMetric}
-                                        name={
-                                            lineMetric === 'balance' ? 'Running Balance' :
-                                            lineMetric === 'income' ? 'Income / Deposits' :
-                                            'Expenses / Withdrawals'
-                                        }
-                                        stroke={lineColor}
-                                        strokeWidth={2.5}
-                                        fill="url(#analytics-area-fill)"
-                                        dot={false}
-                                        activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff', fill: lineColor }}
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="flex items-center justify-center h-full text-muted">
-                                No transaction data available for graphing.
-                            </div>
-                        )}
-                    </div>
-
-                    {lineChartData.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-glass-border pt-8 mt-4">
-                            {/* Bar Chart: Monthly Summary */}
-                            <div>
-                                <h4 className="text-center font-semibold mb-4 text-text-secondary">Monthly Summary</h4>
-                                <div style={{ height: '250px', width: '100%' }}>
-                                    {barData.length > 0 ? (
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart
-                                                data={barData}
-                                                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                            >
-                                                <CartesianGrid strokeDasharray="4 4" stroke="rgba(255, 141, 161, 0.15)" />
-                                                <XAxis dataKey="month" stroke="#8c768f" style={{ fontSize: '0.8rem', fontWeight: 600 }} />
-                                                <YAxis stroke="#8c768f" style={{ fontSize: '0.8rem', fontWeight: 600 }} />
-                                                <Tooltip
-                                                    cursor={{ fill: 'rgba(255, 141, 161, 0.05)' }}
-                                                    contentStyle={{ 
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                                                        border: '2px solid rgba(255, 141, 161, 0.2)', 
-                                                        borderRadius: '16px',
-                                                        color: '#4a3e4b'
-                                                    }}
-                                                />
-                                                <Legend />
-                                                <Bar dataKey="income" name="Income/Deposits" fill="#ffd166" radius={[6, 6, 0, 0]} maxBarSize={35} />
-                                                <Bar dataKey="expense" name="Expenses/Withdrawals" fill="#ff8da1" radius={[6, 6, 0, 0]} maxBarSize={35} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    ) : (
-                                        <div className="flex h-full items-center justify-center text-muted text-sm pb-8">No monthly flow data yet.</div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Pie Chart: Expense Breakdown by Category */}
-                            <div>
-                                <ExpenseCategoryChart data={pieData} currency={bank.currency} />
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
 
             <div className="glass-panel transaction-table-panel">
                 {matchingTransactions.length === 0 ? (
@@ -1044,7 +1051,7 @@ export const PiggyBankView = () => {
                 )}
             </div>
 
-            {!showAdd && <FloatingTools showAnalytics={showAnalytics} setShowAnalytics={setShowAnalytics} />}
+            {!showAdd && <FloatingTools bankId={bank.id} />}
 
             {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} opener={settingsButtonRef.current} />}
 
