@@ -610,7 +610,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                     />
                                     <Legend wrapperStyle={{ paddingTop: '10px' }} />
                                     <Area
-                                        type={lineMetric === 'balance' ? 'stepAfter' : 'monotone'}
+                                        type="monotone"
                                         dataKey={lineMetric}
                                         name={
                                             lineMetric === 'balance' ? 'Running Balance' :
@@ -693,7 +693,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     </main>;
 
     return (
-        <div className="container page-layout-container animate-fade-in">
+        <div className={`container page-layout-container animate-fade-in${showAdd ? '' : ' with-floating-tools'}`}>
             <div className="piggybank-page-header">
                 <Link to="/" className="back-to-dashboard-link">
                     <ArrowLeft size={16} className="mr-2" /> Back to Dashboard

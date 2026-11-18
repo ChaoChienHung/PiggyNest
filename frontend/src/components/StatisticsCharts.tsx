@@ -91,7 +91,7 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
                         {metric === 'balance' ? <AreaChart data={periods} margin={{ top: 20, right: 20, left: 5, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,141,161,.15)" />
                             <XAxis dataKey="period" /><YAxis /><Tooltip formatter={(value) => formatMoney(Number(value), displayCurrency)} />
-                            <Area type="stepAfter" dataKey="balance" name="Balance" stroke="#ff8da1" fill="#ffe5ea" />
+                            <Area type="monotone" dataKey="balance" name="Balance" stroke="#ff8da1" fill="#ffe5ea" />
                         </AreaChart> : <BarChart data={periods} margin={{ top: 20, right: 20, left: 5, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,141,161,.15)" />
                             <XAxis dataKey="period" /><YAxis /><Tooltip formatter={(value) => formatMoney(Number(value), displayCurrency)} /><Legend />

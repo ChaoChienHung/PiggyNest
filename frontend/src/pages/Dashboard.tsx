@@ -136,7 +136,7 @@ export const Dashboard = () => {
     }
 
     return (
-        <div className="container page-layout-container animate-fade-in">
+        <div className={`container page-layout-container animate-fade-in${showCreate ? '' : ' with-floating-tools'}`}>
             <header className="flex justify-between items-center mb-10 dashboard-header">
                 <div>
                     <h1 className="dashboard-title">Dashboard</h1>

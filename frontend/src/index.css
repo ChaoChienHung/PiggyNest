@@ -987,7 +987,7 @@ table tr:last-child td:last-child {
 
 .floating-tools {
   position: fixed;
-  right: max(1.5rem, env(safe-area-inset-right));
+  right: max(1.5rem, calc((100vw - 1200px) / 2 - 58px), env(safe-area-inset-right));
   bottom: max(1.5rem, env(safe-area-inset-bottom));
   z-index: 100;
   display: flex;
@@ -1006,7 +1006,7 @@ table tr:last-child td:last-child {
   place-items: center;
   cursor: pointer;
 }
-.floating-tools-trigger svg { width: 61px; height: 61px; }
+.floating-tools-trigger svg { color: var(--text-primary); }
 .floating-tools-trigger:hover,
 .floating-tools-trigger:focus-visible { background: var(--accent-hover); transform: scale(1.05); }
 .floating-tools-actions { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(8px); transition: opacity .2s, transform .2s, visibility .2s; }
@@ -1015,6 +1015,9 @@ table tr:last-child td:last-child {
 .floating-tools-action { display: grid; place-items: center; width: 52px; height: 52px; border: 2px solid var(--coin-gold-hover); border-radius: 50%; background: var(--coin-gold); color: var(--text-primary); box-shadow: 0 6px 18px rgba(255, 183, 3, 0.25); }
 .floating-tools-action:hover,
 .floating-tools-action:focus-visible { background: var(--coin-gold-hover); }
+@media (min-width: 900px) and (max-width: 1363px) {
+  .page-layout-container.with-floating-tools { padding-right: clamp(1.5rem, calc(706px - 50vw), 106px); }
+}
 .analysis-page > .dashboard-title { margin: 1.25rem 0 2rem; }
 
 .transaction-compact-select {

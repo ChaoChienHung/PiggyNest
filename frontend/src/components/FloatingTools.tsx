@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { BarChart3, FileText } from 'lucide-react';
+import { BarChart3, FileText, PiggyBank } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { PiggySvg } from './PiggyCartoon';
 
 interface FloatingToolsProps { bankId?: number }
 
@@ -36,6 +35,6 @@ export const FloatingTools = ({ bankId }: FloatingToolsProps) => {
         </div>
         <button ref={triggerRef} type="button" className="floating-tools-trigger"
             aria-label="Additional tools" aria-expanded={open} aria-controls="floating-tools-actions"
-            onClick={() => setOpen(!open)}><PiggySvg /></button>
+            onClick={() => setOpen(!open)}><PiggyBank size={41} strokeWidth={1.9} aria-hidden="true" /></button>
     </div>, document.body);
 };
