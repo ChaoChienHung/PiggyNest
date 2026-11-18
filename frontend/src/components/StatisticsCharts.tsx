@@ -3,7 +3,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Pie, PieChart, C
 import { useAuth } from '../context/useAuth';
 import { useRates } from '../context/useRates';
 import { useLedgerEntries } from '../context/useLedgerEntries';
-import { asDateFormat, parseDate } from '../utils/dates';
+import { asDateFormat, formatPeriod, parseDate } from '../utils/dates';
 import { convertLedger, summarizePeriods } from '../utils/ledgerAnalytics';
 import { formatMoney } from '../utils/money';
 import { rateSummary } from '../utils/currency';
@@ -90,11 +90,11 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
                     <ResponsiveContainer width="100%" height="100%">
                         {metric === 'balance' ? <AreaChart data={periods} margin={{ top: 20, right: 20, left: 5, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,141,161,.15)" />
-                            <XAxis dataKey="period" /><YAxis /><Tooltip formatter={(value) => formatMoney(Number(value), displayCurrency)} />
+                            <XAxis dataKey="period" tickFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} /><YAxis /><Tooltip labelFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} formatter={(value) => formatMoney(Number(value), displayCurrency)} />
                             <Area type="monotone" dataKey="balance" name="Balance" stroke="#ff8da1" fill="#ffe5ea" />
                         </AreaChart> : <BarChart data={periods} margin={{ top: 20, right: 20, left: 5, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,141,161,.15)" />
-                            <XAxis dataKey="period" /><YAxis /><Tooltip formatter={(value) => formatMoney(Number(value), displayCurrency)} /><Legend />
+                            <XAxis dataKey="period" tickFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} /><YAxis /><Tooltip labelFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} formatter={(value) => formatMoney(Number(value), displayCurrency)} /><Legend />
                             <Bar dataKey="income" name="Income" fill="#ffd166" /><Bar dataKey="expense" name="Spending" fill="#ff8da1" />
                         </BarChart>}
                     </ResponsiveContainer>

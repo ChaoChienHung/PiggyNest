@@ -2,6 +2,11 @@
 
 ## Awaiting review
 
+- [ ] Numeric chart and report dates, and simpler transaction types
+  - **Delivered:** PiggyBank Monthly Summary labels use numeric months (`YYYY/MM` for the year-first setting, `MM/YYYY` for either day-first setting). PiggyBank chart ticks and combined chart axes/tooltips follow the account date format; Reports follows it for daily and monthly periods. Monthly Summary groups by the stored calendar date, independent of browser language and time zone. Deposit and Withdrawal are absent from the new-transaction Type list; existing transactions with those types remain editable under their original type.
+  - **Evidence:** Frontend build and lint passed; `git diff --check` passed. Visual behavior awaits review.
+  - **Review focus:** Switch through all three Settings date formats and compare the PiggyBank chart, Monthly Summary, combined charts, and Reports. Open an older Deposit or Withdrawal to verify its type remains selected when editing.
+
 - [ ] Custom calendar and dedicated analytics navigation
   - **Delivered:** All date fields keep typed entry and now open an app-styled calendar from an icon inside the input. The calendar renders above surrounding panels, chooses its position from available viewport space, and has direct month and year selection. The fixed, larger FAB uses a line-art piggy-bank icon, opens its centered icon links on hover or click, and sits about 10px outside the white content area on desktop without covering transaction actions. Graph Analysis has its own route for the combined Dashboard and individual PiggyBank charts; the PiggyBank ID is passed into the analysis view so its data request runs; Reports stays on its own route. Both pages include a back link to the originating Dashboard or PiggyBank.
   - **Evidence:** Frontend build and lint passed after the FAB and loading fixes. The earlier browser control session was unavailable and the current Python environments lack Playwright, so visual behavior remains for human review.

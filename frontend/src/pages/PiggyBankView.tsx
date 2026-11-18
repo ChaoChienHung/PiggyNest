@@ -16,7 +16,7 @@ import { formatMoney } from '../utils/money';
 import { useAuth } from '../context/useAuth';
 import { useRates } from '../context/useRates';
 import { convertAmount } from '../utils/currency';
-import { asDateFormat, formatDate, isoDatePart, parseDate, todayIsoDate } from '../utils/dates';
+import { asDateFormat, formatDate, formatMonth, isoDatePart, parseDate, todayIsoDate } from '../utils/dates';
 
 const transferNote = (description?: string) => {
     const note = description || '';
@@ -352,27 +352,26 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const formatMonthTick = (t: number) => {
         const date = new Date(t);
         return xTicks
-            ? `${date.getUTCFullYear()}/${String(date.getUTCMonth() + 1).padStart(2, '0')}`
-            : formatDate(new Date(t).toISOString(), dateFormat);
+            ? formatMonth(`${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`, dateFormat)
+            : formatDate(date.toISOString(), dateFormat);
     };
     const lineColor = lineMetric === 'expense' ? '#ff8da1' : '#f4b740';
 
     // Group monthly for Bar Chart
     const monthlyTotals: Record<string, { month: string, income: number, expense: number }> = {};
     analyticsTransactions.forEach(tx => {
-        const date = new Date(tx.date);
-        const monthStr = date.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
-        if (!monthlyTotals[monthStr]) {
-            monthlyTotals[monthStr] = { month: monthStr, income: 0, expense: 0 };
+        const monthKey = isoDatePart(tx.date).slice(0, 7);
+        if (!monthlyTotals[monthKey]) {
+            monthlyTotals[monthKey] = { month: monthKey, income: 0, expense: 0 };
         }
         if (tx.type === 'transfer') return;
         if (tx.amount > 0) {
-            monthlyTotals[monthStr].income += tx.amount;
+            monthlyTotals[monthKey].income += tx.amount;
         } else {
-            monthlyTotals[monthStr].expense += Math.abs(tx.amount);
+            monthlyTotals[monthKey].expense += Math.abs(tx.amount);
         }
     });
-    const barData = Object.values(monthlyTotals).reverse();
+    const barData = Object.keys(monthlyTotals).sort().map(key => monthlyTotals[key]);
 
     // Group category totals for Pie Chart
     const catTotals: Record<string, number> = {};
@@ -405,8 +404,8 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                         options={[
                             { value: 'expense', label: 'Expense' },
                             { value: 'income', label: 'Income' },
-                            { value: 'withdrawal', label: 'Withdrawal' },
-                            { value: 'deposit', label: 'Deposit' },
+                            ...(editingTxId !== null && type === 'withdrawal' ? [{ value: 'withdrawal', label: 'Withdrawal' }] : []),
+                            ...(editingTxId !== null && type === 'deposit' ? [{ value: 'deposit', label: 'Deposit' }] : []),
                             { value: 'transfer_out', label: 'Bank Transfer Out' },
                             { value: 'transfer_in', label: 'Bank Transfer In' },
                             ...(editingTxId === null || type === 'transfer' ? [{ value: 'transfer', label: 'PiggyBank Transfer' }] : []),
@@ -645,9 +644,10 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                                             >
                                                 <CartesianGrid strokeDasharray="4 4" stroke="rgba(255, 141, 161, 0.15)" />
-                                                <XAxis dataKey="month" stroke="#8c768f" style={{ fontSize: '0.8rem', fontWeight: 600 }} />
+                                                <XAxis dataKey="month" tickFormatter={value => formatMonth(String(value), dateFormat)} stroke="#8c768f" style={{ fontSize: '0.8rem', fontWeight: 600 }} />
                                                 <YAxis stroke="#8c768f" style={{ fontSize: '0.8rem', fontWeight: 600 }} />
                                                 <Tooltip
+                                                    labelFormatter={value => formatMonth(String(value), dateFormat)}
                                                     cursor={{ fill: 'rgba(255, 141, 161, 0.05)' }}
                                                     contentStyle={{ 
                                                         backgroundColor: 'rgba(255, 255, 255, 0.95)', 

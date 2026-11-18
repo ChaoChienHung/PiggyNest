@@ -4,7 +4,7 @@ import { useAuth } from '../context/useAuth';
 import { useRates } from '../context/useRates';
 import { useLedgerEntries } from '../context/useLedgerEntries';
 import { authApi } from '../api/auth';
-import { asDateFormat, formatDate, parseDate } from '../utils/dates';
+import { asDateFormat, formatPeriod, parseDate } from '../utils/dates';
 import { convertLedger, summarizePeriods } from '../utils/ledgerAnalytics';
 import { fillReportPeriods, metricSummary } from '../utils/reportMath';
 import { formatMoney } from '../utils/money';
@@ -56,7 +56,7 @@ export const Reports = () => {
     };
     const amount = (value: number) => hidden ? '****' : formatMoney(value, displayCurrency);
     const ratesTitle = hidden ? undefined : rateSummary(banks.filter(bank => selected.includes(bank.id)).map(bank => bank.currency), displayCurrency, rates);
-    const periodLabel = (key: string, interval: 'day' | 'month' | 'year') => interval === 'day' ? formatDate(key, dateFormat) : key;
+    const periodLabel = (key: string, interval: 'day' | 'month' | 'year') => formatPeriod(key, interval, dateFormat);
 
     return <main className="container page-layout-container animate-fade-in reports-page">
         <header className="reports-header">

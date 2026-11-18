@@ -37,6 +37,15 @@ export const formatDate = (apiDate: string, format: DateFormat) => {
     }
 };
 
+/** Formats an ISO `YYYY-MM` month key without relying on browser language. */
+export const formatMonth = (monthKey: string, format: DateFormat) => {
+    const [year, month] = monthKey.split('-');
+    return format === 'YYYY-MM-DD' ? `${year}/${month}` : `${month}/${year}`;
+};
+
+export const formatPeriod = (key: string, period: 'day' | 'month' | 'year', format: DateFormat) =>
+    period === 'day' ? formatDate(key, format) : period === 'month' ? formatMonth(key, format) : key;
+
 /**
  * Parses text typed in the user's chosen format and returns `YYYY-MM-DD`, or null
  * when it does not match that format or is not a real date. DD/MM and MM/DD are
