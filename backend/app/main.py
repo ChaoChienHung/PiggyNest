@@ -3,10 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import auth, piggy_banks, transactions, transfers, categories, statistics, backup
 from app.core.config import settings
 from app.db.base import Base, engine
+from app.db.money_migration import migrate_money
 from sqlalchemy import inspect, text
 
 # Create the DB tables (Note: in production use Alembic migrations instead)
 Base.metadata.create_all(bind=engine)
+migrate_money(engine)
 if "transfer_group_id" not in {column["name"] for column in inspect(engine).get_columns("transactions")}:
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE transactions ADD COLUMN transfer_group_id VARCHAR(36)"))

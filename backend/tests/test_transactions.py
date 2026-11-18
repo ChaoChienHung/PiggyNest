@@ -61,6 +61,17 @@ def test_get_balance(client, auth_headers, piggy_bank_id):
     assert data["balance"] == 800.0
     assert data["transaction_count"] == 2
 
+
+def test_amounts_use_exact_cents(client, auth_headers, piggy_bank_id, db):
+    endpoint = f"/api/v1/piggy-banks/{piggy_bank_id}/transactions"
+    for amount in (0.1, 0.2):
+        assert client.post(endpoint, headers=auth_headers, json={"amount": amount, "type": "income", "category": "Change"}).status_code == 200
+    assert client.get(f"/api/v1/piggy-banks/{piggy_bank_id}/balance", headers=auth_headers).json()["balance"] == 0.3
+    summary = client.get("/api/v1/statistics?timeframe=all", headers=auth_headers).json()
+    assert summary[0]["income"] == summary[0]["category_incomes"]["Change"] == 0.3
+    assert sorted(tx.amount_minor for tx in db.query(Transaction).all()) == [10, 20]
+    assert client.post(endpoint, headers=auth_headers, json={"amount": 0.001}).status_code == 422
+
 def test_get_transactions(client, auth_headers, piggy_bank_id):
     client.post(
         f"/api/v1/piggy-banks/{piggy_bank_id}/transactions",

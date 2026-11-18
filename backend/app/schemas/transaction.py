@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from typing import Optional, Literal
+from app.core.money import to_minor_units
 
 EntryType = Literal['expense', 'income', 'withdrawal', 'deposit', 'transfer_out', 'transfer_in']
 
@@ -13,6 +14,12 @@ class TransactionCreate(BaseModel):
     category: Optional[str] = None
     description: Optional[str] = None
     date: Optional[datetime] = None
+
+    @field_validator("amount")
+    @classmethod
+    def valid_amount(cls, value):
+        to_minor_units(value)
+        return value
 
 class TransactionRead(BaseModel):
     """
@@ -40,6 +47,12 @@ class TransferCreate(BaseModel):
     amount: float = Field(gt=0, allow_inf_nan=False)
     description: Optional[str] = "Transfer"
 
+    @field_validator("amount")
+    @classmethod
+    def valid_amount(cls, value):
+        to_minor_units(value)
+        return value
+
 class TransactionUpdate(BaseModel):
     """
     Schema for validating incoming data when updating a transaction.
@@ -49,3 +62,10 @@ class TransactionUpdate(BaseModel):
     category: Optional[str] = None
     description: Optional[str] = None
     date: Optional[datetime] = None
+
+    @field_validator("amount")
+    @classmethod
+    def valid_amount(cls, value):
+        if value is not None:
+            to_minor_units(value)
+        return value

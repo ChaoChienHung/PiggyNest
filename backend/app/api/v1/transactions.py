@@ -132,11 +132,11 @@ def get_balance(
     to determine the active numeric balance of a PiggyBank.
     """
     get_user_piggy_bank(db, pb_id, current_user.id)
-    total = db.query(func.sum(Transaction.amount)).filter(Transaction.piggy_bank_id == pb_id).scalar()
+    total_minor = db.query(func.sum(Transaction.amount_minor)).filter(Transaction.piggy_bank_id == pb_id).scalar()
     count = db.query(func.count(Transaction.id)).filter(Transaction.piggy_bank_id == pb_id).scalar()
     
     return {
-        "balance": float(total or 0.0),
+        "balance": (total_minor or 0) / 100,
         "transaction_count": count or 0,
     }
 

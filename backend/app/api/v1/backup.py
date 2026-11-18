@@ -20,6 +20,7 @@ from app.models.piggy_bank import PiggyBank
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.models.category import Category
+from app.core.money import to_minor_units
 
 router = APIRouter()
 BANK_HEADERS = ("bank_id", "name", "currency")
@@ -165,6 +166,10 @@ def _parse(workbook):
         amount = values[2]
         if isinstance(amount, bool) or not isinstance(amount, (float, int)) or not isfinite(amount):
             _fail(f"Invalid amount in row {row}")
+        try:
+            to_minor_units(amount)
+        except ValueError:
+            _fail(f"Amount in row {row} must have at most two decimal places")
         tx_type = _string(values[3], f"Transactions row {row} type", 50, True)
         if tx_type not in {"expense", "income", "withdrawal", "deposit", "transfer", "transfer_out", "transfer_in"}:
             _fail(f"Invalid transaction type in row {row}")

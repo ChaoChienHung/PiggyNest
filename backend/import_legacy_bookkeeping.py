@@ -19,6 +19,7 @@ from sqlalchemy import or_
 from app.core.security import get_password_hash
 from app.core.config import LOCAL_DATA_DIR
 from app.db.base import Base, engine
+from app.db.money_migration import migrate_money
 from app.db.session import SessionLocal
 from app.models.category import Category
 from app.models.piggy_bank import PiggyBank
@@ -38,6 +39,18 @@ CURRENCIES = {
     "LudwigSingapore": "SGD",
     "UnitedOverseasBank": "SGD",
 }
+
+
+def normalized_amount(row):
+    """Discard known sub-cent Float residue in legacy ChungHwaPost NTD rows."""
+    amount = row.amount
+    if row.bank == "ChungHwaPost":
+        whole = amount.to_integral_value()
+        if Decimal(0) < abs(amount - whole) < Decimal("0.01"):
+            amount = whole
+    if amount * 100 != (amount * 100).to_integral_value():
+        raise ValueError(f"Source amount has unsupported sub-cent precision: {row.key}")
+    return amount
 
 # User-confirmed corrections to dates mistyped in the 2013 source file.
 DATE_CORRECTIONS = {
@@ -122,12 +135,12 @@ def load_rows(root: Path):
 def partition_rows(rows):
     by_date_and_amount = defaultdict(list)
     for row in rows:
-        by_date_and_amount[(CURRENCIES[row.bank], row.date, abs(row.amount))].append(row)
+        by_date_and_amount[(CURRENCIES[row.bank], row.date, abs(normalized_amount(row)))].append(row)
     possible_matches = defaultdict(set)
     for group in by_date_and_amount.values():
         for index, first in enumerate(group):
             for second in group[index + 1:]:
-                if first.bank != second.bank and first.amount == -second.amount:
+                if first.bank != second.bank and normalized_amount(first) == -normalized_amount(second):
                     possible_matches[first.key].add(second.key)
                     possible_matches[second.key].add(first.key)
     pending = {row.key for row in rows if row.category == "Transfer"}
@@ -168,6 +181,7 @@ def write_report(path, pending, possible_matches, reference_reasons, balance_war
 
 def import_safe_rows(rows, safe, username, email, password):
     Base.metadata.create_all(bind=engine)
+    migrate_money(engine)
     with SessionLocal() as db:
         if db.query(User).filter(or_(User.username == username, User.email == email)).first():
             raise ValueError("Target user already exists; refusing to duplicate an import")
@@ -186,8 +200,8 @@ def import_safe_rows(rows, safe, username, email, password):
             for row in safe:
                 db.add(Transaction(
                     piggy_bank_id=banks[row.bank].id,
-                    amount=float(row.amount),
-                    type="income" if row.amount > 0 else "expense",
+                    amount=float(normalized_amount(row)),
+                    type="income" if normalized_amount(row) > 0 else "expense",
                     category=row.category,
                     description=row.description,
                     date=row.date,

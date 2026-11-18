@@ -24,7 +24,7 @@ Look in [`frontend/`](../frontend/) for the transfer form and ledger actions, an
 
 ## Backups and legacy imports
 
-Users can export and import an Excel backup from the browser. A separate backend import tool reads legacy CSV files, imports clear transactions, and leaves possible PiggyBank transfers in a local review report. See [persistence and backup](architecture.md#persistence-and-backup) and [transfer repair](transfer-repair.md).
+Users can export and import an Excel backup from the browser. A separate backend import tool reads legacy CSV files, imports clear transactions, and leaves possible PiggyBank transfers in a local review report. See [persistence and backup](architecture.md#persistence-and-backup), [Ludwig legacy import](legacy-import.md), and [transfer repair](transfer-repair.md).
 
 Excel import assigns new local numeric IDs. It does not merge two independently edited copies of the same PiggyBank. See [backup identity and future synchronization](data-sync.md).
 

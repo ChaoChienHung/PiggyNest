@@ -53,23 +53,30 @@ def get_statistics(
             stats_map[map_key] = {
                 "period": period_key,
                 "currency": currency,
-                "income": 0.0,
-                "expense": 0.0,
+                "income": 0,
+                "expense": 0,
                 "category_expenses": {},
                 "category_incomes": {},
             }
 
         # Map types to income/expense for charting purposes
         if tx.type in ['income', 'deposit', 'transfer_in']:
-            stats_map[map_key]["income"] += tx.amount
+            stats_map[map_key]["income"] += tx.amount_minor
             if tx.category:
-                stats_map[map_key]["category_incomes"][tx.category] = stats_map[map_key]["category_incomes"].get(tx.category, 0) + tx.amount
+                stats_map[map_key]["category_incomes"][tx.category] = stats_map[map_key]["category_incomes"].get(tx.category, 0) + tx.amount_minor
         elif tx.type in ['expense', 'withdrawal', 'transfer_out']:
             # Convert negative numbers to positive for charting expenses.
-            amt = abs(tx.amount)
+            amt = abs(tx.amount_minor)
             stats_map[map_key]["expense"] += amt
             if tx.category:
                 stats_map[map_key]["category_expenses"][tx.category] = stats_map[map_key]["category_expenses"].get(tx.category, 0) + amt
+
+    # Sum exact minor units before converting to the public major-unit format.
+    for item in stats_map.values():
+        item["income"] /= 100
+        item["expense"] /= 100
+        item["category_expenses"] = {name: amount / 100 for name, amount in item["category_expenses"].items()}
+        item["category_incomes"] = {name: amount / 100 for name, amount in item["category_incomes"].items()}
 
     # Convert map to list and sort by period
     stats_list = list(stats_map.values())

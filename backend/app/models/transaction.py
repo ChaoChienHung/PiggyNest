@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
+from app.core.money import from_minor_units, to_minor_units
 
 class Transaction(Base):
     """
@@ -10,7 +11,7 @@ class Transaction(Base):
     Attributes:
         id (int): Primary key.
         piggy_bank_id (int): Foreign key linking to the associated PiggyBank.
-        amount (float): The signed monetary value of the transaction.
+        amount_minor (int): The signed monetary value in exact minor units.
         type (str): The transaction classification (e.g., 'expense', 'income', 'transfer').
         category (str): Optional categorical string tag.
         description (str): Optional user-provided context notes.
@@ -21,7 +22,7 @@ class Transaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     piggy_bank_id = Column(Integer, ForeignKey("piggy_banks.id"), nullable=False)
     
-    amount = Column(Float, nullable=False)
+    amount_minor = Column(BigInteger, nullable=False)
     type = Column(String(50), nullable=False, default='expense')
     category = Column(String(100), nullable=True)
     description = Column(String(255), nullable=True)
@@ -33,6 +34,14 @@ class Transaction(Base):
 
     # Relationships
     piggy_bank = relationship("PiggyBank", back_populates="transactions")
+
+    @property
+    def amount(self):
+        return from_minor_units(self.amount_minor)
+
+    @amount.setter
+    def amount(self, value):
+        self.amount_minor = to_minor_units(value)
 
     @property
     def transaction_id(self):
