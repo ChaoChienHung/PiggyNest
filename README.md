@@ -39,15 +39,14 @@ Open `http://localhost:5173`. For account recovery email, configure the backend 
 
 ## CLI
 
-Run the root CLI from the repository root. It uses the same API as the browser and can edit a transaction by its numeric ID; its database inspector reads only the local development database.
+Run the root CLI from the repository root using the backend virtual environment. It goes through the same FastAPI routes as the browser and can edit a transaction by its numeric ID. When no local server is running, it automatically loads the local FastAPI app in-process so you do not need to start `uvicorn` first; if the local server is already running, it connects over HTTP. Its database inspector reads only the local development database.
 
 ```bash
 source backend/venv/bin/activate
-python3 -m pip install requests
 python3 cli.py
 ```
 
-Set `PIGGYNEST_API_URL` to use a shared backend. The inspector is disabled when the CLI points to a remote API.
+Set `PIGGYNEST_API_URL` to use a shared backend. When pointing to a remote API, the CLI strictly uses HTTP and disables both local in-process fallback and the database inspector.
 
 ## Development test account
 

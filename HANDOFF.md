@@ -3,6 +3,7 @@
 ## Snapshot
 
 - Updated: 2026-11-19. Branch: `main`.
+- `cli.py` now uses `httpx` and automatically falls back to running the local FastAPI app in-process when no local backend server is started (while using HTTP when a local server is already running or when `PIGGYNEST_API_URL` targets a remote API). Updated `README.md`, `docs/architecture.md`, `docs/data-sync.md`, and `REVIEW.md`.
 - Open analytics filter menus now raise their containing glass panel above adjacent panels, fixing the Categories menu being covered by PiggyBank Analytics. Frontend build/lint passed; visual review remains in `REVIEW.md`.
 - Combined Graph Analysis places PiggyBanks and Categories side by side with labels above the fields. Category filters in Graph Analysis and Reports now default to visibly checked options; All categories and Clear are distinct actions, with an empty-state prompt after Clear. Frontend build/lint passed; visual review is in `REVIEW.md`.
 - Graph Analysis now removes Deposit/Withdrawal wording, filters chart data by category, and places a `Category Breakdown` control under the pie. The fixed pig FAB stays visible across protected dashboard, PiggyBank, analysis, and report pages, including open forms. Frontend build/lint passed; visual review is in `REVIEW.md`.
@@ -20,7 +21,7 @@ None. Await human review of `REVIEW.md`; begin the owner-led tasks when the owne
 
 ## Verification
 
-- Backend: `cd backend && venv/bin/python -m pytest tests -q` — 52 passed, including new account defaults, rate validation and per-user isolation, and idempotent backfill that preserves custom rates.
+- Backend: `cd backend && venv/bin/python -m pytest tests -q` — 62 passed, including 15 CLI unit/end-to-end tests (`tests/test_cli.py` and `tests/test_cli_edit.py`), new account defaults, rate validation and per-user isolation, and idempotent backfill that preserves custom rates.
 - Frontend: `cd frontend && npm run build && npm run lint` — passed. Node 22 ledger and Reports calculation tests passed, including conversion through NTD, PiggyBank and bank transfers, empty calendar periods, and year boundaries.
 - Isolated Playwright checks at 1280px and 390px covered page navigation, invalid jump input, live rate changes, net worth hiding after reload, Dashboard chips and charts, Reports figures and PiggyBank preselection, and horizontal overflow. Browser fixtures did not write database rows. The earlier 61-row Bob pagination check cleaned all temporary rows and restored Bob's 20-row page size.
 - For the latest desktop UI fixes, a browser fixture with eight PiggyBanks and 30 categories verified menu search, scroll, fixed filter height, bulk actions, and matching Type/Date widths. Mobile design was not reviewed for these fixes, per the owner's current priority.

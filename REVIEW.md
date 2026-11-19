@@ -2,6 +2,11 @@
 
 ## Awaiting review
 
+- [ ] CLI in-process FastAPI fallback (no server required locally)
+  - **Delivered:** `cli.py` now uses `httpx` (already in `backend/requirements.txt`, removing the extra `requests` install) and selects its transport automatically: when `PIGGYNEST_API_URL` points to a remote API or the local backend is already running on `127.0.0.1:8000`, it connects over HTTP; when no local server is running, it loads `backend/app/main.py` in-process via `TestClient` so all routes, validation, and transfer rules still run without starting `uvicorn`. Updated `README.md`, `docs/architecture.md`, and `docs/data-sync.md`.
+  - **Evidence:** Backend test suite passed (62 tests, including 15 CLI tests in `backend/tests/test_cli.py` and `backend/tests/test_cli_edit.py` covering in-process fallback, remote HTTP-only behavior, preferring a running local server, login failure, PiggyBank CRUD, add/edit transaction flows, user isolation, and `main_loop` cleanup); verified both live HTTP detection against the running local server and real in-process FastAPI startup against an isolated temporary SQLite database.
+  - **Review focus:** Run `backend/venv/bin/python cli.py` both with and without `uvicorn` running to confirm the displayed mode (`HTTP API` vs `Local in-process API`) and normal login/transaction flows.
+
 - [ ] Side-by-side analytics filters and explicit category selection
   - **Delivered:** Combined Graph Analysis places PiggyBanks and Categories controls side by side on desktop and labels each field above its value. The shared filter control gives Reports the same visible labels. Category filters on both analysis views and Reports now start with every available category checked. `All categories` checks all; `Clear` unchecks all and shows a select-category prompt. Changing the selected PiggyBanks resets categories to all of the newly available options. An open filter's glass panel now rises above adjacent panels so the Categories menu stays visible over PiggyBank Analytics.
   - **Evidence:** Frontend build and lint passed; `git diff --check` passed. Visual behavior awaits review.

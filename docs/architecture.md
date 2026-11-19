@@ -6,7 +6,7 @@ The browser runs a React single-page application. `frontend/src/api/` wraps HTTP
 
 The API uses SQLAlchemy sessions against SQLite by default. `backend/app/models/` defines the persisted schema, `backend/app/schemas/` defines request and response shapes, and `backend/app/domain/` holds reusable rules. Some endpoint modules still perform database orchestration directly; move a workflow into a service when it has multiple callers or needs more complex invariants. `backend/app/db/repositories/` currently covers only some resources. Avoid adding repository wrappers that merely repeat a one-line query.
 
-`backend/app/domain/transactions.py` and `backend/app/domain/reports.py` are older CSV/pandas bookkeeping code; the FastAPI app does not route through them. `cli.py` is a separate development tool. Keep these paths distinct until there is a deliberate migration or removal.
+`backend/app/domain/transactions.py` and `backend/app/domain/reports.py` are older CSV/pandas bookkeeping code; the FastAPI app does not route through them. `cli.py` is a root CLI client that calls the FastAPI API over HTTP (when a remote `PIGGYNEST_API_URL` is configured or a local server is already running) or runs the local FastAPI app in-process when no local server is started. Keep the legacy CSV modules distinct until there is a deliberate migration or removal.
 
 ## Transaction identity and transfers
 

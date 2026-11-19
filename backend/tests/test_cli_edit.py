@@ -103,3 +103,60 @@ def test_cli_rejects_dates_in_another_format(monkeypatch, capsys):
     monkeypatch.setattr(cli, "api_put", lambda *_: (_ for _ in ()).throw(AssertionError("must not save")))
     cli.edit_transaction()
     assert "MM/DD/YYYY" in capsys.readouterr().out
+
+
+def test_cli_falls_back_to_inprocess_api_when_local_server_is_down(monkeypatch, client):
+    monkeypatch.delenv("PIGGYNEST_API_URL", raising=False)
+    cli = load_cli()
+    monkeypatch.setattr(cli, "is_local_server_running", lambda: False)
+    monkeypatch.setattr(cli, "load_inprocess_client", lambda: client)
+
+    # Register a user through the test FastAPI app, then log in and list banks via cli.py
+    reg = client.post("/api/v1/auth/register", json={
+        "username": "cli_user",
+        "email": "cli_user@example.com",
+        "password": "Password123!",
+    })
+    assert reg.status_code == 200
+
+    answers = iter(["cli_user@example.com", "Password123!"])
+    monkeypatch.setattr("builtins.input", lambda _: next(answers))
+    assert cli.login() is True
+    assert cli._transport_mode == "inprocess"
+
+    created = cli.api_post("/piggy-banks", json_data={"name": "Cash", "currency": "NTD"})
+    assert created["name"] == "Cash"
+    banks = cli.api_get("/piggy-banks")
+    assert [b["name"] for b in banks] == ["Cash"]
+
+
+def test_cli_uses_http_when_remote_api_url_is_set(monkeypatch):
+    monkeypatch.setenv("PIGGYNEST_API_URL", "https://piggynest.example/api/v1/")
+    cli = load_cli()
+    monkeypatch.setattr(cli, "is_local_server_running", lambda: False)
+    monkeypatch.setattr(
+        cli,
+        "load_inprocess_client",
+        lambda: (_ for _ in ()).throw(AssertionError("remote CLI must not fall back to local in-process app")),
+    )
+    try:
+        cli.get_client()
+        assert cli._transport_mode == "http"
+    finally:
+        cli.close_client()
+
+
+def test_cli_prefers_http_when_local_server_is_running(monkeypatch):
+    monkeypatch.delenv("PIGGYNEST_API_URL", raising=False)
+    cli = load_cli()
+    monkeypatch.setattr(cli, "is_local_server_running", lambda: True)
+    monkeypatch.setattr(
+        cli,
+        "load_inprocess_client",
+        lambda: (_ for _ in ()).throw(AssertionError("should use running local HTTP server")),
+    )
+    try:
+        cli.get_client()
+        assert cli._transport_mode == "http"
+    finally:
+        cli.close_client()

@@ -2,11 +2,14 @@
 """
 PiggyNest Interactive CLI Tool
 ------------------------------
-A command-line interface to manage personal finances via a REST API 
-and inspect the underlying SQLite database directly for debugging.
+A command-line interface to manage personal finances through the PiggyNest API.
+Connects over HTTP when a remote PIGGYNEST_API_URL is set or a local backend is
+already running, and falls back to running the local FastAPI app in-process when
+no local server is started.
 """
 
-import requests
+import httpx
+import importlib
 import sqlite3
 import sys
 import os
@@ -17,8 +20,10 @@ from datetime import date
 # Section: Configuration & Global State
 # -------------------------------------
 # The root URL for the backend API services.
-LOCAL_API_URL = "http://127.0.0.1:8000/api/v1"
-BASE_URL = os.environ.get("PIGGYNEST_API_URL", LOCAL_API_URL).rstrip("/")
+API_PREFIX = "/api/v1"
+LOCAL_API_URL = f"http://127.0.0.1:8000{API_PREFIX}"
+RAW_API_URL = os.environ.get("PIGGYNEST_API_URL")
+BASE_URL = (RAW_API_URL or LOCAL_API_URL).rstrip("/")
 
 # Absolute path to the local SQLite database. 
 # Local database lives in the repository's Git-ignored data directory.
@@ -27,6 +32,10 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "data", "piggynest.db")
 # Global session variable. Once logged in, this stores the JWT string 
 # to authorize subsequent API requests.
 token = None
+
+# Active transport client ("http" or "inprocess"), initialized lazily on first request.
+_client = None
+_transport_mode = None
 
 # The signed-in user's date format, read from their account after login.
 # The API always sends and accepts ISO dates; the CLI converts only for prompts and display.
@@ -94,8 +103,66 @@ def print_header(title):
 # ------------------------------------------------
 # Section: API Communication Layer (REST Wrappers)
 # ------------------------------------------------
-# These functions encapsulate the 'requests' library to ensure 
-# the Bearer Token is automatically attached if available.
+# Connects over HTTP when targeting a remote API or when a local server is
+# running; otherwise runs the local FastAPI app in-process with no server needed.
+
+def is_remote_api():
+    """Return True when the CLI is configured to talk to a non-local API URL."""
+    return BASE_URL != LOCAL_API_URL
+
+
+def is_local_server_running():
+    """Return True if the local FastAPI server is already reachable on 127.0.0.1:8000."""
+    health_url = LOCAL_API_URL[:-len(API_PREFIX)] + "/"
+    try:
+        response = httpx.get(health_url, timeout=0.5)
+        return response.status_code < 500
+    except httpx.HTTPError:
+        return False
+
+
+def load_inprocess_client():
+    """Load the local FastAPI app in-process without starting an HTTP server."""
+    backend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend")
+    if backend_dir not in sys.path:
+        sys.path.insert(0, backend_dir)
+    from fastapi.testclient import TestClient
+    app = importlib.import_module("app.main").app
+    return TestClient(app)
+
+
+def get_client():
+    """Return the cached API client, selecting HTTP or in-process mode once."""
+    global _client, _transport_mode
+    if _client is not None:
+        return _client
+
+    if is_remote_api() or is_local_server_running():
+        _transport_mode = "http"
+        _client = httpx.Client(timeout=10.0)
+    else:
+        _transport_mode = "inprocess"
+        _client = load_inprocess_client()
+    return _client
+
+
+def close_client():
+    """Close the active API client and reset transport state."""
+    global _client, _transport_mode
+    if _client is not None:
+        _client.close()
+        _client = None
+    _transport_mode = None
+
+
+def _request(method, endpoint, json_data=None, data=None):
+    """Send an authenticated API request via HTTP or the in-process FastAPI app."""
+    client = get_client()
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    url = f"{API_PREFIX}{endpoint}" if _transport_mode == "inprocess" else f"{BASE_URL}{endpoint}"
+    r = client.request(method, url, json=json_data, data=data, headers=headers)
+    return r.json()
+
 
 def api_get(endpoint):
     """
@@ -103,9 +170,8 @@ def api_get(endpoint):
     :param endpoint: The API path (e.g., "/piggy-banks")
     :return: Parsed JSON response as a dictionary/list.
     """
-    headers = {"Authorization": f"Bearer {token}"} if token else {}
-    r = requests.get(f"{BASE_URL}{endpoint}", headers=headers)
-    return r.json()
+    return _request("GET", endpoint)
+
 
 def api_post(endpoint, json_data=None, data=None):
     """
@@ -114,30 +180,25 @@ def api_post(endpoint, json_data=None, data=None):
     1. json_data: Used for standard API resource creation (Content-Type: application/json).
     2. data: Used for OAuth2 login forms (Content-Type: application/x-www-form-urlencoded).
     """
-    headers = {"Authorization": f"Bearer {token}"} if token else {}
     if data:
         # Form-encoded data (primarily for the /auth/login endpoint)
-        r = requests.post(f"{BASE_URL}{endpoint}", data=data, headers=headers)
-    else:
-        # JSON-encoded data for general resource creation
-        r = requests.post(f"{BASE_URL}{endpoint}", json=json_data, headers=headers)
-    return r.json()
+        return _request("POST", endpoint, data=data)
+    # JSON-encoded data for general resource creation
+    return _request("POST", endpoint, json_data=json_data)
+
 
 def api_delete(endpoint):
     """
     Performs an HTTP DELETE request to remove a specific resource.
     """
-    headers = {"Authorization": f"Bearer {token}"} if token else {}
-    r = requests.delete(f"{BASE_URL}{endpoint}", headers=headers)
-    return r.json()
+    return _request("DELETE", endpoint)
+
 
 def api_put(endpoint, json_data):
     """
     Performs an HTTP PUT request to update an existing resource.
     """
-    headers = {"Authorization": f"Bearer {token}"} if token else {}
-    r = requests.put(f"{BASE_URL}{endpoint}", json=json_data, headers=headers)
-    return r.json()
+    return _request("PUT", endpoint, json_data=json_data)
 
 
 # -----------------------------
@@ -373,61 +434,69 @@ def main_loop():
     and routes user input to the correct functions.
     """
     print_header("Welcome to PiggyNest CLI v1.0")
-    
-    while True:
-        # State: Not Logged In
-        # --------------------
-        if not token:
-            print("Options:")
-            print("(1) Login")
-            print("(q) Quit")
-            print()
-            choice = input("> ").strip().lower()
-            if choice == '1':
-                login()
+    get_client()
+    if _transport_mode == "inprocess":
+        print("Mode: Local in-process API (no server required)\n")
+    else:
+        print(f"Mode: HTTP API ({BASE_URL})\n")
 
-            elif choice == 'q':
-                print("Thanks for using PiggyNest! See you next time.")
-                break
-        
-        # State: Authorized
-        # -----------------
-        else:
-            print_header("Main Menu")
-            print("(1) View PiggyBanks & Balances")
-            print("(2) Create New PiggyBank")
-            print("(3) Delete a PiggyBank")
-            print("(4) Add Transaction")
-            print("(5) Edit Transaction")
-            print("(6) Inspect Raw Database (Debug)")
-            print("(q) Logout & Exit")
+    try:
+        while True:
+            # State: Not Logged In
+            # --------------------
+            if not token:
+                print("Options:")
+                print("(1) Login")
+                print("(q) Quit")
+                print()
+                choice = input("> ").strip().lower()
+                if choice == '1':
+                    login()
+
+                elif choice == 'q':
+                    print("Thanks for using PiggyNest! See you next time.")
+                    break
             
-            choice = input("> ").strip().lower()
-            
-            if choice == '1':
-                list_piggybanks()
-
-            elif choice == '2':
-                create_piggybank()
-
-            elif choice == '3':
-                delete_piggybank()
-
-            elif choice == '4':
-                add_transaction()
-
-            elif choice == '5':
-                edit_transaction()
-
-            elif choice == '6':
-                inspect_db()
-
-            elif choice == 'q':
-                print("Goodbye!")
-                break
-
+            # State: Authorized
+            # -----------------
             else:
-                print("Invalid choice. Please pick (1-6) or (q).")
+                print_header("Main Menu")
+                print("(1) View PiggyBanks & Balances")
+                print("(2) Create New PiggyBank")
+                print("(3) Delete a PiggyBank")
+                print("(4) Add Transaction")
+                print("(5) Edit Transaction")
+                print("(6) Inspect Raw Database (Debug)")
+                print("(q) Logout & Exit")
+
+                choice = input("> ").strip().lower()
+
+                if choice == '1':
+                    list_piggybanks()
+
+                elif choice == '2':
+                    create_piggybank()
+
+                elif choice == '3':
+                    delete_piggybank()
+
+                elif choice == '4':
+                    add_transaction()
+
+                elif choice == '5':
+                    edit_transaction()
+
+                elif choice == '6':
+                    inspect_db()
+
+                elif choice == 'q':
+                    print("Goodbye!")
+                    break
+
+                else:
+                    print("Invalid choice. Please pick (1-6) or (q).")
+    finally:
+        close_client()
 
 if __name__ == "__main__":
     try:
