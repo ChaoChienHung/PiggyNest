@@ -1603,13 +1603,28 @@ table tr:last-child td:last-child {
 }
 
 .analytics-picker-row {
-  width: min(18rem, 100%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 18rem));
+  gap: 1rem;
+  width: 100%;
   margin-bottom: 1rem;
+}
+
+@media (max-width: 640px) {
+  .analytics-picker-row { grid-template-columns: minmax(0, 1fr); }
 }
 
 .filter-picker {
   position: relative;
   min-width: 0;
+}
+
+.filter-picker-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 .filter-picker summary {
@@ -1636,17 +1651,14 @@ table tr:last-child td:last-child {
   color: var(--text-secondary);
 }
 
-.filter-picker[open] summary,
+.filter-picker details[open] summary,
 .filter-picker summary:focus-visible {
   border-color: var(--accent-primary);
 }
 
-.filter-picker-title {
-  font-weight: 600;
-}
-
 .filter-picker-count {
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
   white-space: nowrap;
 }
 

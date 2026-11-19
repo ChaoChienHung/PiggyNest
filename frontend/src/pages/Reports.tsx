@@ -28,7 +28,7 @@ export const Reports = () => {
     const { rates, isLoading: ratesLoading } = useRates();
     const { banks, entries, loading, error } = useLedgerEntries();
     const [selectedIds, setSelectedIds] = useState<number[] | null>(Number.isSafeInteger(initialBank) && initialBank > 0 ? [initialBank] : null);
-    const [categories, setCategories] = useState<string[]>([]);
+    const [categories, setCategories] = useState<string[] | null>(null);
     const [fromText, setFromText] = useState('');
     const [toText, setToText] = useState('');
     const [from, setFrom] = useState<string | null>(null);
@@ -39,6 +39,7 @@ export const Reports = () => {
     const selected = selectedIds ?? banks.map(bank => bank.id);
     const bankEntries = entries.filter(entry => selected.includes(entry.bank.id));
     const categoryOptions = [...new Set(bankEntries.map(entry => entry.transaction.category || ''))].sort();
+    const selectedCategories = categories ?? categoryOptions;
     const { converted, missing } = convertLedger(bankEntries, displayCurrency, rates);
     const parsedFrom = fromText.trim() ? parseDate(fromText, dateFormat) : null;
     const parsedTo = toText.trim() ? parseDate(toText, dateFormat) : null;
@@ -71,9 +72,9 @@ export const Reports = () => {
         <section className="glass-panel p-6 mb-8 reports-filter-panel" aria-label="Report filters">
             <div className="reports-filter-grid">
                 <FilterPicker label="PiggyBanks" options={banks.map(bank => ({ value: bank.id, label: `${bank.name} (${bank.currency})` }))}
-                    selected={selected} onChange={values => { setSelectedIds(values); setCategories([]); }} emptyLabel="None" clearLabel="Clear all" />
+                    selected={selected} onChange={values => { setSelectedIds(values); setCategories(null); }} emptyLabel="None" clearLabel="Clear all" />
                 <FilterPicker label="Categories" options={categoryOptions.map(category => ({ value: category, label: category || 'Uncategorized' }))}
-                    selected={categories} onChange={setCategories} emptyLabel="All" clearLabel="All categories" emptyMeansAll />
+                    selected={selectedCategories} onChange={setCategories} emptyLabel="None" allLabel="All categories" clearLabel="Clear" />
             <div className="analytics-date-filter">
                 <DateTextField id="reports-date-from" label="From" value={fromText}
                     onChange={value => applyRange(value, toText)} dateFormat={dateFormat} invalid={!!rangeError} />
@@ -87,9 +88,10 @@ export const Reports = () => {
         {(loading || ratesLoading) ? <p className="text-muted">Loading reports…</p>
             : error ? <p className="text-danger" role="alert">{error}</p>
             : selected.length === 0 ? <p className="text-muted">Select a PiggyBank to see reports.</p>
+            : selectedCategories.length === 0 && categoryOptions.length > 0 ? <p className="text-muted">Select a category to see reports.</p>
             : missing.length > 0 ? <p className="text-danger">Rate needed for {missing.join(', ')}. <Link to="/settings">Open Settings</Link></p>
             : intervals.map(interval => {
-                const rows = summarizePeriods(converted, interval.key, from, to, categories).periods;
+                const rows = summarizePeriods(converted, interval.key, from, to, selectedCategories).periods;
                 const filled = fillReportPeriods(rows, interval.key, from, to);
                 return <section key={interval.key} className="reports-section">
                     <h2 className="text-xl font-bold mb-3">{interval.label}</h2>

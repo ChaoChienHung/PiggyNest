@@ -2,6 +2,11 @@
 
 ## Awaiting review
 
+- [ ] Side-by-side analytics filters and explicit category selection
+  - **Delivered:** Combined Graph Analysis places PiggyBanks and Categories controls side by side on desktop and labels each field above its value. The shared filter control gives Reports the same visible labels. Category filters on both analysis views and Reports now start with every available category checked. `All categories` checks all; `Clear` unchecks all and shows a select-category prompt. Changing the selected PiggyBanks resets categories to all of the newly available options.
+  - **Evidence:** Frontend build and lint passed; `git diff --check` passed. Visual behavior awaits review.
+  - **Review focus:** Open both menus on desktop, check two-column spacing and labels, then try All categories, Clear, and individual checkboxes in combined Graph Analysis, single-bank Graph Analysis, and Reports.
+
 - [ ] Graph Analysis controls and persistent pig menu
   - **Delivered:** PiggyBank Graph Analysis uses Income and Expenses labels without the obsolete Deposit/Withdrawal wording. Both combined and single-bank Graph Analysis pages have searchable category filters that apply to their charts independently of transaction-list filters. The pie chart's category details control sits below the chart and reads `Category Breakdown`. The fixed pig menu remains available on Dashboard, PiggyBank, Graph Analysis, and Reports, including while add/edit forms are open; the existing desktop gutter continues to reserve space beside content.
   - **Evidence:** Frontend build and lint passed; `git diff --check` passed. Visual behavior awaits review.

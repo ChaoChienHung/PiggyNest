@@ -21,7 +21,7 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
     const [timeframe, setTimeframe] = useState<'month' | 'year'>('month');
     const [metric, setMetric] = useState<'balance' | 'flow'>('balance');
     const [selectedIds, setSelectedIds] = useState<number[] | null>(null);
-    const [categories, setCategories] = useState<string[]>([]);
+    const [categories, setCategories] = useState<string[] | null>(null);
     const [fromText, setFromText] = useState('');
     const [toText, setToText] = useState('');
     const [from, setFrom] = useState<string | null>(null);
@@ -47,7 +47,8 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
     const { converted, missing } = convertLedger(entries.filter(entry => selected.includes(entry.bank.id)), displayCurrency, rates);
     const categoryOptions = [...new Set(entries.filter(entry => selected.includes(entry.bank.id))
         .map(entry => entry.transaction.category || ''))].sort();
-    const { periods } = summarizePeriods(converted, timeframe, from, to, categories);
+    const selectedCategories = categories ?? categoryOptions;
+    const { periods } = summarizePeriods(converted, timeframe, from, to, selectedCategories);
     const categoryTotals: Record<string, number> = {};
     for (const row of periods) for (const [name, amount] of Object.entries(row.categoryExpenses)) {
         categoryTotals[name] = (categoryTotals[name] || 0) + amount;
@@ -71,9 +72,9 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
         {error && <p role="alert" className="text-danger">{error}</p>}
         <div className="analytics-picker-row">
             <FilterPicker label="PiggyBanks" options={banks.map(bank => ({ value: bank.id, label: `${bank.name} (${bank.currency})` }))}
-                selected={selected} onChange={values => { setSelectedIds(values); setCategories([]); }} emptyLabel="None" clearLabel="Clear all" />
+                selected={selected} onChange={values => { setSelectedIds(values); setCategories(null); }} emptyLabel="None" clearLabel="Clear all" />
             <FilterPicker label="Categories" options={categoryOptions.map(category => ({ value: category, label: category || 'Uncategorized' }))}
-                selected={categories} onChange={setCategories} emptyLabel="All" clearLabel="All categories" emptyMeansAll />
+                selected={selectedCategories} onChange={setCategories} emptyLabel="None" allLabel="All categories" clearLabel="Clear" />
         </div>
         <div className="analytics-date-filter">
             <DateTextField id="analytics-date-from" label="From" value={fromText}
@@ -83,6 +84,7 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
             {rangeError && <span className="text-sm text-danger" role="alert">{rangeError}</span>}
         </div>
         {selected.length === 0 ? <p className="text-muted text-center p-8">Select a PiggyBank to see analytics.</p>
+            : selectedCategories.length === 0 && categoryOptions.length > 0 ? <p className="text-muted text-center p-8">Select a category to see analytics.</p>
             : missing.length > 0 ? <p className="text-danger p-4">Rate needed for {missing.join(', ')}.{' '}
                 <button type="button" className="networth-settings-link" onClick={onOpenSettings}>Open Settings</button>
             </p> : periods.length === 0 ? <p className="text-muted text-center p-8">No transactions in this date range.</p>

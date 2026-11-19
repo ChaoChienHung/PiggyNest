@@ -59,7 +59,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const [sortField, setSortField] = useState<'date' | 'amount'>('date');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
-    const [analysisCategories, setAnalysisCategories] = useState<string[]>([]);
+    const [analysisCategories, setAnalysisCategories] = useState<string[] | null>(null);
     const categoryFilterRef = React.useRef<HTMLDetailsElement>(null);
     const [dateFromText, setDateFromText] = useState('');
     const [dateToText, setDateToText] = useState('');
@@ -287,7 +287,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const lastShown = firstShown + visibleTransactions.length - 1;
     const filterCategories = [...new Set(transactions.map(tx => tx.category || ''))].sort((a, b) => a.localeCompare(b));
     const analyticsTransactions = transactions.filter(tx => inDateRange(tx) &&
-        (analysisCategories.length === 0 || analysisCategories.includes(tx.category || '')));
+        (analysisCategories === null || analysisCategories.includes(tx.category || '')));
 
     const transferTargets = allBanks.filter(b => b.id !== bank.id);
     const displayCurrency = user?.display_currency ?? 'NTD';
@@ -686,7 +686,8 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
         <div className="glass-panel p-6 mb-8">
             <div className="analytics-picker-row">
                 <FilterPicker label="Categories" options={filterCategories.map(category => ({ value: category, label: category || 'Uncategorized' }))}
-                    selected={analysisCategories} onChange={setAnalysisCategories} emptyLabel="All" clearLabel="All categories" emptyMeansAll />
+                    selected={analysisCategories ?? filterCategories} onChange={setAnalysisCategories}
+                    emptyLabel="None" allLabel="All categories" clearLabel="Clear" />
             </div>
             <div className="analytics-date-filter">
                 <DateTextField id="analysis-date-from" label={`From (${dateFormat})`} value={dateFromText}
