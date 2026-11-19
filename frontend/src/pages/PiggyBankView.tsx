@@ -58,9 +58,8 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const [pageError, setPageError] = useState('');
     const [sortField, setSortField] = useState<'date' | 'amount'>('date');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-    const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+    const [categoryFilters, setCategoryFilters] = useState<string[] | null>(null);
     const [analysisCategories, setAnalysisCategories] = useState<string[] | null>(null);
-    const categoryFilterRef = React.useRef<HTMLDetailsElement>(null);
     const [dateFromText, setDateFromText] = useState('');
     const [dateToText, setDateToText] = useState('');
     const [appliedFrom, setAppliedFrom] = useState<string | null>(null);
@@ -141,26 +140,6 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     useEffect(() => {
         loadData();
     }, [loadData]);
-
-    useEffect(() => {
-        const closeOutside = (event: PointerEvent) => {
-            if (categoryFilterRef.current && !categoryFilterRef.current.contains(event.target as Node)) {
-                categoryFilterRef.current.open = false;
-            }
-        };
-        const closeEscape = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && categoryFilterRef.current?.open) {
-                categoryFilterRef.current.open = false;
-                categoryFilterRef.current.querySelector<HTMLElement>('summary')?.focus();
-            }
-        };
-        document.addEventListener('pointerdown', closeOutside);
-        document.addEventListener('keydown', closeEscape);
-        return () => {
-            document.removeEventListener('pointerdown', closeOutside);
-            document.removeEventListener('keydown', closeEscape);
-        };
-    }, []);
 
     /**
      * Primary form submission handler for injecting new transactions.
@@ -261,8 +240,10 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
         const day = isoDatePart(tx.date);
         return (!appliedFrom || day >= appliedFrom) && (!appliedTo || day <= appliedTo);
     };
+    const filterCategories = [...new Set(transactions.map(tx => tx.category || ''))].sort((a, b) => a.localeCompare(b));
+    const selectedFilterCategories = categoryFilters ?? filterCategories;
     const matchingTransactions = transactions.filter(tx =>
-        inDateRange(tx) && (categoryFilters.length === 0 || categoryFilters.includes(tx.category || ''))
+        inDateRange(tx) && selectedFilterCategories.includes(tx.category || '')
     ).sort((a, b) => {
         const result = sortField === 'date'
             ? isoDatePart(a.date).localeCompare(isoDatePart(b.date))
@@ -285,7 +266,6 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
         : matchingTransactions;
     const firstShown = matchingTransactions.length === 0 ? 0 : (currentPage - 1) * (pageSize || matchingTransactions.length) + 1;
     const lastShown = firstShown + visibleTransactions.length - 1;
-    const filterCategories = [...new Set(transactions.map(tx => tx.category || ''))].sort((a, b) => a.localeCompare(b));
     const analyticsTransactions = transactions.filter(tx => inDateRange(tx) &&
         (analysisCategories === null || analysisCategories.includes(tx.category || '')));
 
@@ -781,26 +761,9 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                             options={[{ value: 'desc', label: 'Descending' }, { value: 'asc', label: 'Ascending' }]}
                         />
                     </div>
-                    <details ref={categoryFilterRef} className="transaction-category-filter">
-                        <summary>Categories{categoryFilters.length ? ` (${categoryFilters.length})` : ' (all)'}</summary>
-                        <div className="transaction-category-options">
-                            {filterCategories.length ? filterCategories.map(category => (
-                                <label key={category || 'uncategorized'}>
-                                    <input
-                                        type="checkbox"
-                                        checked={categoryFilters.includes(category)}
-                                        onChange={(event) => {
-                                            setCategoryFilters(current => event.target.checked
-                                                ? [...current, category]
-                                                : current.filter(item => item !== category));
-                                            setPage(1);
-                                        }}
-                                    />
-                                    {category || 'Uncategorized'}
-                                </label>
-                            )) : <p className="text-muted text-sm">No categories yet.</p>}
-                        </div>
-                    </details>
+                    <FilterPicker label="Categories" options={filterCategories.map(category => ({ value: category, label: category || 'Uncategorized' }))}
+                        selected={selectedFilterCategories} onChange={values => { setCategoryFilters(values); setPage(1); }}
+                        emptyLabel="None" allLabel="Select all" clearLabel="Clear" />
                     <DateTextField id="filter-date-from" label={`From (${dateFormat})`} value={dateFromText}
                         onChange={value => changeDateRange(value, dateToText)} dateFormat={dateFormat} invalid={!!dateRangeError} />
                     <DateTextField id="filter-date-to" label={`To (${dateFormat})`} value={dateToText}
@@ -812,7 +775,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                     <button type="button" className="btn btn-secondary text-sm" onClick={() => {
                         setSortField('date');
                         setSortDirection('desc');
-                        setCategoryFilters([]);
+                        setCategoryFilters(null);
                         setDateFromText('');
                         setDateToText('');
                         setAppliedFrom(null);
