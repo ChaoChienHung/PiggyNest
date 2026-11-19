@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
-from typing import Optional, Literal
+from typing import List, Optional, Literal
 from app.core.money import to_minor_units
 
 EntryType = Literal['expense', 'income', 'withdrawal', 'deposit', 'transfer_out', 'transfer_in']
@@ -73,3 +73,14 @@ class TransactionUpdate(BaseModel):
         if value is not None:
             to_minor_units(value)
         return value
+
+
+class BulkCategoryUpdateRequest(BaseModel):
+    """Schema for updating the category of multiple transactions at once."""
+    transaction_ids: List[int] = Field(min_length=1)
+    category: Optional[str] = None
+
+
+class BulkDeleteRequest(BaseModel):
+    """Schema for deleting multiple transactions at once."""
+    transaction_ids: List[int] = Field(min_length=1)

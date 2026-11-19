@@ -61,5 +61,24 @@ export const transactionsApi = {
      */
     delete: async (transactionId: number): Promise<void> => {
         await apiClient.delete(`/transactions/${transactionId}`);
+    },
+    /**
+     * Updates the category for multiple non-transfer transactions atomically.
+     */
+    bulkUpdateCategory: async (transactionIds: number[], category: string | null): Promise<{ updated_count: number; category: string | null }> => {
+        const { data } = await apiClient.post('/transactions/bulk-category', {
+            transaction_ids: transactionIds,
+            category,
+        });
+        return data;
+    },
+    /**
+     * Deletes multiple transactions atomically; removes both sides of any PiggyBank transfer.
+     */
+    bulkDelete: async (transactionIds: number[]): Promise<{ success: boolean; deleted_count: number }> => {
+        const { data } = await apiClient.post('/transactions/bulk-delete', {
+            transaction_ids: transactionIds,
+        });
+        return data;
     }
 };

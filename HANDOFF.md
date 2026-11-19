@@ -3,6 +3,10 @@
 ## Snapshot
 
 - Updated: 2026-11-19. Branch: `main`.
+- Added transaction Type filter, keyword search, and bulk transaction actions (multi-select category update and bulk delete with atomic PiggyBank transfer pair handling and confirmation warnings):
+  - Backend: `POST /api/v1/transactions/bulk-category` and `POST /api/v1/transactions/bulk-delete` in `backend/app/api/v1/transactions.py` with tests in `backend/tests/test_transactions.py`.
+  - Frontend: Types `FilterPicker`, keyword Search input, checkbox selection, and bulk action bar in `frontend/src/pages/PiggyBankView.tsx` and `frontend/src/index.css`; `frontend/src/api/transactions.ts` client methods.
+  - Next up in `TODO.md` (Agent-ready): Recurring transactions. Monthly savings & budget planning remains in `Owner-led`.
 - Upgraded browser favicon (`frontend/public/piggynest.svg`) to Option C (dark-plum squircle, coral-pink geometric piggybank, gold coin) per owner selection.
 - Completed Batch 1 engineering optimizations:
   - Cleaned up Python bytecode tracking (`.gitignore` + `git rm --cached` on 23 `.pyc` files, commit `cc69431`).

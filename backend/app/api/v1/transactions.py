@@ -6,7 +6,13 @@ from typing import List, Optional
 from app.db.session import get_db
 from app.models.transaction import Transaction
 from app.models.piggy_bank import PiggyBank
-from app.schemas.transaction import TransactionCreate, TransactionRead, TransactionUpdate
+from app.schemas.transaction import (
+    BulkCategoryUpdateRequest,
+    BulkDeleteRequest,
+    TransactionCreate,
+    TransactionRead,
+    TransactionUpdate,
+)
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.domain.transfer_links import legacy_transfer_pairs
@@ -63,6 +69,99 @@ def add_transaction(
     db.commit()
     db.refresh(transaction)
     return transaction
+
+
+@router.post("/transactions/bulk-category")
+def bulk_update_category(
+    payload: BulkCategoryUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update the category of multiple user-owned non-transfer transactions atomically."""
+    unique_ids = list(dict.fromkeys(payload.transaction_ids))
+    transactions = (
+        db.query(Transaction)
+        .join(PiggyBank)
+        .filter(Transaction.id.in_(unique_ids), PiggyBank.user_id == current_user.id)
+        .all()
+    )
+    if len(transactions) != len(unique_ids):
+        raise HTTPException(status_code=404, detail="One or more transactions were not found")
+
+    if any(tx.transfer_group_id or tx.type == "transfer" for tx in transactions):
+        raise HTTPException(
+            status_code=400,
+            detail="PiggyBank transfer directional categories cannot be changed",
+        )
+
+    normalized = canonical_category(payload.category)
+    for tx in transactions:
+        tx.category = normalized
+
+    db.commit()
+    return {"updated_count": len(transactions), "category": normalized}
+
+
+@router.post("/transactions/bulk-delete")
+def bulk_delete_transactions(
+    payload: BulkDeleteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete multiple user-owned transactions atomically, removing both sides of PiggyBank transfers."""
+    unique_ids = list(dict.fromkeys(payload.transaction_ids))
+    transactions = (
+        db.query(Transaction)
+        .join(PiggyBank)
+        .filter(Transaction.id.in_(unique_ids), PiggyBank.user_id == current_user.id)
+        .all()
+    )
+    if len(transactions) != len(unique_ids):
+        raise HTTPException(status_code=404, detail="One or more transactions were not found")
+
+    to_delete = {}
+    legacy_pairs = None
+
+    for tx in transactions:
+        if tx.id in to_delete:
+            continue
+        if tx.transfer_group_id:
+            pair = (
+                db.query(Transaction)
+                .join(PiggyBank)
+                .filter(
+                    Transaction.transfer_group_id == tx.transfer_group_id,
+                    PiggyBank.user_id == current_user.id,
+                )
+                .all()
+            )
+            for leg in pair:
+                to_delete[leg.id] = leg
+        elif tx.type == "transfer":
+            if legacy_pairs is None:
+                banks = db.query(PiggyBank).filter(PiggyBank.user_id == current_user.id).all()
+                all_txs = db.query(Transaction).filter(
+                    Transaction.piggy_bank_id.in_([bank.id for bank in banks])
+                ).all()
+                legacy_pairs = legacy_transfer_pairs(all_txs, banks)
+            counterpart_id = legacy_pairs.get(tx.id)
+            if counterpart_id is None:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Legacy transfer has no unique pair; repair its transaction ID before deleting",
+                )
+            counterpart = db.get(Transaction, counterpart_id)
+            if counterpart is not None:
+                to_delete[counterpart.id] = counterpart
+            to_delete[tx.id] = tx
+        else:
+            to_delete[tx.id] = tx
+
+    for tx in to_delete.values():
+        db.delete(tx)
+
+    db.commit()
+    return {"success": True, "deleted_count": len(to_delete)}
 
 
 @router.get("/piggy-banks/{pb_id}/transactions", response_model=List[TransactionRead])

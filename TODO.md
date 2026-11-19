@@ -8,14 +8,6 @@
 
 ## Agent-ready
 
-- [ ] Add transaction Type filter and keyword search.
-  - **Scope:** Add a multi-select **Type** filter (`expense`, `income`, `transfer_out`, `transfer_in`, plus legacy types when present) alongside Category and date filters in PiggyBank view, plus a keyword search box matching description and amount.
-  - **Acceptance:** Users can combine Type, Category, date range, and keyword search; matching counts, pagination, and Clear filters work accurately without mutating stored data.
-
-- [ ] Add bulk transaction actions (change category and bulk delete).
-  - **Scope:** Support multi-select checkboxes on the PiggyBank transaction list with a bulk action bar to change the category of selected rows or delete selected rows in one action.
-  - **Acceptance:** Bulk category update scopes to the authenticated user and respects normalized category rules; bulk delete warns clearly when any selected row is part of a PiggyBank transfer pair (which removes both sides atomically) and refreshes balances/lists cleanly.
-
 - [ ] Add recurring transactions (auto-scheduled entries with stop/pause on edit).
   - **Scope:** Allow attaching a recurrence rule (interval such as weekly/monthly/yearly or custom cadence, optional end date) when creating a transaction; editing that transaction/rule allows pausing or stopping future occurrences without deleting past transactions. Store stateful run metadata (`next_run_date` / executed periods) in SQLite so backend restarts or repeated triggers never double-post.
   - **Acceptance:** Due occurrences post atomically and idempotently; stopping/pausing a rule halts future runs while keeping historical entries intact; covered by backend tests and desktop UI flows.

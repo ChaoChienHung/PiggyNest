@@ -25,6 +25,20 @@ const transferNote = (description?: string) => {
     return separator >= 0 ? note.slice(separator + 2) : note;
 };
 
+const TYPE_ORDER = ['expense', 'income', 'transfer', 'transfer_out', 'transfer_in', 'deposit', 'withdrawal'];
+const transactionTypeLabel = (txType: string) => {
+    switch (txType) {
+        case 'expense': return 'Expense';
+        case 'income': return 'Income';
+        case 'transfer': return 'PiggyBank Transfer';
+        case 'transfer_out': return 'Bank Transfer Out';
+        case 'transfer_in': return 'Bank Transfer In';
+        case 'deposit': return 'Deposit';
+        case 'withdrawal': return 'Withdrawal';
+        default: return txType;
+    }
+};
+
 /**
  * Dedicated view for a single PiggyBank account.
  * Handles fetching specific nested transactions and managing the dynamic "Add Transaction" form logic.
@@ -59,6 +73,11 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const [sortField, setSortField] = useState<'date' | 'amount'>('date');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [categoryFilters, setCategoryFilters] = useState<string[] | null>(null);
+    const [typeFilters, setTypeFilters] = useState<string[] | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedTxIds, setSelectedTxIds] = useState<number[]>([]);
+    const [bulkCategory, setBulkCategory] = useState('');
+    const [bulkBusy, setBulkBusy] = useState(false);
     const [analysisCategories, setAnalysisCategories] = useState<string[] | null>(null);
     const [dateFromText, setDateFromText] = useState('');
     const [dateToText, setDateToText] = useState('');
@@ -242,14 +261,42 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     };
     const filterCategories = [...new Set(transactions.map(tx => tx.category || ''))].sort((a, b) => a.localeCompare(b));
     const selectedFilterCategories = categoryFilters ?? filterCategories;
+    const filterTypes = [...new Set(transactions.map(tx => tx.type))].sort((a, b) => {
+        const idxA = TYPE_ORDER.indexOf(a);
+        const idxB = TYPE_ORDER.indexOf(b);
+        return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB) || a.localeCompare(b);
+    });
+    const selectedFilterTypes = typeFilters ?? filterTypes;
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const matchesSearch = (tx: Transaction) => {
+        if (!normalizedSearch) return true;
+        const fields = [
+            tx.description || '',
+            tx.category || '',
+            `#${tx.id}`,
+            String(tx.id),
+            String(tx.amount),
+            Math.abs(tx.amount).toFixed(2),
+            formatMoney(tx.amount, bank.currency, true),
+        ];
+        return fields.some(value => value.toLowerCase().includes(normalizedSearch));
+    };
     const matchingTransactions = transactions.filter(tx =>
-        inDateRange(tx) && selectedFilterCategories.includes(tx.category || '')
+        inDateRange(tx)
+        && selectedFilterCategories.includes(tx.category || '')
+        && selectedFilterTypes.includes(tx.type)
+        && matchesSearch(tx)
     ).sort((a, b) => {
         const result = sortField === 'date'
             ? isoDatePart(a.date).localeCompare(isoDatePart(b.date))
             : a.amount - b.amount;
         return (sortDirection === 'asc' ? result : -result) || b.id - a.id;
     });
+    const matchingIdSet = new Set(matchingTransactions.map(tx => tx.id));
+    const activeSelectedIds = selectedTxIds.filter(txId => matchingIdSet.has(txId));
+    const activeSelectedSet = new Set(activeSelectedIds);
+    const selectedTransactions = matchingTransactions.filter(tx => activeSelectedSet.has(tx.id));
+    const selectedTransferCount = selectedTransactions.filter(tx => tx.type === 'transfer').length;
     const totalPages = pageSize > 0 ? Math.max(1, Math.ceil(matchingTransactions.length / pageSize)) : 1;
     // Deleting the last row of the final page leaves the user on the new last page.
     const currentPage = Math.min(page, totalPages);
@@ -264,6 +311,83 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const visibleTransactions = pageSize > 0
         ? matchingTransactions.slice((currentPage - 1) * pageSize, currentPage * pageSize)
         : matchingTransactions;
+    const visibleIds = visibleTransactions.map(tx => tx.id);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(txId => activeSelectedSet.has(txId));
+    const toggleRowSelection = (txId: number) => {
+        setSelectedTxIds(prev => {
+            const valid = prev.filter(item => matchingIdSet.has(item));
+            return valid.includes(txId) ? valid.filter(item => item !== txId) : [...valid, txId];
+        });
+    };
+    const toggleVisibleSelection = () => {
+        setSelectedTxIds(prev => {
+            const valid = prev.filter(item => matchingIdSet.has(item));
+            if (allVisibleSelected) {
+                return valid.filter(item => !visibleIds.includes(item));
+            }
+            const next = new Set(valid);
+            visibleIds.forEach(txId => next.add(txId));
+            return [...next];
+        });
+    };
+    const handleBulkApplyCategory = async () => {
+        if (!activeSelectedIds.length || selectedTransferCount > 0 || !bulkCategory) return;
+        const targetCategory = bulkCategory === '__CLEAR__' ? null : bulkCategory;
+        setBulkBusy(true);
+        try {
+            await transactionsApi.bulkUpdateCategory(activeSelectedIds, targetCategory);
+            setSelectedTxIds([]);
+            setBulkCategory('');
+            await loadData({ silent: true });
+        } catch (err) {
+            console.error('Bulk category update failed', err);
+            showModal({
+                title: 'Bulk Update Failed',
+                message: 'Could not update categories for the selected transactions.',
+                variant: 'danger',
+                alertOnly: true,
+                onConfirm: closeModal,
+            });
+        } finally {
+            setBulkBusy(false);
+        }
+    };
+    const handleBulkDelete = () => {
+        if (!activeSelectedIds.length) return;
+        const transferWarning = selectedTransferCount > 0
+            ? ` Includes ${selectedTransferCount} PiggyBank transfer${selectedTransferCount > 1 ? 's' : ''} — both sides of each PiggyBank transfer will be removed.`
+            : '';
+        showModal({
+            title: 'Delete Selected Transactions',
+            message: `Delete ${activeSelectedIds.length} selected transaction${activeSelectedIds.length > 1 ? 's' : ''}?${transferWarning} This action cannot be undone.`,
+            variant: 'danger',
+            confirmText: 'Delete',
+            onConfirm: async () => {
+                closeModal();
+                setBulkBusy(true);
+                try {
+                    await transactionsApi.bulkDelete(activeSelectedIds);
+                    if (editingTxId !== null && activeSelectedSet.has(editingTxId)) {
+                        setShowAdd(false);
+                        setEditingTxId(null);
+                    }
+                    setSelectedTxIds([]);
+                    await loadData({ silent: true });
+                } catch (err) {
+                    console.error('Bulk delete failed', err);
+                    showModal({
+                        title: 'Bulk Delete Failed',
+                        message: 'Could not delete the selected transactions.',
+                        variant: 'danger',
+                        alertOnly: true,
+                        onConfirm: closeModal,
+                    });
+                } finally {
+                    setBulkBusy(false);
+                }
+            },
+        });
+    };
     const firstShown = matchingTransactions.length === 0 ? 0 : (currentPage - 1) * (pageSize || matchingTransactions.length) + 1;
     const lastShown = firstShown + visibleTransactions.length - 1;
     const analyticsTransactions = transactions.filter(tx => inDateRange(tx) &&
@@ -761,9 +885,23 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                             options={[{ value: 'desc', label: 'Descending' }, { value: 'asc', label: 'Ascending' }]}
                         />
                     </div>
+                    <FilterPicker label="Types" options={filterTypes.map(txType => ({ value: txType, label: transactionTypeLabel(txType) }))}
+                        selected={selectedFilterTypes} onChange={values => { setTypeFilters(values); setPage(1); }}
+                        emptyLabel="None" allLabel="Select all" clearLabel="Clear" />
                     <FilterPicker label="Categories" options={filterCategories.map(category => ({ value: category, label: category || 'Uncategorized' }))}
                         selected={selectedFilterCategories} onChange={values => { setCategoryFilters(values); setPage(1); }}
                         emptyLabel="None" allLabel="Select all" clearLabel="Clear" />
+                    <div>
+                        <label htmlFor="filter-search" className="text-sm font-medium text-text-secondary">Search</label>
+                        <input
+                            id="filter-search"
+                            type="search"
+                            className="input-field"
+                            placeholder="Description, #ID, amount..."
+                            value={searchQuery}
+                            onChange={event => { setSearchQuery(event.target.value); setPage(1); }}
+                        />
+                    </div>
                     <DateTextField id="filter-date-from" label={`From (${dateFormat})`} value={dateFromText}
                         onChange={value => changeDateRange(value, dateToText)} dateFormat={dateFormat} invalid={!!dateRangeError} />
                     <DateTextField id="filter-date-to" label={`To (${dateFormat})`} value={dateToText}
@@ -776,6 +914,9 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                         setSortField('date');
                         setSortDirection('desc');
                         setCategoryFilters(null);
+                        setTypeFilters(null);
+                        setSearchQuery('');
+                        setSelectedTxIds([]);
                         setDateFromText('');
                         setDateToText('');
                         setAppliedFrom(null);
@@ -786,12 +927,80 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
             </div>
 
             <div className="glass-panel transaction-table-panel">
+                {activeSelectedIds.length > 0 && (
+                    <div className="bulk-action-bar" role="region" aria-label="Bulk transaction actions">
+                        <div className="bulk-action-summary">
+                            <span className="text-sm font-semibold">{activeSelectedIds.length} selected</span>
+                            {activeSelectedIds.length < matchingTransactions.length && (
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary text-xs"
+                                    onClick={() => setSelectedTxIds(matchingTransactions.map(tx => tx.id))}
+                                >
+                                    Select all {matchingTransactions.length} matching
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                className="btn btn-secondary text-xs"
+                                onClick={() => setSelectedTxIds([])}
+                            >
+                                Clear selection
+                            </button>
+                        </div>
+                        <div className="bulk-action-controls">
+                            {selectedTransferCount > 0 ? (
+                                <span className="text-xs text-muted">PiggyBank transfer categories cannot be changed.</span>
+                            ) : (
+                                <>
+                                    <div className="bulk-category-select">
+                                        <ThemedSelect
+                                            id="bulk-category-select"
+                                            value={bulkCategory}
+                                            onChange={setBulkCategory}
+                                            options={[
+                                                { value: '', label: 'Set category...' },
+                                                ...categories.map(cat => ({ value: cat.name, label: cat.name })),
+                                                { value: '__CLEAR__', label: 'Uncategorized' },
+                                            ]}
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary text-sm"
+                                        disabled={!bulkCategory || bulkBusy}
+                                        onClick={handleBulkApplyCategory}
+                                    >
+                                        Apply
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                type="button"
+                                className="btn btn-danger text-sm"
+                                disabled={bulkBusy}
+                                onClick={handleBulkDelete}
+                            >
+                                Delete Selected
+                            </button>
+                        </div>
+                    </div>
+                )}
                 {matchingTransactions.length === 0 ? (
                     <div className="p-8 text-center text-muted">{transactions.length ? 'No transactions match these filters.' : 'No transactions found.'}</div>
                 ) : (
                     <table className="w-full text-left border-collapse transaction-table">
                         <thead>
                             <tr className="border-b border-glass-border">
+                                <th className="p-4 text-center" style={{ width: '44px' }}>
+                                    <input
+                                        type="checkbox"
+                                        className="tx-select-checkbox"
+                                        checked={allVisibleSelected}
+                                        onChange={toggleVisibleSelection}
+                                        aria-label="Select all transactions on this page"
+                                    />
+                                </th>
                                 <th className="p-4 text-text-secondary font-medium">Date</th>
                                 <th className="p-4 text-text-secondary font-medium">Type</th>
                                 <th className="p-4 text-text-secondary font-medium">Category</th>
@@ -828,7 +1037,16 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
 
                                 return (
                                     <React.Fragment key={tx.id}>
-                                        <tr className={`transaction-entry-row border-b border-glass-border hover:bg-white hover:bg-opacity-5 transition-colors${showAdd && editingTxId === tx.id ? ' transaction-entry-row-active' : ''}`}>
+                                        <tr className={`transaction-entry-row border-b border-glass-border hover:bg-white hover:bg-opacity-5 transition-colors${showAdd && editingTxId === tx.id ? ' transaction-entry-row-active' : ''}${activeSelectedSet.has(tx.id) ? ' transaction-entry-row-selected' : ''}`}>
+                                            <td className="p-4 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="tx-select-checkbox"
+                                                    checked={activeSelectedSet.has(tx.id)}
+                                                    onChange={() => toggleRowSelection(tx.id)}
+                                                    aria-label={`Select transaction #${tx.id}`}
+                                                />
+                                            </td>
                                             <td className="p-4 whitespace-nowrap">
                                                 {formatDate(tx.date, dateFormat)}
                                                 <div className="text-xs text-muted">ID #{tx.id}</div>
@@ -939,7 +1157,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                         </tr>
                                         {showAdd && editingTxId === tx.id && (
                                             <tr className="transaction-edit-row">
-                                                <td colSpan={6} className="transaction-edit-cell">
+                                                <td colSpan={7} className="transaction-edit-cell">
                                                     {transactionForm}
                                                 </td>
                                             </tr>

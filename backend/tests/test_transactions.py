@@ -339,3 +339,109 @@ def test_edit_transaction_is_scoped_to_owner(client, auth_headers, piggy_bank_id
     assert client.get(f"/api/v1/transactions/{tx_id}", headers=other).status_code == 404
     assert client.put(f"/api/v1/transactions/{tx_id}", headers=other, json={"amount": -50}).status_code == 404
     assert client.get(f"/api/v1/transactions/{tx_id}", headers=auth_headers).json()["amount"] == -5
+
+
+def test_bulk_category_update_and_isolation(client, auth_headers, piggy_bank_id):
+    target_id = client.post(
+        "/api/v1/piggy-banks", headers=auth_headers, json={"name": "Savings", "currency": "USD"}
+    ).json()["id"]
+
+    tx1 = client.post(
+        f"/api/v1/piggy-banks/{piggy_bank_id}/transactions",
+        headers=auth_headers,
+        json={"amount": -10, "type": "expense", "category": "Food", "description": "Coffee"},
+    ).json()["id"]
+    tx2 = client.post(
+        f"/api/v1/piggy-banks/{piggy_bank_id}/transactions",
+        headers=auth_headers,
+        json={"amount": -25, "type": "transfer_out", "category": "Others", "description": "External transfer"},
+    ).json()["id"]
+    transfer = client.post(
+        "/api/v1/transfers",
+        headers=auth_headers,
+        json={"source_piggy_bank_id": piggy_bank_id, "target_piggy_bank_id": target_id, "amount": 50},
+    ).json()
+    transfer_tx_id, _ = transfer["entry_ids"]
+
+    # Rejects updating PiggyBank transfer category
+    bad = client.post(
+        "/api/v1/transactions/bulk-category",
+        headers=auth_headers,
+        json={"transaction_ids": [tx1, transfer_tx_id], "category": "Transport"},
+    )
+    assert bad.status_code == 400
+    assert client.get(f"/api/v1/transactions/{tx1}", headers=auth_headers).json()["category"] == "Food"
+
+    # Updates both regular and bank transfer transactions and normalizes category name
+    res = client.post(
+        "/api/v1/transactions/bulk-category",
+        headers=auth_headers,
+        json={"transaction_ids": [tx1, tx2], "category": "Other"},
+    )
+    assert res.status_code == 200
+    assert res.json() == {"updated_count": 2, "category": "Others"}
+    assert client.get(f"/api/v1/transactions/{tx1}", headers=auth_headers).json()["category"] == "Others"
+    assert client.get(f"/api/v1/transactions/{tx2}", headers=auth_headers).json()["category"] == "Others"
+
+    # Another user cannot bulk-update these transactions
+    client.post("/api/v1/auth/register", json={
+        "username": "bulk_other", "email": "bulk_other@example.com", "password": "password",
+    })
+    other_token = client.post("/api/v1/auth/login", data={
+        "username": "bulk_other@example.com", "password": "password",
+    }).json()["access_token"]
+    other_headers = {"Authorization": f"Bearer {other_token}"}
+    assert client.post(
+        "/api/v1/transactions/bulk-category",
+        headers=other_headers,
+        json={"transaction_ids": [tx1], "category": "Food"},
+    ).status_code == 404
+
+
+def test_bulk_delete_handles_transfers_bank_transfers_and_isolation(client, auth_headers, piggy_bank_id):
+    target_id = client.post(
+        "/api/v1/piggy-banks", headers=auth_headers, json={"name": "Vault", "currency": "USD"}
+    ).json()["id"]
+
+    tx_exp = client.post(
+        f"/api/v1/piggy-banks/{piggy_bank_id}/transactions",
+        headers=auth_headers,
+        json={"amount": -15, "type": "expense", "category": "Food", "description": "Lunch"},
+    ).json()["id"]
+    tx_bank_in = client.post(
+        f"/api/v1/piggy-banks/{piggy_bank_id}/transactions",
+        headers=auth_headers,
+        json={"amount": 100, "type": "transfer_in", "category": "Others", "description": "Outside in"},
+    ).json()["id"]
+    transfer = client.post(
+        "/api/v1/transfers",
+        headers=auth_headers,
+        json={"source_piggy_bank_id": piggy_bank_id, "target_piggy_bank_id": target_id, "amount": 30},
+    ).json()
+    debit_id, credit_id = transfer["entry_ids"]
+
+    # Another user cannot delete
+    client.post("/api/v1/auth/register", json={
+        "username": "bulk_del_other", "email": "bulk_del_other@example.com", "password": "password",
+    })
+    other_token = client.post("/api/v1/auth/login", data={
+        "username": "bulk_del_other@example.com", "password": "password",
+    }).json()["access_token"]
+    other_headers = {"Authorization": f"Bearer {other_token}"}
+    assert client.post(
+        "/api/v1/transactions/bulk-delete",
+        headers=other_headers,
+        json={"transaction_ids": [tx_exp]},
+    ).status_code == 404
+
+    # Deleting expense, bank transfer, and one leg of a PiggyBank transfer removes all 4 rows atomically
+    res = client.post(
+        "/api/v1/transactions/bulk-delete",
+        headers=auth_headers,
+        json={"transaction_ids": [tx_exp, tx_bank_in, debit_id]},
+    )
+    assert res.status_code == 200
+    assert res.json() == {"success": True, "deleted_count": 4}
+    assert client.get(f"/api/v1/transactions/{credit_id}", headers=auth_headers).status_code == 404
+    assert client.get(f"/api/v1/piggy-banks/{piggy_bank_id}/balance", headers=auth_headers).json()["balance"] == 0
+    assert client.get(f"/api/v1/piggy-banks/{target_id}/balance", headers=auth_headers).json()["balance"] == 0

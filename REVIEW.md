@@ -2,6 +2,14 @@
 
 ## Awaiting review
 
+- [ ] Transaction Type filter, keyword search, and bulk actions (change category & bulk delete)
+  - **Delivered:**
+    - Added a multi-select **Types** filter (`Expense`, `Income`, `PiggyBank Transfer`, `Bank Transfer Out`, `Bank Transfer In`, plus legacy types when present) using the shared `FilterPicker`, and a **Search** input matching description, category, `#ID`, and amount in `frontend/src/pages/PiggyBankView.tsx`. `Clear filters` resets Type, Category, Search, Sort, Date range, and selection.
+    - Added atomic backend endpoints `POST /api/v1/transactions/bulk-category` and `POST /api/v1/transactions/bulk-delete` in `backend/app/api/v1/transactions.py` (user-scoped; bulk category normalizes category names and rejects PiggyBank transfers whose directional labels are fixed; bulk delete atomically removes both sides of any PiggyBank transfer).
+    - Added row selection checkboxes, page select-all, "Select all matching", and a themed bulk action bar in `frontend/src/pages/PiggyBankView.tsx` and `frontend/src/index.css` (with explicit PiggyBank transfer pair warning in the delete confirmation modal and mobile grid alignment).
+  - **Evidence:** Backend pytest suite passed (including new bulk category, bulk delete, transfer pair, bank transfer, and cross-user isolation tests in `backend/tests/test_transactions.py`); `cd frontend && npm run build && npm run lint` passed.
+  - **Review focus:** Combine Types, Categories, Search, and Date filters on a PiggyBank; select multiple rows to change category or delete (including a PiggyBank transfer to verify the pair warning and atomic balance update).
+
 - [ ] Upgraded PiggyNest browser favicon (Option C: dark-plum & coral-pink geometric piggy with gold coin)
   - **Delivered:** Replaced the plain line-art favicon in `frontend/public/piggynest.svg` with the owner-selected Option C design: a dark-plum gradient squircle (`#5c4760` → `#352838`) with a coral-pink piggybank silhouette and gold coin accent for crisp readability at 16px browser tab sizes on both light and dark themes.
   - **Evidence:** `cd frontend && npm run build && npm run lint` passed; `dist/piggynest.svg` reflects the updated asset.
