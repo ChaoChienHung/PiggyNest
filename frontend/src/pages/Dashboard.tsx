@@ -197,11 +197,12 @@ export const Dashboard = () => {
             </div>
 
             {showCreate && (
-                <form onSubmit={handleCreate} className="glass-panel p-6 mb-8 flex gap-4 items-end animate-fade-in">
-                    <div className="flex-1 flex gap-2">
+                <form onSubmit={handleCreate} className="glass-panel p-6 mb-8 flex flex-wrap gap-4 items-end animate-fade-in">
+                    <div className="flex-1 flex gap-3 items-end" style={{ minWidth: '240px' }}>
                         <div className="flex-1">
-                            <label className="block text-sm font-medium text-text-secondary mb-1">PiggyBank Name</label>
+                            <label htmlFor="new-piggybank-name" className="block text-sm font-medium text-text-secondary mb-1">PiggyBank Name</label>
                             <input
+                                id="new-piggybank-name"
                                 type="text"
                                 required
                                 className="input-field"
@@ -211,8 +212,9 @@ export const Dashboard = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">Currency</label>
+                            <label htmlFor="new-piggybank-currency" className="block text-sm font-medium text-text-secondary mb-1">Currency</label>
                             <ThemedSelect
+                                id="new-piggybank-currency"
                                 ariaLabel="Currency"
                                 className="w-24"
                                 value={newCurrency}

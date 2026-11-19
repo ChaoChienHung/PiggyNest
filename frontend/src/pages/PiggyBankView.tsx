@@ -75,6 +75,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const [categoryFilters, setCategoryFilters] = useState<string[] | null>(null);
     const [typeFilters, setTypeFilters] = useState<string[] | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectionMode, setSelectionMode] = useState(false);
     const [selectedTxIds, setSelectedTxIds] = useState<number[]>([]);
     const [bulkCategory, setBulkCategory] = useState('');
     const [bulkBusy, setBulkBusy] = useState(false);
@@ -338,6 +339,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
             await transactionsApi.bulkUpdateCategory(activeSelectedIds, targetCategory);
             setSelectedTxIds([]);
             setBulkCategory('');
+            setSelectionMode(false);
             await loadData({ silent: true });
         } catch (err) {
             console.error('Bulk category update failed', err);
@@ -372,6 +374,8 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                         setEditingTxId(null);
                     }
                     setSelectedTxIds([]);
+                    setBulkCategory('');
+                    setSelectionMode(false);
                     await loadData({ silent: true });
                 } catch (err) {
                     console.error('Bulk delete failed', err);
@@ -841,6 +845,24 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
             <div className="transaction-section-header flex justify-between items-center mb-6">
                 <h2 className="transactions-section-title">Transactions</h2>
                 <div className="flex items-center gap-3">
+                    {transactions.length > 0 && (
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            aria-pressed={selectionMode}
+                            onClick={() => {
+                                setSelectionMode(prev => {
+                                    if (prev) {
+                                        setSelectedTxIds([]);
+                                        setBulkCategory('');
+                                    }
+                                    return !prev;
+                                });
+                            }}
+                        >
+                            {selectionMode ? 'Done' : 'Select'}
+                        </button>
+                    )}
                     <button
                         onClick={() => {
                             if (showAdd && editingTxId !== null) {
@@ -927,7 +949,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
             </div>
 
             <div className="glass-panel transaction-table-panel">
-                {activeSelectedIds.length > 0 && (
+                {selectionMode && activeSelectedIds.length > 0 && (
                     <div className="bulk-action-bar" role="region" aria-label="Bulk transaction actions">
                         <div className="bulk-action-summary">
                             <span className="text-sm font-semibold">{activeSelectedIds.length} selected</span>
@@ -989,18 +1011,20 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                 {matchingTransactions.length === 0 ? (
                     <div className="p-8 text-center text-muted">{transactions.length ? 'No transactions match these filters.' : 'No transactions found.'}</div>
                 ) : (
-                    <table className="w-full text-left border-collapse transaction-table">
+                    <table className={`w-full text-left border-collapse transaction-table${selectionMode ? ' is-selecting' : ''}`}>
                         <thead>
                             <tr className="border-b border-glass-border">
-                                <th className="p-4 text-center" style={{ width: '44px' }}>
-                                    <input
-                                        type="checkbox"
-                                        className="tx-select-checkbox"
-                                        checked={allVisibleSelected}
-                                        onChange={toggleVisibleSelection}
-                                        aria-label="Select all transactions on this page"
-                                    />
-                                </th>
+                                {selectionMode && (
+                                    <th className="p-4 text-center" style={{ width: '44px' }}>
+                                        <input
+                                            type="checkbox"
+                                            className="tx-select-checkbox"
+                                            checked={allVisibleSelected}
+                                            onChange={toggleVisibleSelection}
+                                            aria-label="Select all transactions on this page"
+                                        />
+                                    </th>
+                                )}
                                 <th className="p-4 text-text-secondary font-medium">Date</th>
                                 <th className="p-4 text-text-secondary font-medium">Type</th>
                                 <th className="p-4 text-text-secondary font-medium">Category</th>
@@ -1037,16 +1061,18 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
 
                                 return (
                                     <React.Fragment key={tx.id}>
-                                        <tr className={`transaction-entry-row border-b border-glass-border hover:bg-white hover:bg-opacity-5 transition-colors${showAdd && editingTxId === tx.id ? ' transaction-entry-row-active' : ''}${activeSelectedSet.has(tx.id) ? ' transaction-entry-row-selected' : ''}`}>
-                                            <td className="p-4 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    className="tx-select-checkbox"
-                                                    checked={activeSelectedSet.has(tx.id)}
-                                                    onChange={() => toggleRowSelection(tx.id)}
-                                                    aria-label={`Select transaction #${tx.id}`}
-                                                />
-                                            </td>
+                                        <tr className={`transaction-entry-row border-b border-glass-border hover:bg-white hover:bg-opacity-5 transition-colors${showAdd && editingTxId === tx.id ? ' transaction-entry-row-active' : ''}${selectionMode && activeSelectedSet.has(tx.id) ? ' transaction-entry-row-selected' : ''}`}>
+                                            {selectionMode && (
+                                                <td className="p-4 text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="tx-select-checkbox"
+                                                        checked={activeSelectedSet.has(tx.id)}
+                                                        onChange={() => toggleRowSelection(tx.id)}
+                                                        aria-label={`Select transaction #${tx.id}`}
+                                                    />
+                                                </td>
+                                            )}
                                             <td className="p-4 whitespace-nowrap">
                                                 {formatDate(tx.date, dateFormat)}
                                                 <div className="text-xs text-muted">ID #{tx.id}</div>
@@ -1157,7 +1183,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                         </tr>
                                         {showAdd && editingTxId === tx.id && (
                                             <tr className="transaction-edit-row">
-                                                <td colSpan={7} className="transaction-edit-cell">
+                                                <td colSpan={selectionMode ? 7 : 6} className="transaction-edit-cell">
                                                     {transactionForm}
                                                 </td>
                                             </tr>
