@@ -15,6 +15,7 @@ import math
 import os
 import sqlite3
 import sys
+from typing import Any, Dict
 
 import httpx
 
@@ -649,7 +650,7 @@ def edit_transaction():
         cat_in = "" if is_piggybank_transfer else input(f"New Category ({target_tx['category'] or 'None'}; '-' clears): ")
         date_in = input(f"New date {date_format} ({format_date(target_tx['date'])}): ").strip()
 
-        payload = {}
+        payload: Dict[str, Any] = {}
         if amt_in:
             amount = float(amt_in)
             if not math.isfinite(amount):
@@ -1105,7 +1106,7 @@ def settings_and_backup():
         page_in = input(f"Transactions per page {PAGE_SIZES} (Enter to keep {transactions_per_page}): ").strip()
         hide_in = input(f"Hide net worth? [y/n] (Enter to keep {'y' if net_worth_hidden else 'n'}): ").strip().lower()
 
-        payload = {}
+        payload: Dict[str, Any] = {}
         if fmt:
             payload["date_format"] = fmt
         if curr:
