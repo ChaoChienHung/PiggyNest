@@ -19,13 +19,12 @@ Start the backend in one terminal:
 
 ```bash
 cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+python3.12 -m venv venv
+venv/bin/python -m pip install -r requirements.txt
+venv/bin/python -m uvicorn app.main:app --reload
 ```
 
-The API runs at `http://127.0.0.1:8000`, with interactive documentation at `/docs`. Its default database is `data/piggynest.db` at the repository root; `data/` is ignored by Git.
+Use Python 3.12 for a new backend environment; the pinned SQLAlchemy version fails to import under Python 3.15. If `venv` already exists, run the last command with its working `venv/bin/python` instead of an `uvicorn` executable that may point to another Python version. The API runs at `http://127.0.0.1:8000`, with interactive documentation at `/docs`. Its default database is `data/piggynest.db` at the repository root; `data/` is ignored by Git.
 
 Start the frontend in another terminal:
 

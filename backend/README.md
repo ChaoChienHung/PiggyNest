@@ -3,13 +3,12 @@
 Start from this directory. The default SQLite database lives in the repository's Git-ignored `data/piggynest.db`, independent of the process's working directory:
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+python3.12 -m venv venv
+venv/bin/python -m pip install -r requirements.txt
+venv/bin/python -m uvicorn app.main:app --reload
 ```
 
-The API creates the local database on first startup. It is ignored by Git. Register the disposable Bob test account through the frontend if it is not present yet; see the root README for its credentials.
+Use Python 3.12 for a new environment; the pinned SQLAlchemy version fails to import under Python 3.15. For an existing environment, launch with its working `venv/bin/python` to avoid an `uvicorn` executable that points to a different Python version. The API creates the local database on first startup. It is ignored by Git. Register the disposable Bob test account through the frontend if it is not present yet; see the root README for its credentials.
 
 For account recovery email, copy `.env.example` to `.env` and configure a TLS SMTP server. Recovery requests return 503 while mail is unconfigured. See [account recovery](../docs/account-recovery.md) for the full behavior and security limits.
 
