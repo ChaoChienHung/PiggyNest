@@ -39,7 +39,7 @@ Open `http://localhost:5173`. For account recovery email, configure the backend 
 
 ## CLI
 
-Run the root CLI from the repository root using the backend virtual environment. It goes through the same FastAPI routes as the browser and can edit a transaction by its numeric ID. When no local server is running, it automatically loads the local FastAPI app in-process so you do not need to start `uvicorn` first; if the local server is already running, it connects over HTTP. Its database inspector reads only the local development database.
+Run the root CLI from the repository root using the backend virtual environment. It goes through the same FastAPI routes as the browser with feature parity across account registration/recovery, PiggyBanks & Net Worth, transactions (view/add/edit/delete with category menu), same- and cross-currency PiggyBank transfers, category management, numeric reports, PNG chart export to `data/diagram/`, Settings & exchange rates, Excel backup export/import, and local DB inspection. When no local server is running, it automatically loads the local FastAPI app in-process so you do not need to start `uvicorn` first; if the local server is already running, it connects over HTTP. Its database inspector reads only the local development database.
 
 ```bash
 source backend/venv/bin/activate
