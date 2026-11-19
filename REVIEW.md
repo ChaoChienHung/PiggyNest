@@ -2,6 +2,11 @@
 
 ## Awaiting review
 
+- [ ] Graph Analysis controls and persistent pig menu
+  - **Delivered:** PiggyBank Graph Analysis uses Income and Expenses labels without the obsolete Deposit/Withdrawal wording. Both combined and single-bank Graph Analysis pages have searchable category filters that apply to their charts independently of transaction-list filters. The pie chart's category details control sits below the chart and reads `Category Breakdown`. The fixed pig menu remains available on Dashboard, PiggyBank, Graph Analysis, and Reports, including while add/edit forms are open; the existing desktop gutter continues to reserve space beside content.
+  - **Evidence:** Frontend build and lint passed; `git diff --check` passed. Visual behavior awaits review.
+  - **Review focus:** Try multiple categories and clear the selection in both analysis views; check the pie details button beneath the chart and FAB placement on forms, analysis, and reports.
+
 - [ ] Numeric chart and report dates, and simpler transaction types
   - **Delivered:** PiggyBank Monthly Summary labels use numeric months (`YYYY/MM` for the year-first setting, `MM/YYYY` for either day-first setting). PiggyBank chart ticks and combined chart axes/tooltips follow the account date format; Reports follows it for daily and monthly periods. Monthly Summary groups by the stored calendar date, independent of browser language and time zone. Deposit and Withdrawal are absent from the new-transaction Type list; existing transactions with those types remain editable under their original type.
   - **Evidence:** Frontend build and lint passed; `git diff --check` passed. Visual behavior awaits review.

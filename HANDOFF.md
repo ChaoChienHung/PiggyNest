@@ -3,6 +3,7 @@
 ## Snapshot
 
 - Updated: 2026-11-19. Branch: `main`.
+- Graph Analysis now removes Deposit/Withdrawal wording, filters chart data by category, and places a `Category Breakdown` control under the pie. The fixed pig FAB stays visible across protected dashboard, PiggyBank, analysis, and report pages, including open forms. Frontend build/lint passed; visual review is in `REVIEW.md`.
 - Latest change: chart and report date labels now use the account's Settings date format, with numeric monthly labels. Monthly Summary groups using stored calendar dates. Deposit and Withdrawal were removed from the new transaction Type menu, while legacy entries retain their type when edited. Frontend build/lint passed; see `REVIEW.md` for visual checks.
 - All agent-ready tasks from the current `TODO.md` have been implemented and moved to `REVIEW.md` for human review. The earlier implementation commits include `1f73547` and `4e797ce`.
 - Latest desktop UI feedback fixed the PiggyBank Categories menu layout, replaced expanding Dashboard/Reports filter chips with searchable scrollable menus, themed the bulk actions, and widened the transaction Type control. These fixes are in `REVIEW.md`.

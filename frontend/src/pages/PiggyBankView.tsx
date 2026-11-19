@@ -12,6 +12,7 @@ import { ThemedSelect } from '../components/ThemedSelect';
 import { SettingsDialog } from '../components/SettingsDialog';
 import { ExpenseCategoryChart } from '../components/ExpenseCategoryChart';
 import { DateTextField } from '../components/DateTextField';
+import { FilterPicker } from '../components/FilterPicker';
 import { formatMoney } from '../utils/money';
 import { useAuth } from '../context/useAuth';
 import { useRates } from '../context/useRates';
@@ -58,6 +59,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const [sortField, setSortField] = useState<'date' | 'amount'>('date');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+    const [analysisCategories, setAnalysisCategories] = useState<string[]>([]);
     const categoryFilterRef = React.useRef<HTMLDetailsElement>(null);
     const [dateFromText, setDateFromText] = useState('');
     const [dateToText, setDateToText] = useState('');
@@ -284,7 +286,8 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const firstShown = matchingTransactions.length === 0 ? 0 : (currentPage - 1) * (pageSize || matchingTransactions.length) + 1;
     const lastShown = firstShown + visibleTransactions.length - 1;
     const filterCategories = [...new Set(transactions.map(tx => tx.category || ''))].sort((a, b) => a.localeCompare(b));
-    const analyticsTransactions = transactions.filter(inDateRange);
+    const analyticsTransactions = transactions.filter(tx => inDateRange(tx) &&
+        (analysisCategories.length === 0 || analysisCategories.includes(tx.category || '')));
 
     const transferTargets = allBanks.filter(b => b.id !== bank.id);
     const displayCurrency = user?.display_currency ?? 'NTD';
@@ -562,8 +565,8 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                 onChange={(value) => setLineMetric(value as 'balance' | 'income' | 'expense')}
                                 options={[
                                     { value: 'balance', label: 'Running Balance' },
-                                    { value: 'income', label: 'Income / Deposits' },
-                                    { value: 'expense', label: 'Expenses / Withdrawals' },
+                                    { value: 'income', label: 'Income' },
+                                    { value: 'expense', label: 'Expenses' },
                                 ]}
                             />
 
@@ -613,8 +616,8 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                         dataKey={lineMetric}
                                         name={
                                             lineMetric === 'balance' ? 'Running Balance' :
-                                            lineMetric === 'income' ? 'Income / Deposits' :
-                                            'Expenses / Withdrawals'
+                                            lineMetric === 'income' ? 'Income' :
+                                            'Expenses'
                                         }
                                         stroke={lineColor}
                                         strokeWidth={2.5}
@@ -657,8 +660,8 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                                     }}
                                                 />
                                                 <Legend />
-                                                <Bar dataKey="income" name="Income/Deposits" fill="#ffd166" radius={[6, 6, 0, 0]} maxBarSize={35} />
-                                                <Bar dataKey="expense" name="Expenses/Withdrawals" fill="#ff8da1" radius={[6, 6, 0, 0]} maxBarSize={35} />
+                                                <Bar dataKey="income" name="Income" fill="#ffd166" radius={[6, 6, 0, 0]} maxBarSize={35} />
+                                                <Bar dataKey="expense" name="Expenses" fill="#ff8da1" radius={[6, 6, 0, 0]} maxBarSize={35} />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     ) : (
@@ -677,10 +680,14 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
 
 
     );
-    if (analyticsOnly) return <main className="container page-layout-container animate-fade-in analysis-page">
+    if (analyticsOnly) return <main className="container page-layout-container with-floating-tools animate-fade-in analysis-page">
         <Link to={`/piggybanks/${bank.id}`} className="back-to-dashboard-link">← Back to {bank.name}</Link>
         <h1 className="dashboard-title">Graph Analysis</h1>
         <div className="glass-panel p-6 mb-8">
+            <div className="analytics-picker-row">
+                <FilterPicker label="Categories" options={filterCategories.map(category => ({ value: category, label: category || 'Uncategorized' }))}
+                    selected={analysisCategories} onChange={setAnalysisCategories} emptyLabel="All" clearLabel="All categories" emptyMeansAll />
+            </div>
             <div className="analytics-date-filter">
                 <DateTextField id="analysis-date-from" label={`From (${dateFormat})`} value={dateFromText}
                     onChange={value => changeDateRange(value, dateToText)} dateFormat={dateFormat} invalid={!!dateRangeError} />
@@ -690,10 +697,11 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
             </div>
         </div>
         {analyticsPanel}
+        <FloatingTools bankId={bank.id} />
     </main>;
 
     return (
-        <div className={`container page-layout-container animate-fade-in${showAdd ? '' : ' with-floating-tools'}`}>
+        <div className="container page-layout-container animate-fade-in with-floating-tools">
             <div className="piggybank-page-header">
                 <Link to="/" className="back-to-dashboard-link">
                     <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
@@ -1052,7 +1060,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                 )}
             </div>
 
-            {!showAdd && <FloatingTools bankId={bank.id} />}
+            <FloatingTools bankId={bank.id} />
 
             {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} opener={settingsButtonRef.current} />}
 

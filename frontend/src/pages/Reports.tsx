@@ -11,6 +11,7 @@ import { formatMoney } from '../utils/money';
 import { ThemedSelect } from '../components/ThemedSelect';
 import { FilterPicker } from '../components/FilterPicker';
 import { DateTextField } from '../components/DateTextField';
+import { FloatingTools } from '../components/FloatingTools';
 import { displayCurrencyOptions, rateSummary } from '../utils/currency';
 
 const intervals = [
@@ -58,7 +59,7 @@ export const Reports = () => {
     const ratesTitle = hidden ? undefined : rateSummary(banks.filter(bank => selected.includes(bank.id)).map(bank => bank.currency), displayCurrency, rates);
     const periodLabel = (key: string, interval: 'day' | 'month' | 'year') => formatPeriod(key, interval, dateFormat);
 
-    return <main className="container page-layout-container animate-fade-in reports-page">
+    return <main className="container page-layout-container with-floating-tools animate-fade-in reports-page">
         <header className="reports-header">
             <div><Link to={initialBank ? `/piggybanks/${initialBank}` : '/'} className="text-accent-primary">← Back</Link>
                 <h1 className="dashboard-title">Reports</h1>
@@ -109,5 +110,6 @@ export const Reports = () => {
                     </div>}
                 </section>;
             })}
+        <FloatingTools bankId={Number.isSafeInteger(initialBank) && initialBank > 0 ? initialBank : undefined} />
     </main>;
 };

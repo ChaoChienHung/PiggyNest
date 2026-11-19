@@ -24,41 +24,6 @@ export const ExpenseCategoryChart = ({ data, currency }: ExpenseCategoryChartPro
         <div className="category-chart">
             <div className="category-chart-header">
                 <h3 className="font-semibold text-text-secondary">Expense Categories</h3>
-                {sorted.length > 0 && (
-                    <div
-                        className="category-list-control"
-                        onMouseEnter={() => setListOpen(true)}
-                        onMouseLeave={() => setListOpen(false)}
-                        onBlur={(event) => {
-                            if (!event.currentTarget.contains(event.relatedTarget)) setListOpen(false);
-                        }}
-                    >
-                        <button
-                            type="button"
-                            className="category-list-trigger"
-                            aria-expanded={listOpen}
-                            aria-controls="category-list-panel"
-                            onClick={() => setListOpen(true)}
-                            onFocus={() => setListOpen(true)}
-                            onKeyDown={(event) => {
-                                if (event.key === 'Escape') setListOpen(false);
-                            }}
-                        >
-                            {sorted.length} categories
-                        </button>
-                        {listOpen && (
-                            <div id="category-list-panel" className="category-list-panel" role="region" aria-label="Expense category breakdown">
-                                {sorted.map((item, index) => (
-                                    <div key={item.name} className="category-list-row">
-                                        <span className="category-list-swatch" style={{ backgroundColor: COLORS[index % COLORS.length] }} aria-hidden="true" />
-                                        <span className="category-list-name">{item.name}</span>
-                                        <span className="category-list-value">{summary(index)}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
             <div className="category-chart-plot">
                 {sorted.length > 0 ? (
@@ -92,6 +57,41 @@ export const ExpenseCategoryChart = ({ data, currency }: ExpenseCategoryChartPro
                     <div className="flex h-full items-center justify-center text-muted text-sm">No categorized expenses.</div>
                 )}
             </div>
+            {sorted.length > 0 && (
+                <div
+                    className="category-list-control"
+                    onMouseEnter={() => setListOpen(true)}
+                    onMouseLeave={() => setListOpen(false)}
+                    onBlur={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget)) setListOpen(false);
+                    }}
+                >
+                    <button
+                        type="button"
+                        className="category-list-trigger"
+                        aria-expanded={listOpen}
+                        aria-controls="category-list-panel"
+                        onClick={() => setListOpen(true)}
+                        onFocus={() => setListOpen(true)}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Escape') setListOpen(false);
+                        }}
+                    >
+                        Category Breakdown
+                    </button>
+                    {listOpen && (
+                        <div id="category-list-panel" className="category-list-panel" role="region" aria-label="Expense category breakdown">
+                            {sorted.map((item, index) => (
+                                <div key={item.name} className="category-list-row">
+                                    <span className="category-list-swatch" style={{ backgroundColor: COLORS[index % COLORS.length] }} aria-hidden="true" />
+                                    <span className="category-list-name">{item.name}</span>
+                                    <span className="category-list-value">{summary(index)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
             <p className="category-slice-detail" role="status" aria-live="polite">
                 {detail && detailIndex !== null ? `${detail.name}: ${summary(detailIndex)}` : '\u00a0'}
             </p>

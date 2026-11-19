@@ -1203,7 +1203,10 @@ table tr:last-child td:last-child {
 }
 
 .category-list-control {
-  position: static;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 0.5rem auto 0.35rem;
 }
 
 .category-list-trigger {

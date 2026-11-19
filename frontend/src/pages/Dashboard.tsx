@@ -136,7 +136,7 @@ export const Dashboard = () => {
     }
 
     return (
-        <div className={`container page-layout-container animate-fade-in${showCreate ? '' : ' with-floating-tools'}`}>
+        <div className="container page-layout-container animate-fade-in with-floating-tools">
             <header className="flex justify-between items-center mb-10 dashboard-header">
                 <div>
                     <h1 className="dashboard-title">Dashboard</h1>
@@ -311,7 +311,7 @@ export const Dashboard = () => {
                 )
             )}
 
-            {!showCreate && <FloatingTools />}
+            <FloatingTools />
 
             {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} opener={settingsButtonRef.current} />}
 

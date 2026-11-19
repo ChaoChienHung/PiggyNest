@@ -21,6 +21,7 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
     const [timeframe, setTimeframe] = useState<'month' | 'year'>('month');
     const [metric, setMetric] = useState<'balance' | 'flow'>('balance');
     const [selectedIds, setSelectedIds] = useState<number[] | null>(null);
+    const [categories, setCategories] = useState<string[]>([]);
     const [fromText, setFromText] = useState('');
     const [toText, setToText] = useState('');
     const [from, setFrom] = useState<string | null>(null);
@@ -44,7 +45,9 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
         }
     };
     const { converted, missing } = convertLedger(entries.filter(entry => selected.includes(entry.bank.id)), displayCurrency, rates);
-    const { periods } = summarizePeriods(converted, timeframe, from, to);
+    const categoryOptions = [...new Set(entries.filter(entry => selected.includes(entry.bank.id))
+        .map(entry => entry.transaction.category || ''))].sort();
+    const { periods } = summarizePeriods(converted, timeframe, from, to, categories);
     const categoryTotals: Record<string, number> = {};
     for (const row of periods) for (const [name, amount] of Object.entries(row.categoryExpenses)) {
         categoryTotals[name] = (categoryTotals[name] || 0) + amount;
@@ -68,7 +71,9 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
         {error && <p role="alert" className="text-danger">{error}</p>}
         <div className="analytics-picker-row">
             <FilterPicker label="PiggyBanks" options={banks.map(bank => ({ value: bank.id, label: `${bank.name} (${bank.currency})` }))}
-                selected={selected} onChange={setSelectedIds} emptyLabel="None" clearLabel="Clear all" />
+                selected={selected} onChange={values => { setSelectedIds(values); setCategories([]); }} emptyLabel="None" clearLabel="Clear all" />
+            <FilterPicker label="Categories" options={categoryOptions.map(category => ({ value: category, label: category || 'Uncategorized' }))}
+                selected={categories} onChange={setCategories} emptyLabel="All" clearLabel="All categories" emptyMeansAll />
         </div>
         <div className="analytics-date-filter">
             <DateTextField id="analytics-date-from" label="From" value={fromText}
