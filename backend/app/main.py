@@ -2,33 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import auth, piggy_banks, transactions, transfers, categories, statistics, backup
 from app.core.config import settings
-from app.db.base import Base, engine
-from app.db.money_migration import migrate_money
-from sqlalchemy import inspect, text
+from app.db.base import engine
+from app.db.migrations import run_migrations
 from sqlalchemy.orm import Session
 from app.domain.default_rates import add_missing_default_rates
 
-# Create the DB tables (Note: in production use Alembic migrations instead)
-Base.metadata.create_all(bind=engine)
-migrate_money(engine)
-if "transfer_group_id" not in {column["name"] for column in inspect(engine).get_columns("transactions")}:
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE transactions ADD COLUMN transfer_group_id VARCHAR(36)"))
-if "token_version" not in {column["name"] for column in inspect(engine).get_columns("users")}:
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0"))
-if "transactions_per_page" not in {column["name"] for column in inspect(engine).get_columns("users")}:
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE users ADD COLUMN transactions_per_page INTEGER NOT NULL DEFAULT 20"))
-if "date_format" not in {column["name"] for column in inspect(engine).get_columns("users")}:
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE users ADD COLUMN date_format VARCHAR(10) NOT NULL DEFAULT 'YYYY-MM-DD'"))
-if "display_currency" not in {column["name"] for column in inspect(engine).get_columns("users")}:
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE users ADD COLUMN display_currency VARCHAR(10) NOT NULL DEFAULT 'NTD'"))
-if "net_worth_hidden" not in {column["name"] for column in inspect(engine).get_columns("users")}:
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE users ADD COLUMN net_worth_hidden BOOLEAN NOT NULL DEFAULT 0"))
+# Apply versioned Alembic schema migrations (bridging any pre-Alembic SQLite DB safely)
+run_migrations(engine)
 with Session(engine) as session:
     add_missing_default_rates(session)
 

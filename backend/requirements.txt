@@ -8,6 +8,7 @@ email-validator>=2.1.0     # Email validation
 fastapi==0.111.1           # FastAPI framework
 aiosqlite==0.18.0          # Async SQLite support
 sqlalchemy==2.0.20         # ORM for database modeling
+alembic>=1.13.0,<2.0.0     # Versioned database schema migrations
 python-dotenv==1.0.0       # Load environment variables from .env
 uvicorn[standard]==0.23.2  # ASGI server to run FastAPI
 

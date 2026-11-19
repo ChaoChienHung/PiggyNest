@@ -1,29 +1,23 @@
-"""
-Application Configuration
-Handles environment variables and settings
-"""
-import os
-import secrets
-import yaml
-from typing import List
-from pydantic_settings import BaseSettings
-from pydantic import Field
+"""Application configuration backed by environment variables and backend/.env."""
+
 from pathlib import Path
+import secrets
+from typing import List
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+BACKEND_DIR = PROJECT_ROOT / "backend"
 LOCAL_DATA_DIR = PROJECT_ROOT / "data"
 
 
 class Settings(BaseSettings):
-    # ------------
-    # Project Info
-    # ------------
-    PROJECT_NAME: str = "Bookkeeping API"
+    # Project info
+    PROJECT_NAME: str = "PiggyNest API"
     VERSION: str = "1.0.0"
-    
-    # ------------
-    # API Settings
-    # ------------
+
+    # API & CORS
     API_V1_PREFIX: str = "/api/v1"
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",
@@ -31,87 +25,39 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
-    
-    # -----
-    # Paths
-    # -----
+
+    # Paths & Database
     BASE_DIR: Path = PROJECT_ROOT
     DATA_BASE_DIR: str = str(LOCAL_DATA_DIR)
-    USER_DATA_DIR: str = str(LOCAL_DATA_DIR / "user")
-    CONFIG_FILE: str = "./config/config.yaml"
-    
-    # ------------
-    # Google Drive
-    # ------------
-    DRIVE_FOLDER_ID: str = ""
-    GOOGLE_CREDENTIALS_FILE: str = "credentials.json"
-    GOOGLE_TOKEN_FILE: str = "token.json"
-    GOOGLE_SCOPES: List[str] = ["https://www.googleapis.com/auth/drive.file"]
-    
-    # --------
-    # Database
-    # --------
     DATABASE_URL: str = f"sqlite:///{LOCAL_DATA_DIR / 'piggynest.db'}"
-    
-    # --------
-    # Security
-    # --------
+
+    # Security & JWT
     ALGORITHM: str = "HS256"
     SECRET_KEY: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
+    # Account recovery email (SMTP)
     SMTP_HOST: str = ""
     SMTP_PORT: int = 465
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = ""
-    
-    # ------------------
-    # Default Categories
-    # ------------------
+
+    # Default categories for new users
     DEFAULT_CATEGORIES: List[str] = [
         "Food",
         "Salary",
         "Transport",
         "Entertainment",
-        "Others"
+        "Others",
     ]
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+
+    model_config = SettingsConfigDict(
+        env_file=str(BACKEND_DIR / ".env"),
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
+    )
 
 
-def load_yaml_config(config_path: str = None) -> dict:
-    """
-    Load configuration from YAML file
-    """
-    if config_path is None:
-        config_path = Settings().CONFIG_FILE
-    
-    if os.path.exists(config_path):
-        with open(config_path, 'r', encoding='utf-8') as f:
-            return yaml.safe_load(f)
-    return {}
-
-
-# ------------------------
-# Global settings instance
-# ------------------------
 settings = Settings()
-
-# ------------------------------------
-# Load and merge YAML config if exists
-# ------------------------------------
-yaml_config = load_yaml_config()
-if yaml_config:
-    if 'google_drive' in yaml_config:
-        settings.DRIVE_FOLDER_ID = yaml_config['google_drive'].get('folder_id', '')
-        settings.GOOGLE_SCOPES = yaml_config['google_drive'].get('scopes', settings.GOOGLE_SCOPES)
-    
-    if 'defaults' in yaml_config and 'categories' in yaml_config['defaults']:
-        settings.DEFAULT_CATEGORIES = yaml_config['defaults']['categories']
-    
-    if 'paths' in yaml_config:
-        paths = yaml_config['paths']
-        settings.DATA_BASE_DIR = paths.get('data_base_dir', settings.DATA_BASE_DIR)
-        settings.USER_DATA_DIR = paths.get('user_data_dir', settings.USER_DATA_DIR)

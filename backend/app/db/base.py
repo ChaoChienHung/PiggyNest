@@ -10,6 +10,7 @@ Base = declarative_base()
 from app.models.user import User
 from app.models.piggy_bank import PiggyBank
 from app.models.transaction import Transaction
+from app.models.category import Category
 from app.models.recovery import RecoveryChallenge
 from app.models.currency_rate import CurrencyRate
 

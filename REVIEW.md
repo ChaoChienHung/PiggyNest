@@ -2,6 +2,20 @@
 
 ## Awaiting review
 
+- [ ] Upgraded PiggyNest browser favicon (Option C: dark-plum & coral-pink geometric piggy with gold coin)
+  - **Delivered:** Replaced the plain line-art favicon in `frontend/public/piggynest.svg` with the owner-selected Option C design: a dark-plum gradient squircle (`#5c4760` → `#352838`) with a coral-pink piggybank silhouette and gold coin accent for crisp readability at 16px browser tab sizes on both light and dark themes.
+  - **Evidence:** `cd frontend && npm run build && npm run lint` passed; `dist/piggynest.svg` reflects the updated asset.
+  - **Review focus:** Refresh the browser tab (hard refresh if cached) and confirm the icon looks sharp in light and dark tab bars.
+
+- [ ] Batch 1 engineering optimizations (Alembic migrations, config & legacy cleanup, frontend code splitting, and docs)
+  - **Delivered:**
+    - Added Alembic (`alembic>=1.13.0,<2.0.0`) with `backend/alembic.ini`, `backend/migrations/env.py` (`render_as_batch=True`), baseline revision `0001_initial_schema`, and `backend/app/db/migrations.py` (`run_migrations`) replacing startup `create_all` and inline `ALTER TABLE` blocks while safely bridging pre-Alembic SQLite databases without data loss. Removed obsolete `backend/migrate_db.py` and `backend/migrate_db_v3.py`.
+    - Consolidated configuration in `backend/app/core/config.py` around environment variables and `backend/.env` (removing unused `PyYAML`/Google Drive settings, dead `backend/app/core/config.yaml`, four unimported legacy CSV/pandas domain modules, and the empty root `requirements.txt`).
+    - Split all frontend routes and `SettingsDialog` in `frontend/src/App.tsx` with `React.lazy` and `Suspense`, shrinking the initial entry JS chunk from `756.20 kB` (`231.04 kB` gzip) to `275.87 kB` (`91.10 kB` gzip) (-63.5% raw / -60.6% gzip) and eliminating the Vite >500 kB chunk warning.
+    - Documented background, rationale, benefits, impact, and measured results in `docs/engineering-optimizations.md` and updated `docs/backlog.md`.
+  - **Evidence:** Backend pytest suite passed (72 tests, including 3 new migration tests in `backend/tests/test_migrations.py` covering fresh DBs, pre-Alembic legacy DB bridging, and downgrade/re-upgrade round-trip); `cd frontend && npm run build && npm run lint` passed with zero warnings.
+  - **Review focus:** Review `docs/engineering-optimizations.md`, start the app against your local database to confirm seamless Alembic stamping/startup, and click through Dashboard, PiggyBank, Reports, Analysis, and Settings to confirm smooth lazy-loaded route transitions.
+
 - [ ] Transaction Categories filter follows the shared picker behavior
   - **Delivered:** The PiggyBank transaction filter labels Categories above its field. Every category is checked by default when the field reads All; `Select all` checks every option and `Clear` unchecks every option. Clearing categories shows no matching transactions, while the page's `Clear filters` button restores the default all-selected state. The shared picker keeps search, outside-click dismissal, and the existing scrollable option list.
   - **Evidence:** Frontend build and lint passed; `git diff --check` passed. Browser access was unavailable in this session.

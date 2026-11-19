@@ -8,9 +8,29 @@
 
 ## Agent-ready
 
-No outstanding tasks.
+- [ ] Add transaction Type filter and keyword search.
+  - **Scope:** Add a multi-select **Type** filter (`expense`, `income`, `transfer_out`, `transfer_in`, plus legacy types when present) alongside Category and date filters in PiggyBank view, plus a keyword search box matching description and amount.
+  - **Acceptance:** Users can combine Type, Category, date range, and keyword search; matching counts, pagination, and Clear filters work accurately without mutating stored data.
+
+- [ ] Add bulk transaction actions (change category and bulk delete).
+  - **Scope:** Support multi-select checkboxes on the PiggyBank transaction list with a bulk action bar to change the category of selected rows or delete selected rows in one action.
+  - **Acceptance:** Bulk category update scopes to the authenticated user and respects normalized category rules; bulk delete warns clearly when any selected row is part of a PiggyBank transfer pair (which removes both sides atomically) and refreshes balances/lists cleanly.
+
+- [ ] Add recurring transactions (auto-scheduled entries with stop/pause on edit).
+  - **Scope:** Allow attaching a recurrence rule (interval such as weekly/monthly/yearly or custom cadence, optional end date) when creating a transaction; editing that transaction/rule allows pausing or stopping future occurrences without deleting past transactions. Store stateful run metadata (`next_run_date` / executed periods) in SQLite so backend restarts or repeated triggers never double-post.
+  - **Acceptance:** Due occurrences post atomically and idempotently; stopping/pausing a rule halts future runs while keeping historical entries intact; covered by backend tests and desktop UI flows.
 
 ## Owner-led
+
+- [ ] Add monthly savings & budget planning with stateful email notifications.
+  - **Priority:** Owner wants to design the detailed planning and notification rules before implementation.
+  - **Context & Design Direction:**
+    - Budget periods run from the first through the last day of each month.
+    - Users create a monthly savings & spending plan based on monthly income (auto-sum actual monthly income excluding PiggyBank transfers, or manual expected income), set a savings target, and allocate spending limits across categories with in-app progress bars.
+    - Notifications must be **stateful** with a persisted per-period/threshold counter in the database so backend restarts never re-send duplicate emails.
+    - Alert thresholds should be user-configurable (e.g., approaching at 70% / 80%, reaching 100%, significantly exceeding 120%+) rather than hardcoded to a single count.
+  - **Decision needed:** Finalize the exact planning UX, essential-spending vs discretionary rules, configurable alert threshold structure, and notification cadence/limits.
+  - **Acceptance:** Users can configure a monthly savings & spending plan, view live progress bars for remaining spend and overspending, and receive stateful email/app notifications according to their configured thresholds without duplicate sends across restarts.
 
 - [ ] Polish the mobile layout after the desktop flows are settled.
   - **Priority:** Deferred by the owner. Focus current UI work on desktop.
@@ -27,8 +47,3 @@ No outstanding tasks.
   - **Priority:** Deferred by the owner until the basic features are settled.
   - **Decision needed:** Choose an AI provider, data-sharing boundary, and whether advice can use individual transactions.
   - **Acceptance:** Users can ask about spending and savings plans from the app; private ledger data is sent only under the agreed policy.
-
-- [ ] Add monthly budget planning and reminders.
-  - **Priority:** Deferred by the owner until later.
-  - **Decision:** Budget periods run from the first through the last day of each month. The owner is open to app and email reminders; settle delivery and essential-spending rules when implementation starts.
-  - **Acceptance:** Users can set a monthly plan and see remaining spend, overspending, and the agreed start-of-month reminder.
