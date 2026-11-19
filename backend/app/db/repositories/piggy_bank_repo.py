@@ -13,7 +13,18 @@ class PiggyBankRepository:
         return piggy_bank
 
     def list_by_user(self, user_id: int):
-        return self.db.query(PiggyBank).filter(PiggyBank.user_id == user_id).all()
+        return (
+            self.db.query(PiggyBank)
+            .filter(PiggyBank.user_id == user_id)
+            .order_by(PiggyBank.is_pinned.desc(), PiggyBank.id.asc())
+            .all()
+        )
+
+    def set_pinned(self, piggy_bank: PiggyBank, is_pinned: bool) -> PiggyBank:
+        piggy_bank.is_pinned = is_pinned
+        self.db.commit()
+        self.db.refresh(piggy_bank)
+        return piggy_bank
 
     def get_by_name(self, user_id: int, name: str):
         return self.db.query(PiggyBank).filter(

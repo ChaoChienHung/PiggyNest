@@ -1410,6 +1410,38 @@ table tr:last-child td:last-child {
   background: rgba(255, 141, 161, 0.08);
 }
 
+.carousel-card-pinned {
+  border-color: rgba(255, 141, 161, 0.55);
+  box-shadow: 0 8px 24px rgba(255, 141, 161, 0.14);
+}
+
+.piggybank-pin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+.piggybank-pin-btn:hover {
+  color: var(--accent-primary);
+  background: rgba(255, 141, 161, 0.12);
+}
+
+.piggybank-pin-btn.is-pinned {
+  color: var(--accent-hover);
+  background: rgba(255, 141, 161, 0.16);
+}
+
+.piggybank-pin-btn.is-pinned svg {
+  fill: currentColor;
+}
+
 @media (max-width: 600px) {
   .settings-dialog-backdrop {
     padding: 0;

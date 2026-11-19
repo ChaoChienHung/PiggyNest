@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { piggybanksApi } from '../api/piggybanks';
 import type { PiggyBank, Balance } from '../types';
-import { Plus, LogOut, ArrowRight, Settings, Eye, EyeOff } from 'lucide-react';
+import { Plus, LogOut, ArrowRight, Settings, Eye, EyeOff, Pin } from 'lucide-react';
 import { FloatingTools } from '../components/FloatingTools';
 import { ThemedSelect } from '../components/ThemedSelect';
 import { SettingsDialog } from '../components/SettingsDialog';
@@ -254,7 +254,7 @@ export const Dashboard = () => {
                             <Link
                                 key={pb.id}
                                 to={`/piggybanks/${pb.id}`}
-                                className="glass-panel hover-bounce p-6 group block carousel-card"
+                                className={`glass-panel hover-bounce p-6 group block carousel-card${pb.is_pinned ? ' carousel-card-pinned' : ''}`}
                                 style={{ display: 'flex', flexDirection: 'column', minHeight: '190px' }}
                             >
                                 <div className="flex justify-between items-start mb-4">
@@ -274,32 +274,56 @@ export const Dashboard = () => {
                                     <p className="text-muted" style={{ fontSize: '1.0rem' }}>
                                         {pb.details?.transaction_count || 0} transactions
                                     </p>
-                                    <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            showModal({
-                                                title: 'Delete PiggyBank',
-                                                message: `Are you sure you want to delete "${pb.name}" and all its transactions? This action cannot be undone.`,
-                                                variant: 'danger',
-                                                confirmText: 'Delete',
-                                                onConfirm: () => {
-                                                    closeModal();
-                                                    piggybanksApi.remove(pb.id)
-                                                        .then(() => loadData())
-                                                        .catch((err: unknown) => {
-                                                            console.error(err);
-                                                            showModal({ title: 'Error', message: 'Failed to delete piggy bank.', variant: 'danger', alertOnly: true, onConfirm: closeModal });
-                                                        });
-                                                },
-                                            });
-                                        }}
-                                        className="text-muted hover:text-danger p-1 rounded transition-colors"
-                                        title="Delete PiggyBank"
-                                        style={{ border: 'none', background: 'none', cursor: 'pointer' }}
-                                    >
-                                        ✕
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={async (e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                try {
+                                                    await piggybanksApi.setPinned(pb.id, !pb.is_pinned);
+                                                    await loadData();
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    showModal({ title: 'Error', message: 'Failed to update pin status.', variant: 'danger', alertOnly: true, onConfirm: closeModal });
+                                                }
+                                            }}
+                                            className={`piggybank-pin-btn${pb.is_pinned ? ' is-pinned' : ''}`}
+                                            aria-label={pb.is_pinned ? `Unpin ${pb.name}` : `Pin ${pb.name}`}
+                                            aria-pressed={!!pb.is_pinned}
+                                            title={pb.is_pinned ? 'Unpin PiggyBank' : 'Pin PiggyBank'}
+                                        >
+                                            <Pin size={15} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                showModal({
+                                                    title: 'Delete PiggyBank',
+                                                    message: `Are you sure you want to delete "${pb.name}" and all its transactions? This action cannot be undone.`,
+                                                    variant: 'danger',
+                                                    confirmText: 'Delete',
+                                                    onConfirm: () => {
+                                                        closeModal();
+                                                        piggybanksApi.remove(pb.id)
+                                                            .then(() => loadData())
+                                                            .catch((err: unknown) => {
+                                                                console.error(err);
+                                                                showModal({ title: 'Error', message: 'Failed to delete piggy bank.', variant: 'danger', alertOnly: true, onConfirm: closeModal });
+                                                            });
+                                                    },
+                                                });
+                                            }}
+                                            className="text-muted hover:text-danger p-1 rounded transition-colors"
+                                            aria-label={`Delete ${pb.name}`}
+                                            title="Delete PiggyBank"
+                                            style={{ border: 'none', background: 'none', cursor: 'pointer' }}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
                                 </div>
                             </Link>
                         ))}

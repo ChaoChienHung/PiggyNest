@@ -3,7 +3,9 @@
 from alembic import command
 from sqlalchemy import create_engine, inspect, text
 
-from app.db.migrations import BASELINE_REVISION, _build_alembic_config, run_migrations
+from app.db.migrations import _build_alembic_config, run_migrations
+
+HEAD_REVISION = "0002_add_piggy_bank_pin"
 
 
 EXPECTED_TABLES = {
@@ -30,7 +32,9 @@ def test_run_migrations_on_fresh_database(tmp_path):
 
     with engine.connect() as conn:
         version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-    assert version == BASELINE_REVISION
+    assert version == HEAD_REVISION
+    pb_cols = {col["name"] for col in inspect(engine).get_columns("piggy_banks")}
+    assert "is_pinned" in pb_cols
     engine.dispose()
 
 
@@ -106,8 +110,10 @@ def test_run_migrations_bridges_pre_alembic_database_without_data_loss(tmp_path)
         version = conn.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
         row = conn.execute(text("SELECT amount_minor, description FROM transactions WHERE id = 1")).one()
 
-    assert version == BASELINE_REVISION
+    assert version == HEAD_REVISION
     assert row == (-1234, "Lunch")
+    pb_cols = {col["name"] for col in inspector.get_columns("piggy_banks")}
+    assert "is_pinned" in pb_cols
     engine.dispose()
 
 

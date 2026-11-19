@@ -2,6 +2,11 @@
 
 ## Awaiting review
 
+- [ ] Pin PiggyBanks to the front of Dashboard and PiggyBank lists
+  - **Delivered:** Added `piggy_banks.is_pinned` via Alembic revision `0002_add_piggy_bank_pin`, ordered `GET /api/v1/piggy-banks` by `is_pinned DESC, id ASC`, and added `PUT /api/v1/piggy-banks/{pb_id}/pin` (scoped to the authenticated user). Added an accessible Pin/Unpin icon button and subtle highlight on each Dashboard PiggyBank card (`frontend/src/pages/Dashboard.tsx`, `frontend/src/index.css`) so frequently used accounts (such as UOB) stay at the front of the carousel.
+  - **Evidence:** Backend pytest suite passed (including new pin ordering, cross-user isolation, and `0002_add_piggy_bank_pin` migration tests in `backend/tests/test_piggy_banks.py` and `backend/tests/test_migrations.py`); `cd frontend && npm run build && npm run lint` passed.
+  - **Review focus:** Pin a PiggyBank near the end of the Dashboard carousel, confirm it jumps to the front with a filled pin icon and persists after reload, then unpin to confirm order restores.
+
 - [ ] Transaction Type filter, keyword search, and bulk actions (change category & bulk delete)
   - **Delivered:**
     - Added a multi-select **Types** filter (`Expense`, `Income`, `PiggyBank Transfer`, `Bank Transfer Out`, `Bank Transfer In`, plus legacy types when present) using the shared `FilterPicker`, and a **Search** input matching description, category, `#ID`, and amount in `frontend/src/pages/PiggyBankView.tsx`. `Clear filters` resets Type, Category, Search, Sort, Date range, and selection.

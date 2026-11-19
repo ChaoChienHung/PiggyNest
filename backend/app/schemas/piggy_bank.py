@@ -7,6 +7,11 @@ class PiggyBankCreate(BaseModel):
     name: str
     currency: str = "USD"
 
+class PiggyBankPinUpdate(BaseModel):
+    """Schema for pinning or unpinning a PiggyBank."""
+    is_pinned: bool
+
+
 class PiggyBankRead(BaseModel):
     """
     Schema for serializing a PiggyBank record back to the client.
@@ -15,6 +20,7 @@ class PiggyBankRead(BaseModel):
     name: str
     currency: str
     user_id: int
+    is_pinned: bool = False
 
     class Config:
         from_attributes = True

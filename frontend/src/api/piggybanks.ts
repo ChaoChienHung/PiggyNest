@@ -15,5 +15,9 @@ export const piggybanksApi = {
     },
     remove: async (id: number) => {
         await apiClient.delete(`/piggy-banks/${id}`);
+    },
+    setPinned: async (id: number, isPinned: boolean) => {
+        const { data } = await apiClient.put(`/piggy-banks/${id}/pin`, { is_pinned: isPinned });
+        return data;
     }
 };

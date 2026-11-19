@@ -15,6 +15,7 @@ export interface PiggyBank {
   user_id: number;
   name: string;
   currency: string;
+  is_pinned?: boolean;
 }
 
 export interface Category {

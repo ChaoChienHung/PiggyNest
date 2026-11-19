@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db.repositories.piggy_bank_repo import PiggyBankRepository
 from app.domain.piggy_banks import create_piggy_bank, list_piggy_banks
-from app.schemas.piggy_bank import PiggyBankCreate, PiggyBankRead
+from app.schemas.piggy_bank import PiggyBankCreate, PiggyBankPinUpdate, PiggyBankRead
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.transaction import Transaction
@@ -41,9 +41,25 @@ def list_all(
 ):
     """
     Fetch all PiggyBank accounts owned by the currently authenticated user.
+    Pinned PiggyBanks appear first.
     """
     repo = PiggyBankRepository(db)
     return list_piggy_banks(current_user.id, repo)
+
+
+@router.put("/{pb_id}/pin", response_model=PiggyBankRead)
+def set_piggy_bank_pin(
+    pb_id: int,
+    payload: PiggyBankPinUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Pin or unpin a PiggyBank owned by the authenticated user."""
+    repo = PiggyBankRepository(db)
+    pb = repo.get_by_id(current_user.id, pb_id)
+    if not pb:
+        raise HTTPException(status_code=404, detail="Piggy bank not found")
+    return repo.set_pinned(pb, payload.is_pinned)
 
 @router.delete("/{pb_id}")
 def delete_piggy_bank_api(
