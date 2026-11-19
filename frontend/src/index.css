@@ -1619,6 +1619,12 @@ table tr:last-child td:last-child {
   min-width: 0;
 }
 
+/* Keep an open picker above the next glass panel, whose backdrop filter creates its own stacking context. */
+.glass-panel:has(.filter-picker details[open]) {
+  position: relative;
+  z-index: 40;
+}
+
 .filter-picker-label {
   display: block;
   margin-bottom: 0.35rem;

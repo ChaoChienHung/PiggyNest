@@ -3,6 +3,7 @@
 ## Snapshot
 
 - Updated: 2026-11-19. Branch: `main`.
+- Open analytics filter menus now raise their containing glass panel above adjacent panels, fixing the Categories menu being covered by PiggyBank Analytics. Frontend build/lint passed; visual review remains in `REVIEW.md`.
 - Combined Graph Analysis places PiggyBanks and Categories side by side with labels above the fields. Category filters in Graph Analysis and Reports now default to visibly checked options; All categories and Clear are distinct actions, with an empty-state prompt after Clear. Frontend build/lint passed; visual review is in `REVIEW.md`.
 - Graph Analysis now removes Deposit/Withdrawal wording, filters chart data by category, and places a `Category Breakdown` control under the pie. The fixed pig FAB stays visible across protected dashboard, PiggyBank, analysis, and report pages, including open forms. Frontend build/lint passed; visual review is in `REVIEW.md`.
 - Latest change: chart and report date labels now use the account's Settings date format, with numeric monthly labels. Monthly Summary groups using stored calendar dates. Deposit and Withdrawal were removed from the new transaction Type menu, while legacy entries retain their type when edited. Frontend build/lint passed; see `REVIEW.md` for visual checks.
