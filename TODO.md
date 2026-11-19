@@ -10,14 +10,12 @@
 
 No outstanding tasks.
 
-## Later
+## Owner-led
 
 - [ ] Polish the mobile layout after the desktop flows are settled.
   - **Priority:** Deferred by the owner. Focus current UI work on desktop.
   - **Scope:** Review Dashboard, PiggyBank transactions and forms, charts, Reports filters, and Settings at common phone widths; keep controls readable and reachable without horizontal overflow.
   - **Acceptance:** The main add, edit, transfer, filter, report, and settings flows work by touch on a narrow screen, with no clipped content or controls covering one another.
-
-## Owner-led
 
 - [ ] Fetch exchange rates automatically from a free rate API.
   - **Priority:** Deferred by the owner until the basic features are settled.
