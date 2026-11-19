@@ -7,6 +7,6 @@
 - Consider route-level service extraction when transaction workflows grow, and centralize shared authentication and ownership queries.
 - Split the large frontend bundle by route if initial load performance becomes a concern.
 - Decide whether bank transfers need a dedicated counterparty field. Cross-currency PiggyBank transfers now store the actual sent and received amounts entered by the user; automatic exchange rates for display remain a separate decision.
-- Stop tracking generated Python bytecode. Earlier commits still contain SQLite databases, including the disposable Bob test account; `.gitignore` protects future commits but does not erase Git history. A history rewrite would need a separate coordinated decision.
+- Earlier commits still contain SQLite databases (including the disposable Bob test account) and historical Python bytecode; `.gitignore` now ignores `__pycache__/` and `*.py[cod]` and tracked `.pyc` files have been removed from `HEAD`, but Git history still contains earlier copies. A history rewrite would need a separate coordinated decision.
 - Verify email ownership at registration and provide shared gateway rate limits before deploying account recovery across multiple API workers.
 - If offline multi-device editing is required, follow the stable-ID and conflict design in [data synchronization](data-sync.md); Excel backup is currently add-only.
