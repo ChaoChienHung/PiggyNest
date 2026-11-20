@@ -17,7 +17,8 @@ import { formatMoney } from '../utils/money';
 import { useAuth } from '../context/useAuth';
 import { useRates } from '../context/useRates';
 import { convertAmount } from '../utils/currency';
-import { asDateFormat, formatDate, formatMonth, isoDatePart, parseDate, todayIsoDate } from '../utils/dates';
+import { asDateFormat, formatDate, formatMonth, formatPeriod, isoDatePart, parseDate, todayIsoDate } from '../utils/dates';
+import { periodKey } from '../utils/ledgerAnalytics';
 
 const transferNote = (description?: string) => {
     const note = description || '';
@@ -58,6 +59,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const [settingsOpen, setSettingsOpen] = useState(false);
     const settingsButtonRef = React.useRef<HTMLButtonElement>(null);
     const [lineMetric, setLineMetric] = useState<'balance' | 'income' | 'expense'>('balance');
+    const [viewScale, setViewScale] = useState<'day' | 'month' | 'year'>('day');
 
     // Form states
     const [showAdd, setShowAdd] = useState(false);
@@ -416,39 +418,39 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const impliedRate = hasOtherAmount && sentValue > 0 && receivedValue > 0
         ? receivedValue / sentValue : null;
 
-    // One point per calendar day: the end-of-day balance plus that day's money in and out.
-    // `t` is UTC midnight of the date, so the time axis spaces days evenly in any time zone.
-    const dailyTotals = new Map<string, { income: number; expense: number; net: number }>();
+    // Group transactions by the selected view scale (daily, monthly, or yearly).
+    // On daily scale, `t` is UTC midnight so the time axis spaces calendar days evenly.
+    const periodTotals = new Map<string, { income: number; expense: number; net: number }>();
     for (const tx of analyticsTransactions) {
-        const day = isoDatePart(tx.date);
-        const totals = dailyTotals.get(day) ?? { income: 0, expense: 0, net: 0 };
+        const key = periodKey(isoDatePart(tx.date), viewScale);
+        const totals = periodTotals.get(key) ?? { income: 0, expense: 0, net: 0 };
         if (tx.type !== 'transfer') {
             if (tx.amount > 0) totals.income += tx.amount;
             else totals.expense += Math.abs(tx.amount);
         }
         totals.net += tx.amount;
-        dailyTotals.set(day, totals);
+        periodTotals.set(key, totals);
     }
     let runningBalance = appliedFrom
         ? transactions.filter(tx => isoDatePart(tx.date) < appliedFrom).reduce((sum, tx) => sum + tx.amount, 0)
         : 0;
-    const lineChartData = [...dailyTotals.entries()]
+    const lineChartData = [...periodTotals.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([day, totals]) => {
+        .map(([period, totals]) => {
             runningBalance += totals.net;
-            const [y, m, d] = day.split('-').map(Number);
+            const [y, m = 1, d = 1] = period.split('-').map(Number);
             return {
                 t: Date.UTC(y, m - 1, d),
-                day,
+                period,
                 balance: Math.round(runningBalance * 100) / 100,
                 income: Math.round(totals.income * 100) / 100,
                 expense: Math.round(totals.expense * 100) / 100,
             };
         });
 
-    // Tick at the start of each month in range, thinned to at most ~8 labels.
+    // Tick at the start of each month in range on daily scale, thinned to at most ~8 labels.
     const monthTicks: number[] = [];
-    if (lineChartData.length > 0) {
+    if (viewScale === 'day' && lineChartData.length > 0) {
         const first = new Date(lineChartData[0].t);
         const last = lineChartData[lineChartData.length - 1].t;
         for (let y = first.getUTCFullYear(), m = first.getUTCMonth() + 1; ; m++) {
@@ -467,22 +469,8 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
             : formatDate(date.toISOString(), dateFormat);
     };
     const lineColor = lineMetric === 'expense' ? '#ff8da1' : '#f4b740';
-
-    // Group monthly for Bar Chart
-    const monthlyTotals: Record<string, { month: string, income: number, expense: number }> = {};
-    analyticsTransactions.forEach(tx => {
-        const monthKey = isoDatePart(tx.date).slice(0, 7);
-        if (!monthlyTotals[monthKey]) {
-            monthlyTotals[monthKey] = { month: monthKey, income: 0, expense: 0 };
-        }
-        if (tx.type === 'transfer') return;
-        if (tx.amount > 0) {
-            monthlyTotals[monthKey].income += tx.amount;
-        } else {
-            monthlyTotals[monthKey].expense += Math.abs(tx.amount);
-        }
-    });
-    const barData = Object.keys(monthlyTotals).sort().map(key => monthlyTotals[key]);
+    const scaleLabel = viewScale === 'day' ? 'Daily' : viewScale === 'month' ? 'Monthly' : 'Yearly';
+    const barData = lineChartData;
 
     // Group category totals for Pie Chart
     const catTotals: Record<string, number> = {};
@@ -663,9 +651,20 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
 
     const analyticsPanel = (
                 <div className="glass-panel p-6 mb-8 animate-fade-in">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="analytics-heading mb-6">
                         <h3 className="text-xl font-bold">PiggyBank Analytics</h3>
-                        <div className="flex gap-4 items-center">
+                        <div className="analytics-heading-actions">
+                            <ThemedSelect
+                                ariaLabel="View scale"
+                                className="analytics-select"
+                                value={viewScale}
+                                onChange={(value) => setViewScale(value as 'day' | 'month' | 'year')}
+                                options={[
+                                    { value: 'day', label: 'Daily' },
+                                    { value: 'month', label: 'Monthly' },
+                                    { value: 'year', label: 'Yearly' },
+                                ]}
+                            />
                             <ThemedSelect
                                 ariaLabel="Analytics metric"
                                 className="analytics-select"
@@ -695,20 +694,32 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="4 4" stroke="rgba(255, 141, 161, 0.15)" vertical={false} />
-                                    <XAxis
-                                        dataKey="t"
-                                        type="number"
-                                        scale="time"
-                                        domain={['dataMin', 'dataMax']}
-                                        ticks={xTicks}
-                                        tickFormatter={formatMonthTick}
-                                        minTickGap={24}
-                                        stroke="#8c768f"
-                                        style={{ fontSize: '0.85rem', fontWeight: 600 }}
-                                    />
+                                    {viewScale === 'day' ? (
+                                        <XAxis
+                                            dataKey="t"
+                                            type="number"
+                                            scale="time"
+                                            domain={['dataMin', 'dataMax']}
+                                            ticks={xTicks}
+                                            tickFormatter={formatMonthTick}
+                                            minTickGap={24}
+                                            stroke="#8c768f"
+                                            style={{ fontSize: '0.85rem', fontWeight: 600 }}
+                                        />
+                                    ) : (
+                                        <XAxis
+                                            dataKey="period"
+                                            tickFormatter={value => formatPeriod(String(value), viewScale, dateFormat)}
+                                            minTickGap={24}
+                                            stroke="#8c768f"
+                                            style={{ fontSize: '0.85rem', fontWeight: 600 }}
+                                        />
+                                    )}
                                     <YAxis stroke="#8c768f" style={{ fontSize: '0.85rem', fontWeight: 600 }} width={56} />
                                     <Tooltip
-                                        labelFormatter={(t) => formatDate(new Date(Number(t)).toISOString(), dateFormat)}
+                                        labelFormatter={(value) => viewScale === 'day'
+                                            ? formatDate(new Date(Number(value)).toISOString(), dateFormat)
+                                            : formatPeriod(String(value), viewScale, dateFormat)}
                                         formatter={(value) => formatMoney(Number(value), bank.currency)}
                                         contentStyle={{ 
                                             backgroundColor: 'rgba(255, 255, 255, 0.95)', 
@@ -744,9 +755,9 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
 
                     {lineChartData.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-glass-border pt-8 mt-4">
-                            {/* Bar Chart: Monthly Summary */}
+                            {/* Bar Chart: Period Summary */}
                             <div>
-                                <h4 className="text-center font-semibold mb-4 text-text-secondary">Monthly Summary</h4>
+                                <h4 className="text-center font-semibold mb-4 text-text-secondary">{scaleLabel} Summary</h4>
                                 <div style={{ height: '250px', width: '100%' }}>
                                     {barData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height="100%">
@@ -755,10 +766,17 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                                             >
                                                 <CartesianGrid strokeDasharray="4 4" stroke="rgba(255, 141, 161, 0.15)" />
-                                                <XAxis dataKey="month" tickFormatter={value => formatMonth(String(value), dateFormat)} stroke="#8c768f" style={{ fontSize: '0.8rem', fontWeight: 600 }} />
+                                                <XAxis
+                                                    dataKey="period"
+                                                    minTickGap={24}
+                                                    tickFormatter={value => formatPeriod(String(value), viewScale, dateFormat)}
+                                                    stroke="#8c768f"
+                                                    style={{ fontSize: '0.8rem', fontWeight: 600 }}
+                                                />
                                                 <YAxis stroke="#8c768f" style={{ fontSize: '0.8rem', fontWeight: 600 }} />
                                                 <Tooltip
-                                                    labelFormatter={value => formatMonth(String(value), dateFormat)}
+                                                    labelFormatter={value => formatPeriod(String(value), viewScale, dateFormat)}
+                                                    formatter={(value) => formatMoney(Number(value), bank.currency)}
                                                     cursor={{ fill: 'rgba(255, 141, 161, 0.05)' }}
                                                     contentStyle={{ 
                                                         backgroundColor: 'rgba(255, 255, 255, 0.95)', 
@@ -773,7 +791,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                             </BarChart>
                                         </ResponsiveContainer>
                                     ) : (
-                                        <div className="flex h-full items-center justify-center text-muted text-sm pb-8">No monthly flow data yet.</div>
+                                        <div className="flex h-full items-center justify-center text-muted text-sm pb-8">No {scaleLabel.toLowerCase()} flow data yet.</div>
                                     )}
                                 </div>
                             </div>

@@ -2,6 +2,11 @@
 
 ## Awaiting review
 
+- [ ] Daily / Monthly / Yearly view scale selector for Graph Analysis
+  - **Delivered:** Added a `Daily` / `Monthly` / `Yearly` view scale selector to both Combined Graph Analysis (`frontend/src/components/StatisticsCharts.tsx`) and Single-PiggyBank Graph Analysis (`frontend/src/pages/PiggyBankView.tsx`). Combined Graph Analysis now includes `Daily` alongside `Monthly` and `Yearly` with `minTickGap={24}` and clean hover-only dots on the balance curve. Single-PiggyBank Graph Analysis now switches both the main AreaChart (preserving the proportional time axis on `Daily` and using formatted period ticks on `Monthly` / `Yearly`) and the summary BarChart (`Daily Summary` / `Monthly Summary` / `Yearly Summary`, with currency-formatted tooltips). Extended `frontend/tests/ledgerAnalytics.test.mjs` to assert `day`, `month`, and `year` aggregation.
+  - **Evidence:** `cd frontend && npm run build && npm run lint` passed; `node tests/ledgerAnalytics.test.mjs` and `node tests/reportMath.test.mjs` passed.
+  - **Review focus:** Switch between `Daily`, `Monthly`, and `Yearly` on both Combined Graph Analysis and a single PiggyBank's Graph Analysis; verify X-axis labels, tooltips (following your Settings date format), and the BarChart heading/values update together cleanly.
+
 - [ ] Pin PiggyBanks to the front of Dashboard and PiggyBank lists
   - **Delivered:** Added `piggy_banks.is_pinned` via Alembic revision `0002_add_piggy_bank_pin`, ordered `GET /api/v1/piggy-banks` by `is_pinned DESC, id ASC`, and added `PUT /api/v1/piggy-banks/{pb_id}/pin` (scoped to the authenticated user). Added an accessible Pin/Unpin icon button and subtle highlight on each Dashboard PiggyBank card (`frontend/src/pages/Dashboard.tsx`, `frontend/src/index.css`) so frequently used accounts (such as UOB) stay at the front of the carousel.
   - **Evidence:** Backend pytest suite passed (including new pin ordering, cross-user isolation, and `0002_add_piggy_bank_pin` migration tests in `backend/tests/test_piggy_banks.py` and `backend/tests/test_migrations.py`); `cd frontend && npm run build && npm run lint` passed.

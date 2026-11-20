@@ -2,7 +2,8 @@
 
 ## Snapshot
 
-- Updated: 2026-11-19. Branch: `main`.
+- Updated: 2026-11-20. Branch: `main`.
+- Added `Daily` / `Monthly` / `Yearly` view scale switching across both Combined Graph Analysis (`frontend/src/components/StatisticsCharts.tsx`) and Single-PiggyBank Graph Analysis (`frontend/src/pages/PiggyBankView.tsx`), syncing both the main area chart and the summary bar chart (`Daily Summary` / `Monthly Summary` / `Yearly Summary`) with currency-formatted tooltips and date-format-aware period labels. Added `day` and `year` assertions to `frontend/tests/ledgerAnalytics.test.mjs`. Frontend build, lint, and Node analytics/report tests passed.
 - Added Pin PiggyBanks (`piggy_banks.is_pinned` via Alembic revision `0002_add_piggy_bank_pin`, `PUT /api/v1/piggy-banks/{pb_id}/pin`, pinned-first ordering in `GET /api/v1/piggy-banks`, and Pin/Unpin button on Dashboard cards) so frequently used PiggyBanks stay at the front. Added Dark Mode to `TODO.md` (`Agent-ready`) and Savings Rate/MoM comparison + per-PiggyBank Savings Goals to `TODO.md` (`Owner-led`).
 - Added transaction Type filter, keyword search, and bulk transaction actions (multi-select category update and bulk delete with atomic PiggyBank transfer pair handling and confirmation warnings):
   - Backend: `POST /api/v1/transactions/bulk-category` and `POST /api/v1/transactions/bulk-delete` in `backend/app/api/v1/transactions.py` with tests in `backend/tests/test_transactions.py`.

@@ -23,6 +23,13 @@ const ledger = [
 ];
 const converted = convertLedger(ledger, 'NTD', rates);
 assert.deepEqual(converted.missing, []);
+const daily = summarizePeriods(converted.converted, 'day', null, null).periods;
+assert.deepEqual(daily.map(row => row.period), ['2026-12-31', '2027-01-01', '2027-01-02']);
+assert.equal(daily[0].balance, 2400);
+assert.equal(daily[1].balance, 1920);
+assert.equal(daily[2].balance, 1800);
+assert.equal(daily[2].expense, 120);
+
 const monthly = summarizePeriods(converted.converted, 'month', null, null).periods;
 assert.deepEqual(monthly.map(row => row.period), ['2026-12', '2027-01']);
 assert.equal(monthly[0].income, 2400);
@@ -31,4 +38,10 @@ assert.equal(monthly[1].net, -600);
 assert.equal(monthly[1].expenseCount, 2);
 assert.equal(monthly[1].netCount, 4);
 assert.equal(monthly[1].balance, 1800);
+
+const yearly = summarizePeriods(converted.converted, 'year', null, null).periods;
+assert.deepEqual(yearly.map(row => row.period), ['2026', '2027']);
+assert.equal(yearly[0].balance, 2400);
+assert.equal(yearly[1].expense, 600);
+assert.equal(yearly[1].balance, 1800);
 console.log('Ledger conversion and transfer checks passed');
