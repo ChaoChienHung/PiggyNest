@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import hmac
 import secrets
@@ -23,6 +23,11 @@ from app.api.deps import get_current_user
 
 router = APIRouter()
 RECOVERY_MESSAGE = {"message": "If this email belongs to an active account, a message will be sent."}
+
+
+def _utc_now_naive() -> datetime:
+    """UTC timestamp stored as naive datetime to match SQLite DateTime comparisons."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 RECOVERY_COOLDOWN = timedelta(seconds=60)
 RESET_LIFETIME = timedelta(minutes=10)
 MAX_RESET_ATTEMPTS = 5
@@ -55,7 +60,7 @@ def remind_username(
     user = db.query(User).filter(User.email == payload.email, User.is_active.is_(True)).first()
     if user:
         challenge = _challenge(db, user.id)
-        now = datetime.utcnow()
+        now = _utc_now_naive()
         if not challenge.username_sent_at or now - challenge.username_sent_at >= RECOVERY_COOLDOWN:
             challenge.username_sent_at = now
             db.commit()
@@ -75,7 +80,7 @@ def request_password_reset(
     user = db.query(User).filter(User.email == payload.email, User.is_active.is_(True)).first()
     if user:
         challenge = _challenge(db, user.id)
-        now = datetime.utcnow()
+        now = _utc_now_naive()
         if not challenge.reset_sent_at or now - challenge.reset_sent_at >= RECOVERY_COOLDOWN:
             code = f"{secrets.randbelow(10**8):08d}"
             challenge.code_digest = _code_digest(user.id, code)
@@ -94,9 +99,9 @@ def request_password_reset(
 def confirm_password_reset(payload: PasswordResetConfirm, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email, User.is_active.is_(True)).first()
     challenge = db.get(RecoveryChallenge, user.id) if user else None
-    now = datetime.utcnow()
+    now = _utc_now_naive()
     invalid = HTTPException(status_code=400, detail="Invalid or expired reset code")
-    if (not challenge or not challenge.code_digest or not challenge.expires_at
+    if (not user or not challenge or not challenge.code_digest or not challenge.expires_at
             or now >= challenge.expires_at or challenge.attempts >= MAX_RESET_ATTEMPTS):
         raise invalid
     if not hmac.compare_digest(challenge.code_digest, _code_digest(user.id, payload.code)):
@@ -226,7 +231,7 @@ def set_currency_rate(
         rate = CurrencyRate(user_id=current_user.id, currency=currency)
         db.add(rate)
     rate.rate_to_ntd = payload.rate_to_ntd
-    rate.updated_at = datetime.utcnow()
+    rate.updated_at = _utc_now_naive()
     db.commit()
     db.refresh(rate)
     return rate
