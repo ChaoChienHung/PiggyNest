@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, inspect, text
 
 from app.db.migrations import _build_alembic_config, run_migrations
 
-HEAD_REVISION = "0002_add_piggy_bank_pin"
+HEAD_REVISION = "0003_pending_notif_recurring"
 
 
 EXPECTED_TABLES = {
@@ -15,6 +15,10 @@ EXPECTED_TABLES = {
     "categories",
     "currency_rates",
     "recovery_challenges",
+    "pending_transactions",
+    "notifications",
+    "recurring_rules",
+    "recurring_executions",
     "alembic_version",
 }
 

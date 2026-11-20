@@ -9,6 +9,9 @@ from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.transaction import Transaction
 from app.models.piggy_bank import PiggyBank
+from app.models.pending_transaction import PendingTransaction
+from app.models.recurring_rule import RecurringRule
+from app.domain.recurring import process_due_recurring_rules
 from app.domain.transfer_links import legacy_transfer_pairs
 
 router = APIRouter()
@@ -44,6 +47,7 @@ def list_all(
     Pinned PiggyBanks appear first.
     """
     repo = PiggyBankRepository(db)
+    process_due_recurring_rules(db, current_user.id)
     return list_piggy_banks(current_user.id, repo)
 
 
@@ -101,5 +105,11 @@ def delete_piggy_bank_api(
             counterpart = db.get(Transaction, pairs[tx.id])
             if counterpart is not None:
                 db.delete(counterpart)
+    db.query(PendingTransaction).filter(PendingTransaction.piggy_bank_id == pb_id).delete()
+    for rule in db.query(RecurringRule).filter(RecurringRule.piggy_bank_id == pb_id).all():
+        db.query(Transaction).filter(Transaction.recurring_rule_id == rule.id).update(
+            {Transaction.recurring_rule_id: None}
+        )
+        db.delete(rule)
     repo.delete(pb)
     return {"success": True}

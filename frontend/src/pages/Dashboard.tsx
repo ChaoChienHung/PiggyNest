@@ -5,6 +5,7 @@ import { piggybanksApi } from '../api/piggybanks';
 import type { PiggyBank, Balance } from '../types';
 import { Plus, LogOut, ArrowRight, Settings, Eye, EyeOff, Pin } from 'lucide-react';
 import { FloatingTools } from '../components/FloatingTools';
+import { HeaderQuickTools } from '../components/HeaderQuickTools';
 import { ThemedSelect } from '../components/ThemedSelect';
 import { SettingsDialog } from '../components/SettingsDialog';
 import { ConfirmModal, type ModalVariant } from '../components/ConfirmModal';
@@ -143,12 +144,14 @@ export const Dashboard = () => {
                     <p className="welcome-subtext">Welcome back, {user?.username || user?.email}</p>
                 </div>
                 <div className="flex gap-3 dashboard-header-actions">
-                    <button ref={settingsButtonRef} type="button" onClick={() => setSettingsOpen(true)} className="btn btn-secondary dashboard-nav-btn">
-                        <Settings size={18} /> Settings
-                    </button>
-                    <button onClick={logout} className="btn btn-secondary dashboard-nav-btn">
-                        <LogOut size={18} /> Logout
-                    </button>
+                    <HeaderQuickTools onLedgerChanged={loadData}>
+                        <button ref={settingsButtonRef} type="button" onClick={() => setSettingsOpen(true)} className="btn btn-secondary dashboard-nav-btn">
+                            <Settings size={18} /> Settings
+                        </button>
+                        <button onClick={logout} className="btn btn-secondary dashboard-nav-btn">
+                            <LogOut size={18} /> Logout
+                        </button>
+                    </HeaderQuickTools>
                 </div>
             </header>
 

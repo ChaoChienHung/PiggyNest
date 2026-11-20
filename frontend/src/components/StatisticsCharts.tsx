@@ -100,12 +100,12 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
                 <div className="analytics-chart" role="img" aria-label={`${metric === 'balance' ? 'Combined balance' : 'Combined income and spending'} in ${displayCurrency}`} title={ratesTitle}>
                     <ResponsiveContainer width="100%" height="100%">
                         {metric === 'balance' ? <AreaChart data={periods} margin={{ top: 20, right: 20, left: 5, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,141,161,.15)" />
-                            <XAxis dataKey="period" minTickGap={24} tickFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} /><YAxis /><Tooltip labelFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} formatter={(value) => formatMoney(Number(value), displayCurrency)} />
-                            <Area type="monotone" dataKey="balance" name="Balance" stroke="#ff8da1" fill="#ffe5ea" dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff', fill: '#ff8da1' }} />
+                            <CartesianGrid strokeDasharray="4 4" stroke="var(--chart-grid)" />
+                            <XAxis dataKey="period" minTickGap={24} stroke="var(--chart-axis)" tickFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} /><YAxis stroke="var(--chart-axis)" /><Tooltip contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '2px solid var(--glass-border)', borderRadius: '14px', color: 'var(--text-primary)' }} labelFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} formatter={(value) => formatMoney(Number(value), displayCurrency)} />
+                            <Area type="monotone" dataKey="balance" name="Balance" stroke="#ff8da1" fill="var(--chart-area-fill)" dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff', fill: '#ff8da1' }} />
                         </AreaChart> : <BarChart data={periods} margin={{ top: 20, right: 20, left: 5, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,141,161,.15)" />
-                            <XAxis dataKey="period" minTickGap={24} tickFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} /><YAxis /><Tooltip labelFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} formatter={(value) => formatMoney(Number(value), displayCurrency)} /><Legend />
+                            <CartesianGrid strokeDasharray="4 4" stroke="var(--chart-grid)" />
+                            <XAxis dataKey="period" minTickGap={24} stroke="var(--chart-axis)" tickFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} /><YAxis stroke="var(--chart-axis)" /><Tooltip contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '2px solid var(--glass-border)', borderRadius: '14px', color: 'var(--text-primary)' }} labelFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} formatter={(value) => formatMoney(Number(value), displayCurrency)} /><Legend />
                             <Bar dataKey="income" name="Income" fill="#ffd166" /><Bar dataKey="expense" name="Spending" fill="#ff8da1" />
                         </BarChart>}
                     </ResponsiveContainer>

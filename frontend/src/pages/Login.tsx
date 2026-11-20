@@ -3,8 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { authApi } from '../api/auth';
 import { getApiError } from '../api/client';
-import { LogIn } from 'lucide-react';
+import { LogIn, Moon, Sun } from 'lucide-react';
 import { PiggyAnimation } from '../components/PiggyCartoon';
+import { useTheme } from '../context/ThemeContext';
 
 export const Login = () => {
     const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ export const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
 
     const { login } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -36,6 +38,15 @@ export const Login = () => {
 
     return (
         <div className="auth-page-wrapper">
+            <button
+                type="button"
+                className="btn btn-secondary auth-theme-toggle"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <div className="split-screen-card">
                 {/* Left Side: Gorgeous Cartoon Animation Panel (Refactored) */}
                 <PiggyAnimation 

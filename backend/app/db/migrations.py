@@ -11,6 +11,14 @@ from app.db.base import Base
 from app.db.money_migration import migrate_money
 
 BASELINE_REVISION = "0001_initial_schema"
+BASELINE_TABLES = (
+    "users",
+    "piggy_banks",
+    "transactions",
+    "categories",
+    "currency_rates",
+    "recovery_challenges",
+)
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 ALEMBIC_INI_PATH = BACKEND_DIR / "alembic.ini"
 ALEMBIC_SCRIPT_DIR = BACKEND_DIR / "migrations"
@@ -26,7 +34,12 @@ def _build_alembic_config(engine: Engine) -> Config:
 
 def _bring_pre_alembic_db_to_baseline(engine: Engine) -> None:
     """Upgrade an existing pre-Alembic SQLite database to the 0001 baseline schema."""
-    Base.metadata.create_all(bind=engine)
+    baseline_table_objs = [
+        Base.metadata.tables[name]
+        for name in BASELINE_TABLES
+        if name in Base.metadata.tables
+    ]
+    Base.metadata.create_all(bind=engine, tables=baseline_table_objs)
     migrate_money(engine)
 
     inspector = inspect(engine)

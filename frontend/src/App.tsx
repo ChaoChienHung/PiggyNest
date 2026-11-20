@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { RateProvider } from './context/RateProvider';
+import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
@@ -26,33 +27,35 @@ const SettingsRoute = () => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <RateProvider>
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/recover-username" element={<AccountRecovery mode="username" />} />
-              <Route path="/reset-password" element={<AccountRecovery mode="password" />} />
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <RateProvider>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/recover-username" element={<AccountRecovery mode="username" />} />
+                <Route path="/reset-password" element={<AccountRecovery mode="password" />} />
 
-              {/* Protected Routes */}
-              <Route element={<ProtectedRoute />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/piggybanks/:id" element={<PiggyBankView />} />
-                <Route path="/settings" element={<SettingsRoute />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/analysis" element={<Analysis />} />
-              </Route>
+                {/* Protected Routes */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/piggybanks/:id" element={<PiggyBankView />} />
+                  <Route path="/settings" element={<SettingsRoute />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/analysis" element={<Analysis />} />
+                </Route>
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </RateProvider>
-      </AuthProvider>
-    </BrowserRouter>
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </RateProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

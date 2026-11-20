@@ -1,10 +1,12 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
 
 # Import all models here so that Base has them before being imported by Alembic or create_all
 from app.models.user import User
@@ -13,6 +15,9 @@ from app.models.transaction import Transaction
 from app.models.category import Category
 from app.models.recovery import RecoveryChallenge
 from app.models.currency_rate import CurrencyRate
+from app.models.pending_transaction import PendingTransaction
+from app.models.notification import Notification
+from app.models.recurring_rule import RecurringRule, RecurringExecution
 
 # Format database URL properly
 db_url = settings.DATABASE_URL

@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated
-from pydantic import BaseModel, EmailStr, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
 from typing import Literal, Optional
 
 # Transactions shown per page in a PiggyBank; 0 shows all.
@@ -29,8 +29,7 @@ class UserResponse(BaseModel):
     display_currency: str = "NTD"
     net_worth_hidden: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
@@ -50,5 +49,4 @@ class CurrencyRateResponse(BaseModel):
     rate_to_ntd: float
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

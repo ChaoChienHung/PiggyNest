@@ -1,6 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+from pydantic import BaseModel, ConfigDict
 
 class CategoryBase(BaseModel):
     name: str
@@ -16,5 +15,4 @@ class CategoryRead(CategoryBase):
     user_id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

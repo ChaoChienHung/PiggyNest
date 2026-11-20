@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from datetime import datetime
 from typing import List, Optional, Literal
 from app.core.money import to_minor_units
@@ -34,9 +34,9 @@ class TransactionRead(BaseModel):
     description: Optional[str]
     date: datetime
     created_at: datetime
+    recurring_rule_id: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class TransferCreate(BaseModel):
     """

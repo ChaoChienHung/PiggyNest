@@ -36,6 +36,10 @@ class Transaction(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     # Both legs of a transfer share this stable identifier. Ordinary entries are null.
     transfer_group_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    # Optional link to the recurring schedule that generated this transaction.
+    recurring_rule_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("recurring_rules.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     # Relationships
     piggy_bank = relationship("PiggyBank", back_populates="transactions")

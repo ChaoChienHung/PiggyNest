@@ -3,11 +3,14 @@ import { useParams, Link } from 'react-router-dom';
 import { piggybanksApi } from '../api/piggybanks';
 import { transactionsApi } from '../api/transactions';
 import { categoriesApi } from '../api/categories';
-import type { Transaction, PiggyBank, Balance, Category } from '../types';
-import { ArrowLeft, ArrowUpRight, ArrowDownRight, ArrowRight, Plus, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
+import { pendingApi } from '../api/pending';
+import { recurringApi } from '../api/recurring';
+import type { Transaction, PiggyBank, Balance, Category, RecurrenceFrequency } from '../types';
+import { ArrowLeft, ArrowUpRight, ArrowDownRight, ArrowRight, Plus, Pencil, ChevronLeft, ChevronRight, Repeat } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ConfirmModal, type ModalVariant } from '../components/ConfirmModal';
 import { FloatingTools } from '../components/FloatingTools';
+import { HeaderQuickTools } from '../components/HeaderQuickTools';
 import { ThemedSelect } from '../components/ThemedSelect';
 import { SettingsDialog } from '../components/SettingsDialog';
 import { ExpenseCategoryChart } from '../components/ExpenseCategoryChart';
@@ -92,6 +95,12 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const [desc, setDesc] = useState('');
     // Holds the date as typed, in the user's chosen format.
     const [txDate, setTxDate] = useState(() => formatDate(todayIsoDate(), dateFormat));
+    const [addMode, setAddMode] = useState<'one-time' | 'recurring' | 'pending'>('one-time');
+    const [recFrequency, setRecFrequency] = useState<RecurrenceFrequency>('monthly');
+    const [recInterval, setRecInterval] = useState('1');
+    const [recEndDate, setRecEndDate] = useState('');
+    const [quickToolsRefresh, setQuickToolsRefresh] = useState(0);
+    const [ruleActionMsg, setRuleActionMsg] = useState('');
 
     // Category states
     const [selectedCatId, setSelectedCatId] = useState('');
@@ -176,9 +185,19 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
         if (['expense', 'withdrawal', 'transfer_out'].includes(type)) finalAmount = -Math.abs(finalAmount);
         if (['income', 'deposit', 'transfer_in'].includes(type)) finalAmount = Math.abs(finalAmount);
 
-        const isoDate = parseDate(txDate, dateFormat);
-        if (!isoDate) {
+        const isoDate = txDate.trim() ? parseDate(txDate, dateFormat) : null;
+        if (addMode === 'pending' && editingTxId === null && type !== 'transfer') {
+            if (txDate.trim() && !isoDate) {
+                showModal({ title: 'Check the date', message: `Expected date must use ${dateFormat} (or leave blank if undecided).`, variant: 'warning', alertOnly: true, onConfirm: closeModal });
+                return;
+            }
+        } else if (!isoDate) {
             showModal({ title: 'Check the date', message: `Enter a real date in the format ${dateFormat}.`, variant: 'warning', alertOnly: true, onConfirm: closeModal });
+            return;
+        }
+        const parsedRecEnd = addMode === 'recurring' && recEndDate.trim() ? parseDate(recEndDate, dateFormat) : null;
+        if (addMode === 'recurring' && recEndDate.trim() && !parsedRecEnd) {
+            showModal({ title: 'Check the end date', message: `Recurrence end date must use ${dateFormat}.`, variant: 'warning', alertOnly: true, onConfirm: closeModal });
             return;
         }
 
@@ -224,12 +243,37 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                     isCrossCurrencyCreate ? parseFloat(otherAmount) : undefined,
                     `${isoDate}T00:00:00`,
                 );
+            } else if (addMode === 'pending') {
+                await pendingApi.create({
+                    piggy_bank_id: parseInt(id),
+                    amount: finalAmount,
+                    type,
+                    category: finalCategoryName || null,
+                    description: desc || null,
+                    expected_date: isoDate,
+                });
+                setQuickToolsRefresh(v => v + 1);
             } else {
                 let finalDate = undefined;
                 if (isoDate) {
                     finalDate = `${isoDate}T00:00:00`;
                 }
-                await transactionsApi.create(parseInt(id), finalAmount, type, desc, finalCategoryName, finalDate);
+                const created = await transactionsApi.create(parseInt(id), finalAmount, type, desc, finalCategoryName, finalDate);
+                if (addMode === 'recurring' && isoDate) {
+                    await recurringApi.create({
+                        piggy_bank_id: parseInt(id),
+                        amount: finalAmount,
+                        type,
+                        category: finalCategoryName || null,
+                        description: desc || null,
+                        frequency: recFrequency,
+                        interval: Math.max(1, Number(recInterval) || 1),
+                        start_date: isoDate,
+                        end_date: parsedRecEnd,
+                        initial_transaction_id: created.id,
+                    });
+                    setQuickToolsRefresh(v => v + 1);
+                }
             }
 
             setShowAdd(false);
@@ -242,6 +286,11 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
             setIsCreatingCat(false);
             setType('expense');
             setTxDate(formatDate(todayIsoDate(), dateFormat));
+            setAddMode('one-time');
+            setRecFrequency('monthly');
+            setRecInterval('1');
+            setRecEndDate('');
+            setRuleActionMsg('');
             setEditingTxId(null);
             await loadData({ silent: true });
         } catch (err) {
@@ -490,7 +539,51 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
             onSubmit={handleAddTx}
             className="glass-panel p-6 mb-8 animate-fade-in flex flex-col gap-4 transaction-form"
         >
-            <h3 className="text-lg font-semibold mb-2">{editingTxId ? 'Edit Transaction' : 'Add New Transaction'}</h3>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                <h3 className="text-lg font-semibold" style={{ marginBottom: 0 }}>{editingTxId ? 'Edit Transaction' : 'Add New Transaction'}</h3>
+                {editingTxId === null && (
+                    <div className="tx-mode-tabs" role="tablist" aria-label="Transaction entry mode">
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={addMode === 'one-time'}
+                            className={`tx-mode-tab${addMode === 'one-time' ? ' is-active' : ''}`}
+                            onClick={() => {
+                                setAddMode('one-time');
+                                if (!txDate.trim()) setTxDate(formatDate(todayIsoDate(), dateFormat));
+                            }}
+                        >
+                            One-time
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={addMode === 'recurring'}
+                            className={`tx-mode-tab${addMode === 'recurring' ? ' is-active' : ''}`}
+                            onClick={() => {
+                                setAddMode('recurring');
+                                if (type === 'transfer') setType('expense');
+                                if (!txDate.trim()) setTxDate(formatDate(todayIsoDate(), dateFormat));
+                            }}
+                        >
+                            Recurring
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={addMode === 'pending'}
+                            className={`tx-mode-tab${addMode === 'pending' ? ' is-active' : ''}`}
+                            onClick={() => {
+                                setAddMode('pending');
+                                if (type === 'transfer') setType('expense');
+                                setTxDate('');
+                            }}
+                        >
+                            Pending
+                        </button>
+                    </div>
+                )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div>
                     <label htmlFor="transaction-type" className="block text-sm font-medium text-text-secondary mb-1">Type</label>
@@ -507,13 +600,20 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                             ...(editingTxId !== null && type === 'deposit' ? [{ value: 'deposit', label: 'Deposit' }] : []),
                             { value: 'transfer_out', label: 'Bank Transfer Out' },
                             { value: 'transfer_in', label: 'Bank Transfer In' },
-                            ...(editingTxId === null || type === 'transfer' ? [{ value: 'transfer', label: 'PiggyBank Transfer' }] : []),
+                            ...((editingTxId === null && addMode === 'one-time') || type === 'transfer'
+                                ? [{ value: 'transfer', label: 'PiggyBank Transfer' }] : []),
                         ]}
                     />
                 </div>
 
-                <DateTextField id="transaction-date" label={`Date (${dateFormat})`} value={txDate}
-                    onChange={setTxDate} dateFormat={dateFormat} required />
+                <DateTextField
+                    id="transaction-date"
+                    label={addMode === 'pending' && editingTxId === null ? `Expected Date (optional, ${dateFormat})` : `Date (${dateFormat})`}
+                    value={txDate}
+                    onChange={setTxDate}
+                    dateFormat={dateFormat}
+                    required={!(addMode === 'pending' && editingTxId === null)}
+                />
 
                 {type === 'transfer' && editingTxId === null && (
                     <div>
@@ -622,6 +722,93 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                     />
                 </div>
             </div>
+
+            {editingTxId === null && addMode === 'pending' && (
+                <div className="tx-extra-options text-sm text-text-secondary">
+                    This payment will be staged in your <strong>Pending Cart</strong> without changing your balance. Confirm it later once the final date and amount settle.
+                </div>
+            )}
+
+            {editingTxId === null && addMode === 'recurring' && (
+                <div className="tx-extra-options">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-xs font-medium text-text-secondary mb-1">Frequency</label>
+                            <ThemedSelect
+                                value={recFrequency}
+                                onChange={(v) => setRecFrequency(v as RecurrenceFrequency)}
+                                options={[
+                                    { value: 'daily', label: 'Daily' },
+                                    { value: 'weekly', label: 'Weekly' },
+                                    { value: 'monthly', label: 'Monthly' },
+                                    { value: 'yearly', label: 'Yearly' },
+                                ]}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-text-secondary mb-1">Every N periods</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="365"
+                                className="input-field"
+                                value={recInterval}
+                                onChange={(e) => setRecInterval(e.target.value)}
+                            />
+                        </div>
+                        <DateTextField
+                            id="tx-recurring-end"
+                            label={`End Date (optional, ${dateFormat})`}
+                            value={recEndDate}
+                            onChange={setRecEndDate}
+                            dateFormat={dateFormat}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {editingTxId !== null && editingTransaction?.recurring_rule_id && (
+                <div className="tx-recurring-banner">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                        <Repeat size={16} className="text-accent-primary" />
+                        <span>This entry belongs to a recurring schedule. Pause or stop future runs without deleting past entries:</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                            type="button"
+                            className="btn btn-secondary text-xs"
+                            style={{ padding: '0.35rem 0.75rem' }}
+                            onClick={async () => {
+                                try {
+                                    await recurringApi.update(editingTransaction.recurring_rule_id!, { status: 'paused' });
+                                    setRuleActionMsg('Schedule paused — future runs are on hold.');
+                                } catch {
+                                    setRuleActionMsg('Could not pause schedule.');
+                                }
+                            }}
+                        >
+                            Pause Schedule
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-secondary text-xs"
+                            style={{ padding: '0.35rem 0.75rem' }}
+                            onClick={async () => {
+                                try {
+                                    await recurringApi.update(editingTransaction.recurring_rule_id!, { status: 'stopped' });
+                                    setRuleActionMsg('Schedule stopped — no more future entries will post.');
+                                } catch {
+                                    setRuleActionMsg('Could not stop schedule.');
+                                }
+                            }}
+                        >
+                            Stop Schedule
+                        </button>
+                        {ruleActionMsg && <span className="text-xs text-success" role="status">{ruleActionMsg}</span>}
+                    </div>
+                </div>
+            )}
+
             <div className="flex justify-end gap-3 mt-2">
                 <button
                     type="button"
@@ -636,6 +823,9 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                         setIsCreatingCat(false);
                         setType('expense');
                         setTxDate(formatDate(todayIsoDate(), dateFormat));
+                        setAddMode('one-time');
+                        setRecEndDate('');
+                        setRuleActionMsg('');
                         setEditingTxId(null);
                     }}
                     className="btn btn-secondary text-sm"
@@ -643,7 +833,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                     Cancel
                 </button>
                 <button type="submit" className="btn btn-primary text-sm">
-                    {editingTxId ? 'Save Changes' : 'Save Transaction'}
+                    {editingTxId ? 'Save Changes' : addMode === 'pending' ? 'Add to Pending Cart' : addMode === 'recurring' ? 'Save Recurring Transaction' : 'Save Transaction'}
                 </button>
             </div>
         </form>
@@ -721,12 +911,12 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                             ? formatDate(new Date(Number(value)).toISOString(), dateFormat)
                                             : formatPeriod(String(value), viewScale, dateFormat)}
                                         formatter={(value) => formatMoney(Number(value), bank.currency)}
-                                        contentStyle={{ 
-                                            backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                                            border: '2px solid rgba(255, 141, 161, 0.2)', 
+                                        contentStyle={{
+                                            backgroundColor: 'var(--chart-tooltip-bg)',
+                                            border: '2px solid var(--glass-border)',
                                             borderRadius: '16px',
                                             boxShadow: '0 8px 24px rgba(255, 141, 161, 0.1)',
-                                            color: '#4a3e4b'
+                                            color: 'var(--text-primary)',
                                         }}
                                     />
                                     <Legend wrapperStyle={{ paddingTop: '10px' }} />
@@ -778,11 +968,11 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                                     labelFormatter={value => formatPeriod(String(value), viewScale, dateFormat)}
                                                     formatter={(value) => formatMoney(Number(value), bank.currency)}
                                                     cursor={{ fill: 'rgba(255, 141, 161, 0.05)' }}
-                                                    contentStyle={{ 
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                                                        border: '2px solid rgba(255, 141, 161, 0.2)', 
+                                                    contentStyle={{
+                                                        backgroundColor: 'var(--chart-tooltip-bg)',
+                                                        border: '2px solid var(--glass-border)',
                                                         borderRadius: '16px',
-                                                        color: '#4a3e4b'
+                                                        color: 'var(--text-primary)',
                                                     }}
                                                 />
                                                 <Legend />
@@ -834,7 +1024,12 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                     <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
                 </Link>
                 <div className="piggybank-header-actions">
-                    <button ref={settingsButtonRef} type="button" className="btn btn-secondary" onClick={() => setSettingsOpen(true)}>Settings</button>
+                    <HeaderQuickTools
+                        refreshSignal={quickToolsRefresh}
+                        onLedgerChanged={() => loadData({ silent: true })}
+                    >
+                        <button ref={settingsButtonRef} type="button" className="btn btn-secondary" onClick={() => setSettingsOpen(true)}>Settings</button>
+                    </HeaderQuickTools>
                 </div>
             </div>
 

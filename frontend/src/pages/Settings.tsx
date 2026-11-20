@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/useAuth';
+import { useTheme, type ThemeMode } from '../context/ThemeContext';
 import { authApi } from '../api/auth';
 import { User, AlertTriangle, Download, Upload, LayoutList } from 'lucide-react';
 import { backupApi } from '../api/backup';
@@ -13,6 +14,7 @@ import { displayCurrencyOptions } from '../utils/currency';
 
 export const Settings = () => {
     const { user, logout, updateUser } = useAuth();
+    const { theme, setTheme } = useTheme();
     const { rates, saveRate } = useRates();
     const [heldCurrencies, setHeldCurrencies] = useState<string[]>([]);
     const [rateDrafts, setRateDrafts] = useState<Record<string, string>>({});
@@ -237,6 +239,19 @@ export const Settings = () => {
                             onChange={(value) => saveDisplay(() => authApi.updateDisplayCurrency(value))}
                             disabled={isSavingDisplay}
                             options={displayCurrencyOptions(heldCurrencies, user?.display_currency)}
+                        />
+                    </div>
+                    <div className="settings-field">
+                        <label htmlFor="app-theme" className="text-sm font-medium text-text-secondary">Appearance</label>
+                        <ThemedSelect
+                            id="app-theme"
+                            className="settings-select"
+                            value={theme}
+                            onChange={(value) => setTheme(value as ThemeMode)}
+                            options={[
+                                { value: 'light', label: 'Light (Soft Pastel)' },
+                                { value: 'dark', label: 'Dark (Soft Dark-Plum)' },
+                            ]}
                         />
                     </div>
                 </div>

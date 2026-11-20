@@ -8,13 +8,7 @@
 
 ## Agent-ready
 
-- [ ] Add Dark Mode (soft dark-plum theme matching the new favicon) with a light/dark toggle.
-  - **Scope:** Add a theme preference (light / dark) using CSS variables in `frontend/src/index.css` with a soft dark-plum palette that complements the dark-plum favicon, plus a quick toggle in the header/Settings and persistence across reloads.
-  - **Acceptance:** Every page (Login, Dashboard, PiggyBankView, Reports, Analysis, Settings, calendar/select popovers, and charts) maintains readable contrast in both light and dark themes with no flash or broken styles.
-
-- [ ] Add recurring transactions (auto-scheduled entries with stop/pause on edit).
-  - **Scope:** Allow attaching a recurrence rule (interval such as weekly/monthly/yearly or custom cadence, optional end date) when creating a transaction; editing that transaction/rule allows pausing or stopping future occurrences without deleting past transactions. Store stateful run metadata (`next_run_date` / executed periods) in SQLite so backend restarts or repeated triggers never double-post.
-  - **Acceptance:** Due occurrences post atomically and idempotently; stopping/pausing a rule halts future runs while keeping historical entries intact; covered by backend tests and desktop UI flows.
+*(No pending agent-ready tasks — see [REVIEW.md](REVIEW.md) for recently completed work awaiting human review.)*
 
 ## Owner-led
 

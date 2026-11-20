@@ -35,3 +35,12 @@ Look in [`frontend/`](../frontend/) for backup controls, [`backend/`](../backend
 The browser combines selected PiggyBanks in the account's display currency using each user's fixed NTD reference rates. The Dashboard shows one net worth total and combined balance, income, spending, and category charts. Graph Analysis filters by PiggyBank, category, and date; a single PiggyBank analysis filters by category and date. Category filters on Graph Analysis and Reports show every category selected by default; All categories selects every checkbox and Clear selects none. The Reports view shows numeric summaries by day, month, and year; empty calendar periods count in averages. Chart and report dates follow the user's Settings date format; monthly labels use numeric `YYYY/MM` or `MM/YYYY`. PiggyBank transfers are excluded from income and spending totals; bank transfers follow their signed direction. Conversion changes display values only, never stored ledger amounts.
 
 Look in [`frontend/`](../frontend/) for charts and report views, and [`backend/`](../backend/) for calculations and tests.
+
+## Pending cart, notifications, recurring schedules, and dark mode
+
+- **Pending Cart:** Users can stage delayed payments (such as credit-card authorizations with undecided settlement dates) without affecting PiggyBank balances, then confirm them with a final date and amount to post atomically to the ledger.
+- **In-App Notifications:** Pending actions and recurring postings deliver idempotent in-app notifications accessible from the header bell; clicking any notification opens a formatted popup letter.
+- **Recurring Schedules:** Users can attach daily, weekly, monthly, or yearly schedules (with custom intervals and optional end dates) when adding transactions or from the Recurring Schedules modal, and pause or stop future runs without deleting historical transactions.
+- **Dark Mode:** Users can toggle between Light (Soft Pastel) and Dark (Soft Dark-Plum) themes from the header, Login screen, or Settings → Display, persisted across reloads without flash.
+
+See [pending, notifications, recurring, and dark mode](pending-notifications-recurring-theme.md) for the technical architecture, database contracts, and idempotency guarantees.

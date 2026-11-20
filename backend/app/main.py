@@ -1,6 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1 import auth, piggy_banks, transactions, transfers, categories, statistics, backup
+from app.api.v1 import (
+    auth,
+    piggy_banks,
+    transactions,
+    transfers,
+    categories,
+    statistics,
+    backup,
+    pending_transactions,
+    notifications,
+    recurring,
+)
 from app.core.config import settings
 from app.db.base import engine
 from app.db.migrations import run_migrations
@@ -60,6 +71,21 @@ app.include_router(
     tags=["Statistics"]
 )
 app.include_router(backup.router, prefix=f"{settings.API_V1_PREFIX}/backup", tags=["Backup"])
+app.include_router(
+    pending_transactions.router,
+    prefix=f"{settings.API_V1_PREFIX}/pending-transactions",
+    tags=["Pending Transactions"],
+)
+app.include_router(
+    notifications.router,
+    prefix=f"{settings.API_V1_PREFIX}/notifications",
+    tags=["Notifications"],
+)
+app.include_router(
+    recurring.router,
+    prefix=f"{settings.API_V1_PREFIX}/recurring",
+    tags=["Recurring Transactions"],
+)
 
 @app.get("/")
 def read_root():

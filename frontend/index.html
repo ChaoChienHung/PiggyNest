@@ -7,6 +7,18 @@
     <meta name="theme-color" content="#fff8fa" />
     <meta name="description" content="Track your money across PiggyBanks with PiggyNest." />
     <title>PiggyNest</title>
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('piggynest-theme');
+          if (saved === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', '#1b141e');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

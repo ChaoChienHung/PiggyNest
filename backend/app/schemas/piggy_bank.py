@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class PiggyBankCreate(BaseModel):
     """
@@ -22,5 +22,4 @@ class PiggyBankRead(BaseModel):
     user_id: int
     is_pinned: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
