@@ -2558,3 +2558,91 @@ table tr:last-child td:last-child {
   background: rgba(255, 255, 255, 0.24);
   color: #ffffff;
 }
+
+.analytics-chart-hint {
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.period-drilldown-modal {
+  width: min(720px, 100%);
+}
+
+.period-drilldown-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.period-drilldown-nav button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.period-drilldown-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.period-drilldown-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+}
+
+.period-drilldown-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.period-drilldown-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: rgba(255, 141, 161, 0.16);
+  color: var(--text-primary);
+}
+
+.period-drilldown-bank-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: rgba(244, 183, 64, 0.2);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.period-drilldown-bank-link:hover {
+  text-decoration: underline;
+}
+
+.period-drilldown-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .period-drilldown-summary {
+    grid-template-columns: 1fr;
+  }
+}

@@ -7,7 +7,7 @@ import { pendingApi } from '../api/pending';
 import { recurringApi } from '../api/recurring';
 import type { Transaction, PiggyBank, Balance, Category, RecurrenceFrequency } from '../types';
 import { ArrowLeft, ArrowUpRight, ArrowDownRight, ArrowRight, Plus, Pencil, ChevronLeft, ChevronRight, Repeat } from 'lucide-react';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, type MouseHandlerDataParam } from 'recharts';
 import { ConfirmModal, type ModalVariant } from '../components/ConfirmModal';
 import { FloatingTools } from '../components/FloatingTools';
 import { HeaderQuickTools } from '../components/HeaderQuickTools';
@@ -16,6 +16,7 @@ import { SettingsDialog } from '../components/SettingsDialog';
 import { ExpenseCategoryChart } from '../components/ExpenseCategoryChart';
 import { DateTextField } from '../components/DateTextField';
 import { FilterPicker } from '../components/FilterPicker';
+import { PeriodTransactionsModal } from '../components/PeriodTransactionsModal';
 import { formatMoney } from '../utils/money';
 import { useAuth } from '../context/useAuth';
 import { useRates } from '../context/useRates';
@@ -63,6 +64,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const settingsButtonRef = React.useRef<HTMLButtonElement>(null);
     const [lineMetric, setLineMetric] = useState<'balance' | 'income' | 'expense'>('balance');
     const [viewScale, setViewScale] = useState<'day' | 'month' | 'year'>('day');
+    const [inspectedPeriod, setInspectedPeriod] = useState<string | null>(null);
 
     // Form states
     const [showAdd, setShowAdd] = useState(false);
@@ -521,6 +523,34 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
     const scaleLabel = viewScale === 'day' ? 'Daily' : viewScale === 'month' ? 'Monthly' : 'Yearly';
     const barData = lineChartData;
 
+    const handleChartClick = (state: MouseHandlerDataParam) => {
+        if (state.activeTooltipIndex !== undefined && state.activeTooltipIndex !== null) {
+            const idx = Number(state.activeTooltipIndex);
+            if (Number.isInteger(idx) && idx >= 0 && idx < lineChartData.length) {
+                setInspectedPeriod(lineChartData[idx].period);
+                return;
+            }
+        }
+        if (typeof state.activeLabel === 'number') {
+            const match = lineChartData.find(row => row.t === state.activeLabel);
+            if (match) setInspectedPeriod(match.period);
+        } else if (typeof state.activeLabel === 'string' && lineChartData.some(row => row.period === state.activeLabel)) {
+            setInspectedPeriod(state.activeLabel);
+        }
+    };
+    const inspectedIndex = inspectedPeriod ? lineChartData.findIndex(row => row.period === inspectedPeriod) : -1;
+    const inspectedRow = inspectedIndex >= 0 ? lineChartData[inspectedIndex] : null;
+    const inspectedEntries = inspectedRow
+        ? analyticsTransactions
+            .filter(tx => periodKey(isoDatePart(tx.date), viewScale) === inspectedRow.period)
+            .map(tx => ({
+                transaction: tx,
+                bankId: bank.id,
+                bankName: bank.name,
+                bankCurrency: bank.currency,
+            }))
+        : [];
+
     // Group category totals for Pie Chart
     const catTotals: Record<string, number> = {};
     analyticsTransactions.forEach(tx => {
@@ -876,6 +906,8 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                 <AreaChart
                                     data={lineChartData}
                                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                    onClick={handleChartClick}
+                                    style={{ cursor: 'pointer' }}
                                 >
                                     <defs>
                                         <linearGradient id="analytics-area-fill" x1="0" y1="0" x2="0" y2="1">
@@ -932,7 +964,7 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                         strokeWidth={2.5}
                                         fill="url(#analytics-area-fill)"
                                         dot={false}
-                                        activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff', fill: lineColor }}
+                                        activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff', fill: lineColor, style: { cursor: 'pointer' } }}
                                     />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -942,6 +974,9 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                             </div>
                         )}
                     </div>
+                    {lineChartData.length > 0 && (
+                        <p className="analytics-chart-hint mb-6">Click any point or bar to inspect transactions in that interval.</p>
+                    )}
 
                     {lineChartData.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-glass-border pt-8 mt-4">
@@ -954,6 +989,8 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                             <BarChart
                                                 data={barData}
                                                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                                onClick={handleChartClick}
+                                                style={{ cursor: 'pointer' }}
                                             >
                                                 <CartesianGrid strokeDasharray="4 4" stroke="rgba(255, 141, 161, 0.15)" />
                                                 <XAxis
@@ -991,6 +1028,23 @@ export const PiggyBankView = ({ analyticsOnly = false, bankId }: { analyticsOnly
                                 <ExpenseCategoryChart data={pieData} currency={bank.currency} />
                             </div>
                         </div>
+                    )}
+                    {inspectedRow && (
+                        <PeriodTransactionsModal
+                            period={inspectedRow.period}
+                            scale={viewScale}
+                            dateFormat={dateFormat}
+                            displayCurrency={bank.currency}
+                            entries={inspectedEntries}
+                            summary={{
+                                income: inspectedRow.income,
+                                expense: inspectedRow.expense,
+                                balance: inspectedRow.balance,
+                            }}
+                            onPrev={inspectedIndex > 0 ? () => setInspectedPeriod(lineChartData[inspectedIndex - 1].period) : undefined}
+                            onNext={inspectedIndex < lineChartData.length - 1 ? () => setInspectedPeriod(lineChartData[inspectedIndex + 1].period) : undefined}
+                            onClose={() => setInspectedPeriod(null)}
+                        />
                     )}
                 </div>
 

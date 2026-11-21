@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, type MouseHandlerDataParam } from 'recharts';
 import { useAuth } from '../context/useAuth';
 import { useRates } from '../context/useRates';
 import { useLedgerEntries } from '../context/useLedgerEntries';
 import { asDateFormat, formatPeriod, parseDate } from '../utils/dates';
-import { convertLedger, summarizePeriods } from '../utils/ledgerAnalytics';
+import { convertLedger, periodKey, summarizePeriods } from '../utils/ledgerAnalytics';
 import { formatMoney } from '../utils/money';
 import { rateSummary } from '../utils/currency';
 import { ThemedSelect } from './ThemedSelect';
 import { ExpenseCategoryChart } from './ExpenseCategoryChart';
 import { FilterPicker } from './FilterPicker';
 import { DateTextField } from './DateTextField';
+import { PeriodTransactionsModal } from './PeriodTransactionsModal';
 
 interface StatisticsChartsProps { onOpenSettings?: () => void }
 
@@ -26,6 +27,7 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
     const [toText, setToText] = useState('');
     const [from, setFrom] = useState<string | null>(null);
     const [to, setTo] = useState<string | null>(null);
+    const [inspectedPeriod, setInspectedPeriod] = useState<string | null>(null);
     const displayCurrency = user?.display_currency ?? 'NTD';
     const dateFormat = asDateFormat(user?.date_format);
     const selected = selectedIds ?? banks.map(bank => bank.id);
@@ -58,6 +60,36 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
     const totalExpense = periods.reduce((sum, row) => sum + row.expense, 0);
     const flowData = [{ name: 'Income', value: totalIncome }, { name: 'Spending', value: totalExpense }].filter(item => item.value > 0);
     const ratesTitle = rateSummary(banks.filter(bank => selected.includes(bank.id)).map(bank => bank.currency), displayCurrency, rates);
+    const handleChartClick = (state: MouseHandlerDataParam) => {
+        if (state.activeTooltipIndex !== undefined && state.activeTooltipIndex !== null) {
+            const idx = Number(state.activeTooltipIndex);
+            if (Number.isInteger(idx) && idx >= 0 && idx < periods.length) {
+                setInspectedPeriod(periods[idx].period);
+                return;
+            }
+        }
+        if (typeof state.activeLabel === 'string' && periods.some(row => row.period === state.activeLabel)) {
+            setInspectedPeriod(state.activeLabel);
+        }
+    };
+    const inspectedIndex = inspectedPeriod ? periods.findIndex(row => row.period === inspectedPeriod) : -1;
+    const inspectedRow = inspectedIndex >= 0 ? periods[inspectedIndex] : null;
+    const inspectedEntries = inspectedRow
+        ? converted
+            .filter(entry =>
+                (!from || entry.day >= from)
+                && (!to || entry.day <= to)
+                && (!selectedCategories.length || selectedCategories.includes(entry.transaction.category || ''))
+                && periodKey(entry.day, timeframe) === inspectedRow.period,
+            )
+            .map(entry => ({
+                transaction: entry.transaction,
+                bankId: entry.bank.id,
+                bankName: entry.bank.name,
+                bankCurrency: entry.bank.currency,
+                convertedAmount: entry.amount,
+            }))
+        : [];
 
     if (loading || ratesLoading) return <div className="glass-panel p-6 mb-8 text-muted">Loading analytics…</div>;
     return <section className="glass-panel p-6 mb-8 animate-fade-in" aria-label="Financial analytics">
@@ -99,17 +131,18 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
                 </div>
                 <div className="analytics-chart" role="img" aria-label={`${metric === 'balance' ? 'Combined balance' : 'Combined income and spending'} in ${displayCurrency}`} title={ratesTitle}>
                     <ResponsiveContainer width="100%" height="100%">
-                        {metric === 'balance' ? <AreaChart data={periods} margin={{ top: 20, right: 20, left: 5, bottom: 5 }}>
+                        {metric === 'balance' ? <AreaChart data={periods} margin={{ top: 20, right: 20, left: 5, bottom: 5 }} onClick={handleChartClick} style={{ cursor: 'pointer' }}>
                             <CartesianGrid strokeDasharray="4 4" stroke="var(--chart-grid)" />
                             <XAxis dataKey="period" minTickGap={24} stroke="var(--chart-axis)" tickFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} /><YAxis stroke="var(--chart-axis)" /><Tooltip contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '2px solid var(--glass-border)', borderRadius: '14px', color: 'var(--text-primary)' }} labelFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} formatter={(value) => formatMoney(Number(value), displayCurrency)} />
-                            <Area type="monotone" dataKey="balance" name="Balance" stroke="#ff8da1" fill="var(--chart-area-fill)" dot={false} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff', fill: '#ff8da1' }} />
-                        </AreaChart> : <BarChart data={periods} margin={{ top: 20, right: 20, left: 5, bottom: 5 }}>
+                            <Area type="monotone" dataKey="balance" name="Balance" stroke="#ff8da1" fill="var(--chart-area-fill)" dot={false} activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff', fill: '#ff8da1', style: { cursor: 'pointer' } }} />
+                        </AreaChart> : <BarChart data={periods} margin={{ top: 20, right: 20, left: 5, bottom: 5 }} onClick={handleChartClick} style={{ cursor: 'pointer' }}>
                             <CartesianGrid strokeDasharray="4 4" stroke="var(--chart-grid)" />
                             <XAxis dataKey="period" minTickGap={24} stroke="var(--chart-axis)" tickFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} /><YAxis stroke="var(--chart-axis)" /><Tooltip contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', border: '2px solid var(--glass-border)', borderRadius: '14px', color: 'var(--text-primary)' }} labelFormatter={value => formatPeriod(String(value), timeframe, dateFormat)} formatter={(value) => formatMoney(Number(value), displayCurrency)} /><Legend />
                             <Bar dataKey="income" name="Income" fill="#ffd166" /><Bar dataKey="expense" name="Spending" fill="#ff8da1" />
                         </BarChart>}
                     </ResponsiveContainer>
                 </div>
+                <p className="analytics-chart-hint">Click any point or bar to inspect transactions in that interval.</p>
                 <div className="analytics-summary">
                     <p>Ending balance: <strong title={ratesTitle}>{formatMoney(periods[periods.length - 1].balance, displayCurrency)}</strong></p>
                     <p>Income: <strong title={ratesTitle}>{formatMoney(totalIncome, displayCurrency)}</strong></p>
@@ -126,6 +159,24 @@ export const StatisticsCharts = ({ onOpenSettings }: StatisticsChartsProps) => {
                     </div>}
                     {categoryData.length > 0 && <ExpenseCategoryChart data={categoryData} currency={displayCurrency} />}
                 </div>
+                {inspectedRow && (
+                    <PeriodTransactionsModal
+                        period={inspectedRow.period}
+                        scale={timeframe}
+                        dateFormat={dateFormat}
+                        displayCurrency={displayCurrency}
+                        entries={inspectedEntries}
+                        summary={{
+                            income: inspectedRow.income,
+                            expense: inspectedRow.expense,
+                            balance: inspectedRow.balance,
+                        }}
+                        showBankBadge
+                        onPrev={inspectedIndex > 0 ? () => setInspectedPeriod(periods[inspectedIndex - 1].period) : undefined}
+                        onNext={inspectedIndex < periods.length - 1 ? () => setInspectedPeriod(periods[inspectedIndex + 1].period) : undefined}
+                        onClose={() => setInspectedPeriod(null)}
+                    />
+                )}
             </>}
     </section>;
 };
