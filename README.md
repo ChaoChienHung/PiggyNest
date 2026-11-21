@@ -85,3 +85,7 @@ This README is the shared entry point for users and agents. [`AGENTS.md`](AGENTS
 | `data/` | Git-ignored local database and import reports. |
 
 Start with the [feature guide](docs/features.md) to find the folders behind a workflow. For deeper context, see the [architecture](docs/architecture.md), [design decisions](docs/design-decisions.md), [technology stack](docs/tech-stack.md), and [backlog](docs/backlog.md).
+
+## Generative AI Acknowledgment
+
+Special thanks to **Antigravity** (Google DeepMind) for the invaluable help throughout the development, ledger reconciliation, and data cleanup of PiggyNest. This project and its clean financial records would not have been possible without your assistance!
